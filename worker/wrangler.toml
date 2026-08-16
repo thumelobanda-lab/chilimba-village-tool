@@ -1,0 +1,35 @@
+name = "chilimba-worker"
+main = "src/index.js"
+compatibility_date = "2024-11-01"
+compatibility_flags = ["nodejs_compat"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "chilimba-db"
+database_id = "REPLACE_AFTER_WRANGLER_D1_CREATE"
+
+[vars]
+ALLOWED_ORIGIN = "https://your-pages-project.pages.dev"
+VAPID_SUBJECT = "mailto:admin@example.com"
+VAPID_PUBLIC_KEY = "REPLACE_WITH_GENERATED_VAPID_PUBLIC_KEY"
+
+[triggers]
+# Runs daily — reminders/reminders.js only actually sends on the day a
+# member's lead time matches an upcoming due date, so a daily check is
+# enough for a biweekly schedule. Adjust the hour to your timezone; this
+# is UTC (06:00 UTC ≈ 08:00 CAT).
+crons = ["0 6 * * *"]
+
+# Set real secrets with, e.g.:
+#   npx wrangler secret put VAPID_PRIVATE_KEY
+#   npx wrangler secret put SMS_API_KEY
+#   npx wrangler secret put MOMO_API_KEY
+# Never put API keys in this file or in [vars] — [vars] is plaintext
+# in your repo. Secrets set via `wrangler secret put` are encrypted
+# and only readable at runtime by the Worker.
+#
+# Generate VAPID keys once with:
+#   npx web-push generate-vapid-keys
+# The public key goes in [vars] above (it's meant to be public — the
+# frontend needs it too, via VITE_VAPID_PUBLIC_KEY). The private key is a
+# secret, set with wrangler secret put, never committed.

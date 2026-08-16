@@ -1,0 +1,164 @@
+-- Chilimba Village Tool — D1 schema
+-- Apply with: npx wrangler d1 execute chilimba-db --file=./worker/schema/schema.sql
+
+CREATE TABLE IF NOT EXISTS users (
+  id TEXT PRIMARY KEY,              -- uuid
+  name TEXT NOT NULL UNIQUE,        -- stored lowercase for lookup
+  display_name TEXT NOT NULL,       -- original casing, for display
+  pin_salt TEXT NOT NULL,
+  pin_hash TEXT NOT NULL,
+  role TEXT NOT NULL DEFAULT 'member',   -- 'member' | 'admin' — set only via direct DB write
+  failed_attempts INTEGER NOT NULL DEFAULT 0,
+  locked_until TEXT,                -- login rejected while now() < locked_until
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS sessions (
+  token TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id),
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  expires_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS group_config (
+  id INTEGER PRIMARY KEY CHECK (id = 1),   -- single row
+  group_name TEXT NOT NULL,
+  cycle_name TEXT NOT NULL,
+  recipient_exempt INTEGER NOT NULL DEFAULT 1,
+  schedule_json TEXT NOT NULL,             -- JSON array of {id,date,group,payees,due} — payees is an array of 1-3 names
+  funds_json TEXT NOT NULL DEFAULT '[]',   -- JSON array of {id,name,amount} — community funds, e.g. Future Sharing / Hospital Emergency
+  updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_by TEXT
+);
+
+-- Each row is one member's contribution into one community fund, for one
+-- schedule date. Recorded automatically the moment a member's payments for
+-- that date first reach their due amount (not on every log entry — a
+-- member paying in two installments should still only fund once per date).
+-- This table is intentionally readable by ALL members, not just admins —
+-- unlike payments/due_overrides, communal fund contributions are meant to
+-- be visible to the whole group, the way a physical ledger passed around
+-- at a meeting works. It only ever holds {name, fund, amount, date} — never
+-- a member's balance, rate, or full payment history.
+CREATE TABLE IF NOT EXISTS fund_contributions (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id),
+  display_name TEXT NOT NULL,
+  schedule_row_id TEXT NOT NULL,
+  fund_id TEXT NOT NULL,
+  amount REAL NOT NULL,
+  recorded_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(user_id, schedule_row_id, fund_id)
+);
+CREATE INDEX IF NOT EXISTS idx_fund_contrib_recorded ON fund_contributions(recorded_at);
+
+-- Append-only payment log. Never UPDATE amount/recorded_at on an existing
+-- row — corrections are made by setting voided_at and inserting a new row.
+CREATE TABLE IF NOT EXISTS payments (
+  id TEXT PRIMARY KEY,               -- uuid
+  user_id TEXT NOT NULL REFERENCES users(id),
+  schedule_row_id TEXT NOT NULL,
+  amount REAL NOT NULL,
+  note TEXT DEFAULT '',
+  recorded_by TEXT NOT NULL,         -- display name at time of entry
+  recorded_at TEXT NOT NULL DEFAULT (datetime('now')),
+  voided_at TEXT,
+  void_reason TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_payments_user ON payments(user_id);
+
+CREATE TABLE IF NOT EXISTS payouts (
+  user_id TEXT PRIMARY KEY REFERENCES users(id),
+  amount REAL NOT NULL DEFAULT 0,
+  received_date TEXT,
+  recorded_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Per-member overrides of the shared schedule's default "due" amount.
+-- Members are not all charged the same rate — payout totals differ too
+-- (e.g. one member's payout is K25,700, another's is K17,500) — so each
+-- member's own agreed amount for a date can diverge from the group default
+-- without changing what anyone else owes.
+CREATE TABLE IF NOT EXISTS due_overrides (
+  user_id TEXT NOT NULL REFERENCES users(id),
+  schedule_row_id TEXT NOT NULL,
+  amount REAL NOT NULL,
+  updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (user_id, schedule_row_id)
+);
+
+CREATE TABLE IF NOT EXISTS subscriptions (
+  user_id TEXT PRIMARY KEY REFERENCES users(id),
+  masked_phone TEXT NOT NULL,
+  network TEXT NOT NULL,
+  amount REAL NOT NULL,
+  reference TEXT NOT NULL,
+  paid_at TEXT NOT NULL,
+  expires_at TEXT NOT NULL
+);
+
+-- Web push subscriptions — a member can have more than one (phone + laptop).
+CREATE TABLE IF NOT EXISTS push_subscriptions (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id),
+  endpoint TEXT NOT NULL UNIQUE,
+  p256dh TEXT NOT NULL,
+  auth TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_push_user ON push_subscriptions(user_id);
+
+-- Reminder preferences. phone here is the FULL number, unlike the masked
+-- mobile-money phone in `subscriptions` — SMS delivery needs the real
+-- number. Stored separately from payment data so a data export or leak of
+-- one doesn't automatically expose the other.
+CREATE TABLE IF NOT EXISTS reminder_prefs (
+  user_id TEXT PRIMARY KEY REFERENCES users(id),
+  push_enabled INTEGER NOT NULL DEFAULT 0,
+  sms_enabled INTEGER NOT NULL DEFAULT 0,
+  phone TEXT,
+  lead_days INTEGER NOT NULL DEFAULT 2,
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Prevents sending the same reminder twice if the cron runs more than once
+-- inside the lead window.
+CREATE TABLE IF NOT EXISTS reminder_log (
+  user_id TEXT NOT NULL REFERENCES users(id),
+  schedule_row_id TEXT NOT NULL,
+  channel TEXT NOT NULL,             -- 'push' | 'sms'
+  sent_at TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (user_id, schedule_row_id, channel)
+);
+
+-- Loans against a loanable fund (e.g. Future Sharing Fund). Only funds
+-- with "loanable": true in funds_json are eligible — the Worker checks
+-- this before issuing. Issuing and repaying are admin-only actions (real
+-- money leaving/returning the pool), but every loan is readable by all
+-- members via /api/funds — same transparency principle as fund_contributions.
+CREATE TABLE IF NOT EXISTS fund_loans (
+  id TEXT PRIMARY KEY,
+  fund_id TEXT NOT NULL,
+  borrower_user_id TEXT REFERENCES users(id),   -- nullable: borrower may not be an app user yet
+  borrower_name TEXT NOT NULL,
+  amount REAL NOT NULL,
+  notes TEXT DEFAULT '',
+  status TEXT NOT NULL DEFAULT 'outstanding',   -- 'outstanding' | 'repaid'
+  issued_by TEXT NOT NULL,                      -- admin display name
+  issued_at TEXT NOT NULL DEFAULT (datetime('now')),
+  repaid_at TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_loans_fund ON fund_loans(fund_id);
+
+-- Seed the group config row (edit values before running, or update after).
+-- Default funds match a common Chilimba pattern: a fixed amount from each
+-- settled contribution goes to a shared future fund and a hospital
+-- emergency fund. Both amounts are editable from Group Setup. The Future
+-- Sharing Fund is marked loanable — members can borrow against its
+-- collected balance; the Hospital Emergency Fund is not, by default.
+INSERT OR IGNORE INTO group_config (id, group_name, cycle_name, recipient_exempt, schedule_json, funds_json)
+VALUES (1, 'Hillcrest Chilimba', 'Cycle 3', 1, '[]',
+  '[{"id":"future","name":"Future Sharing Fund","amount":100,"loanable":true},{"id":"hospital","name":"Hospital Emergency Fund","amount":20,"loanable":false}]');
+
+-- To make someone an admin, run directly (never expose this via an API route):
+-- UPDATE users SET role = 'admin' WHERE name = 'harriet';

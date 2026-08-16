@@ -1,0 +1,18 @@
+{
+  "name": "chilimba-worker",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@block65/webcrypto-web-push": "^1.0.2"
+  },
+  "devDependencies": {
+    "wrangler": "^3.78.0",
+    "vitest": "^2.1.1"
+  }
+}
