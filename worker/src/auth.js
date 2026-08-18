@@ -20,7 +20,7 @@ export async function getSessionUser(request, env) {
   if (!token) return null;
 
   const row = await env.DB.prepare(
-    `SELECT s.expires_at, u.id, u.display_name, u.role, u.group_id as groupId, g.slug as groupSlug
+    `SELECT s.expires_at, u.id, u.display_name, u.role, u.active, u.group_id as groupId, g.slug as groupSlug
      FROM sessions s
      JOIN users u ON u.id = s.user_id
      JOIN groups g ON g.id = u.group_id
@@ -29,6 +29,10 @@ export async function getSessionUser(request, env) {
 
   if (!row) return null;
   if (new Date(row.expires_at).getTime() < Date.now()) return null;
+  // Checked on every request, not just at login — if an admin removes
+  // this member while they're mid-session, access is revoked immediately
+  // rather than lingering until their token naturally expires.
+  if (!row.active) return null;
 
   return { id: row.id, name: row.display_name, role: row.role, groupId: row.groupId, groupSlug: row.groupSlug, token };
 }
@@ -82,6 +86,9 @@ export async function loginOrCreate(env, groupSlug, name, pin) {
     ).bind(id, group.id, key, name.trim(), salt, hash).run();
     user = { id, group_id: group.id, name: key, display_name: name.trim(), role: "member" };
   } else {
+    if (!user.active) {
+      throw new HttpError(403, "This account has been removed by an admin.");
+    }
     if (user.locked_until && new Date(user.locked_until).getTime() > Date.now()) {
       throw new HttpError(429, "Too many attempts. Try again later.");
     }

@@ -1,23 +1,44 @@
 import { MOCK_MODE, lsGet, lsSet, realFetch, currentSession, groupScopedKey } from "./core.js";
 import { wouldLeaveZeroAdmins } from "../adminUtils.js";
+import { findNextDue } from "../scheduleUtils.js";
 
-// Every member of the signed-in admin's OWN group, with their current
-// role. Admin-only, and — same as reconciliation — only shows real
-// cross-member data once MOCK_MODE = false; in mock mode it can only see
-// accounts created in this browser.
+// Every ACTIVE member of the signed-in admin's OWN group, with role,
+// when they joined, and the next date they still owe something on —
+// powers the roster in Group Setup → Admins. Admin-only, and — same as
+// reconciliation — only shows real cross-member data once MOCK_MODE =
+// false; in mock mode it can only see accounts created in this browser.
 export async function getGroupMembers() {
   const session = currentSession();
   if (!session || session.role !== "admin") throw new Error("Admin access required.");
 
   if (MOCK_MODE) {
-    const prefix = `chilimba:account:${session.groupSlug}:`;
+    const config = lsGet(groupScopedKey(session, "group"), null);
+    const schedule = config?.schedule || [];
+    const recipientExempt = !!config?.recipientExempt;
+
+    const accountPrefix = `chilimba:account:${session.groupSlug}:`;
     const members = [];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (!key.startsWith(prefix)) continue;
-      const name = key.slice(prefix.length);
+      if (!key.startsWith(accountPrefix)) continue;
+      const name = key.slice(accountPrefix.length);
       const account = lsGet(key, {});
-      members.push({ name, role: account.role || "member" });
+      if (account.active === false) continue; // removed — drop off the active roster
+
+      const ledger = lsGet(groupScopedKey(session, "ledger", name), { payments: [], dueOverrides: {} });
+      const paidByRowId = {};
+      (ledger.payments || []).filter((p) => !p.voidedAt).forEach((p) => {
+        paidByRowId[p.scheduleRowId] = (paidByRowId[p.scheduleRowId] || 0) + p.amount;
+      });
+      const next = findNextDue(schedule, name, recipientExempt, ledger.dueOverrides || {}, paidByRowId);
+
+      members.push({
+        name,
+        role: account.role || "member",
+        joinedAt: account.joinedAt || null,
+        nextDueDate: next?.row.date || null,
+        nextDueAmount: next?.balance || 0,
+      });
     }
     members.sort((a, b) => a.name.localeCompare(b.name));
     return { members };
@@ -66,4 +87,27 @@ export async function demoteMember(name) {
   }
 
   return realFetch("/api/admin/demote", { method: "POST", body: JSON.stringify({ name }) });
+}
+
+// Removes a member — soft delete, same as the real backend: their
+// payment history stays intact, they simply can no longer log in and
+// drop off the roster. Restricted to non-admins, matching the server's
+// rule — demote an admin first, then remove them.
+export async function removeMember(name) {
+  const session = currentSession();
+  if (!session || session.role !== "admin") throw new Error("Admin access required.");
+  if (!name || !name.trim()) throw new Error("A name is required.");
+
+  if (MOCK_MODE) {
+    const key = groupScopedKey(session, "account", name.trim().toLowerCase());
+    const account = lsGet(key, null);
+    if (!account) throw new Error("No member with that name in your group.");
+    if (account.role === "admin") {
+      throw new Error("This member is an admin — demote them first, then remove.");
+    }
+    lsSet(key, { ...account, active: false, removedAt: new Date().toISOString() });
+    return { ok: true };
+  }
+
+  return realFetch("/api/admin/remove", { method: "POST", body: JSON.stringify({ name }) });
 }

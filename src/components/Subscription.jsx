@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { getSubscriptionStatus, initiateSubscriptionPayment, subscriptionPrice } from "../lib/api.js";
+import { getSubscriptionStatus, initiateSubscriptionPayment, subscriptionPrice, subscriptionDurationDays } from "../lib/api.js";
 
 const NETWORKS = ["MTN Money", "Airtel Money", "Zamtel Kwacha"];
 
-export default function Subscription({ onActive }) {
+export default function Subscription({ session, onActive }) {
   const [status, setStatus] = useState(null);
   const [phone, setPhone] = useState("");
   const [network, setNetwork] = useState(NETWORKS[0]);
@@ -11,6 +11,8 @@ export default function Subscription({ onActive }) {
   const [error, setError] = useState("");
 
   const price = subscriptionPrice();
+  const months = Math.round(subscriptionDurationDays() / 30);
+  const isAdmin = session?.role === "admin";
 
   const refresh = async () => {
     const s = await getSubscriptionStatus();
@@ -35,7 +37,7 @@ export default function Subscription({ onActive }) {
       setPhone(""); // clear the number from memory once the charge is sent
       await refresh();
     } catch (e) {
-      setError("Payment could not be started. Try again.");
+      setError(e.message || "Payment could not be started. Try again.");
     } finally {
       setPaying(false);
     }
@@ -48,8 +50,24 @@ export default function Subscription({ onActive }) {
       <div className="panel">
         <div className="badge badge-ok">Subscription active</div>
         <p className="muted small">
-          Valid until {new Date(status.expiresAt).toLocaleDateString()}
-          {status.maskedPhone && <> · paid from {status.maskedPhone}</>}.
+          This group's access is valid until {new Date(status.expiresAt).toLocaleDateString()}.
+        </p>
+      </div>
+    );
+  }
+
+  // Regular members never see a payment form — the subscription belongs
+  // to the whole group, and only an admin can activate it. Showing every
+  // member a "pay K100" button would be actively wrong here, not just
+  // unnecessary.
+  if (!isAdmin) {
+    return (
+      <div className="panel">
+        <h2 className="panel-title">Waiting on your group's subscription</h2>
+        <p className="muted small">
+          This group's K{price} / {months}-month subscription isn't active yet. Only a group
+          admin can activate it — once they do, everyone in the group gets access automatically.
+          Nothing for you to pay here.
         </p>
       </div>
     );
@@ -57,9 +75,10 @@ export default function Subscription({ onActive }) {
 
   return (
     <div className="panel">
-      <h2 className="panel-title">Cycle Subscription</h2>
+      <h2 className="panel-title">Activate Your Group's Subscription</h2>
       <p className="muted small">
-        A {"K" + price} subscription unlocks this cycle's ledger. Pay by mobile money.
+        K{price} unlocks this app for every member of the group for {months} months. This is a
+        one-time group payment — members never pay individually.
       </p>
 
       <label className="field">
@@ -82,7 +101,7 @@ export default function Subscription({ onActive }) {
         />
       </label>
 
-      {error && <div className="error-text">{error}</div>}
+      {error && <div className="error-text" role="alert">{error}</div>}
 
       <button className="btn-primary" onClick={pay} disabled={paying}>
         {paying ? "Waiting for approval…" : `Pay K${price} via ${network}`}

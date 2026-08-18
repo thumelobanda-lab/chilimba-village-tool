@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { getReconciliation } from "../lib/api.js";
+import { getReconciliation, confirmPayment, unconfirmPayment } from "../lib/api.js";
 import { payeesLabel } from "../lib/scheduleUtils.js";
 import { useApiData } from "../lib/useApiData.js";
 
@@ -8,11 +8,29 @@ const money = (n) => "K" + (Number(n) || 0).toLocaleString("en-ZM", { maximumFra
 export default function Reconciliation({ config }) {
   const upcoming = pickDefaultRow(config.schedule);
   const [rowId, setRowId] = useState(upcoming?.id || config.schedule[0]?.id);
+  const [expanded, setExpanded] = useState(null); // one member's name at a time
+  const [busyEntryId, setBusyEntryId] = useState(null);
 
-  const { data, error, loading } = useApiData(
+  const { data, error, loading, refresh } = useApiData(
     () => (rowId ? getReconciliation(rowId) : Promise.resolve(null)),
     [rowId]
   );
+
+  const toggleExpand = (name) => setExpanded(expanded === name ? null : name);
+
+  const toggleConfirm = async (entry) => {
+    setBusyEntryId(entry.id);
+    try {
+      if (entry.confirmedAt) {
+        await unconfirmPayment({ paymentId: entry.id, memberName: entry.memberName });
+      } else {
+        await confirmPayment({ paymentId: entry.id, memberName: entry.memberName, scheduleRowId: rowId });
+      }
+      await refresh();
+    } finally {
+      setBusyEntryId(null);
+    }
+  };
 
   const exportCsv = () => {
     if (!data) return;
@@ -91,23 +109,61 @@ export default function Reconciliation({ config }) {
               </thead>
               <tbody>
                 {data.members.map((m) => (
-                  <tr key={m.name}>
-                    <td className="al">{m.name}</td>
-                    <td className="ar">{m.due.toLocaleString()}</td>
-                    <td className="ar">{m.paid.toLocaleString()}</td>
-                    <td className={"ar " + (m.balance > 0 && !m.isRecipient ? "neg" : "pos")}>
-                      {m.balance.toLocaleString()}
-                    </td>
-                    <td className="al">
-                      {m.isRecipient ? (
-                        <span className="tag">recipient</span>
-                      ) : m.balance > 0 ? (
-                        <span className="status-outstanding">Outstanding</span>
-                      ) : (
-                        <span className="status-paid">Paid</span>
-                      )}
-                    </td>
-                  </tr>
+                  <React.Fragment key={m.name}>
+                    <tr>
+                      <td className="al">
+                        {m.entries && m.entries.length > 0 ? (
+                          <button className="link-amount" onClick={() => toggleExpand(m.name)} title="View payment entries">
+                            {m.name} <span className="entry-count">({m.entries.length})</span>
+                          </button>
+                        ) : (
+                          m.name
+                        )}
+                      </td>
+                      <td className="ar">{m.due.toLocaleString()}</td>
+                      <td className="ar">{m.paid.toLocaleString()}</td>
+                      <td className={"ar " + (m.balance > 0 && !m.isRecipient ? "neg" : "pos")}>
+                        {m.balance.toLocaleString()}
+                      </td>
+                      <td className="al">
+                        {m.isRecipient ? (
+                          <span className="tag">recipient</span>
+                        ) : m.balance > 0 ? (
+                          <span className="status-outstanding">Outstanding</span>
+                        ) : (
+                          <span className="status-paid">Paid</span>
+                        )}
+                        {m.entries && m.entries.length > 0 && m.entries.every((e) => e.confirmedAt) && (
+                          <span className="confirm-bulb confirm-bulb-on" title="All entries confirmed">●</span>
+                        )}
+                      </td>
+                    </tr>
+                    {expanded === m.name && m.entries && (
+                      <tr className="history-row">
+                        <td colSpan={5}>
+                          <div className="history-panel">
+                            {m.entries.map((e) => (
+                              <div key={e.id} className="history-entry">
+                                <span
+                                  className={"confirm-bulb " + (e.confirmedAt ? "confirm-bulb-on" : "confirm-bulb-off")}
+                                  title={e.confirmedAt ? `Confirmed by ${e.confirmedBy}` : "Not yet confirmed"}
+                                >●</span>
+                                <span>{money(e.amount)}</span>
+                                <span className="muted tiny">{new Date(e.recordedAt).toLocaleDateString()}</span>
+                                <button
+                                  className="btn-link"
+                                  disabled={busyEntryId === e.id}
+                                  onClick={() => toggleConfirm(e)}
+                                >
+                                  {e.confirmedAt ? "unconfirm" : "confirm"}
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
                 ))}
                 {data.members.length === 0 && (
                   <tr><td colSpan={5} className="muted small">No members have signed in yet.</td></tr>

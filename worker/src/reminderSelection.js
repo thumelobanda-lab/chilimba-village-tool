@@ -12,12 +12,17 @@ import { isRecipient, resolveDue } from "./scheduleUtils.js";
  * @param {Array} params.schedule - group_config's schedule rows
  * @param {Array} params.users - [{id, name, displayName, pushEnabled, smsEnabled, phone, leadDays}]
  * @param {Map<string, number>} params.dueOverrides - key `${userId}|${scheduleRowId}` -> amount
+ * @param {Map<string, {leadDays?: number, muted?: boolean}>} [params.dateOverrides] - key
+ *   `${userId}|${scheduleRowId}` -> per-date reminder override. `muted: true` skips this
+ *   (user, date) entirely regardless of the blanket setting; `leadDays` replaces the
+ *   user's default lead time for just this date. Defaults to an empty map, so every
+ *   existing caller that doesn't pass this keeps the old blanket-only behavior unchanged.
  * @param {Set<string>} params.alreadySent - key `${userId}|${scheduleRowId}|${channel}`
  * @param {Date} params.today - start-of-day reference point (UTC)
  * @param {boolean} params.recipientExempt
  * @returns {Array<{ user, row, amount, channel: 'push'|'sms' }>}
  */
-export function selectReminderCandidates({ schedule, users, dueOverrides, alreadySent, today, recipientExempt }) {
+export function selectReminderCandidates({ schedule, users, dueOverrides, dateOverrides = new Map(), alreadySent, today, recipientExempt }) {
   const candidates = [];
 
   for (const row of schedule) {
@@ -27,7 +32,11 @@ export function selectReminderCandidates({ schedule, users, dueOverrides, alread
     if (daysUntil < 0) continue;
 
     for (const user of users) {
-      if (daysUntil !== (user.leadDays ?? 2)) continue;
+      const dateOverride = dateOverrides.get(`${user.id}|${row.id}`);
+      if (dateOverride?.muted) continue; // explicitly opted out of reminders for this one date
+
+      const effectiveLeadDays = dateOverride?.leadDays ?? user.leadDays ?? 2;
+      if (daysUntil !== effectiveLeadDays) continue;
       if (isRecipient(row, user.displayName, recipientExempt)) continue; // nothing owed on their own payout date
 
       const overrideAmount = dueOverrides.get(`${user.id}|${row.id}`);

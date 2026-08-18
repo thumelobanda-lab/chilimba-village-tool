@@ -131,6 +131,12 @@ function RowWithHistory({ row, isRecipient, onAddPayment, onVoidPayment, onSetDu
                 .sort((a, b) => new Date(b.recordedAt) - new Date(a.recordedAt))
                 .map((e) => (
                   <div key={e.id} className={"history-entry" + (e.voidedAt ? " voided" : "")}>
+                    {!e.voidedAt && (
+                      <span
+                        className={"confirm-bulb " + (e.confirmedAt ? "confirm-bulb-on" : "confirm-bulb-off")}
+                        title={e.confirmedAt ? `Confirmed by an admin (${e.confirmedBy})` : "Not yet confirmed by an admin"}
+                      >●</span>
+                    )}
                     <span>{money(e.amount)}</span>
                     <span className="muted tiny">
                       {new Date(e.recordedAt).toLocaleDateString()} · {e.recordedBy}

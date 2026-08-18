@@ -17,3 +17,4 @@ export * from "./api/members.js";
 export * from "./api/reconciliation.js";
 export * from "./api/reminders.js";
 export * from "./api/subscription.js";
+export * from "./api/notices.js";

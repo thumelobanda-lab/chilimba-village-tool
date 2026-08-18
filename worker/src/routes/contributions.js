@@ -9,7 +9,8 @@ export default function registerContributionsRoutes(router) {
     const user = await requireSession(request, env);
     const payments = await env.DB.prepare(
       `SELECT id, schedule_row_id as scheduleRowId, amount, note, recorded_by as recordedBy,
-              recorded_at as recordedAt, voided_at as voidedAt, void_reason as voidReason
+              recorded_at as recordedAt, voided_at as voidedAt, void_reason as voidReason,
+              confirmed_at as confirmedAt, confirmed_by as confirmedBy
        FROM payments WHERE user_id = ? ORDER BY recorded_at ASC`
     ).bind(user.id).all();
     const payout = await env.DB.prepare(

@@ -159,6 +159,25 @@ npx wrangler secret put MOMO_API_KEY
 npx wrangler secret put SMS_API_KEY
 ```
 
+## Updating an already-deployed database
+
+`schema.sql` only runs the base tables on a fresh install — it won't
+retroactively add columns to a database that already exists. If you
+deployed before group subscriptions, payment details, notices, or member
+removal existed, apply the migrations once, in order, against your real
+database:
+
+```
+cd worker
+npx wrangler d1 execute chilimba-db --remote --file=./schema/migrations/002_group_subscription_payment_notices.sql
+npx wrangler d1 execute chilimba-db --remote --file=./schema/migrations/003_remove_member.sql
+```
+
+Both are purely additive — safe to run against a database with real
+members and payment history already in it. A brand-new deployment
+running `schema.sql` for the first time already includes everything in
+both migrations and doesn't need to run them separately.
+
 ## Deploy — the manual path
 
 If you'd rather see each step explicitly (or the scripts hit something

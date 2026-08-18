@@ -17,7 +17,7 @@ body { margin: 0; background: var(--bg); color: var(--ink); }
 .app-shell { min-height: 100vh; display: flex; flex-direction: column; }
 
 .app-header {
-  background: var(--accent);
+  background: linear-gradient(135deg, var(--accent), #163a30);
   color: white;
   padding: 14px 20px;
   display: flex;
@@ -25,11 +25,22 @@ body { margin: 0; background: var(--bg); color: var(--ink); }
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
+  border-bottom: 3px solid var(--accent-2);
 }
 .brand { font-weight: 700; font-size: 1.1rem; }
 .header-right { display: flex; align-items: center; gap: 10px; }
 
+.dashboard-greeting {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--ink);
+  padding: 4px 4px 14px;
+}
+.greeting-emoji { display: inline-block; }
+
 .app-main { max-width: 880px; margin: 0 auto; padding: 20px; width: 100%; }
+
+.tabs-scroll-wrap { position: relative; }
 
 .tabs {
   display: flex;
@@ -40,6 +51,38 @@ body { margin: 0; background: var(--bg); color: var(--ink); }
   scrollbar-width: thin;
 }
 .tab { flex: 0 0 auto; }
+
+/* Fade + tap-to-scroll chevron, shown only when there's genuinely more
+   content off-screen in that direction — the visual cue the plain
+   scrolling tab bar was missing. */
+.tabs-edge-fade {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 40px;
+  display: flex;
+  align-items: center;
+  border: none;
+  cursor: pointer;
+  z-index: 2;
+  padding: 0;
+}
+.tabs-edge-fade-right {
+  right: 0;
+  justify-content: flex-end;
+  background: linear-gradient(to right, transparent, var(--bg) 70%);
+}
+.tabs-edge-fade-left {
+  left: 0;
+  justify-content: flex-start;
+  background: linear-gradient(to left, transparent, var(--bg) 70%);
+}
+.tabs-chevron {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--accent);
+  padding: 0 6px;
+}
 .tab {
   padding: 8px 16px;
   border: 1px solid var(--line);
@@ -50,7 +93,11 @@ body { margin: 0; background: var(--bg); color: var(--ink); }
   cursor: pointer;
   border-radius: 6px 6px 0 0;
 }
-.tab.active { background: var(--panel); color: var(--accent); }
+.tab.active {
+  background: var(--panel);
+  color: var(--accent);
+  box-shadow: inset 0 -3px 0 var(--accent-2);
+}
 
 .panel {
   background: var(--panel);
@@ -177,6 +224,43 @@ body { margin: 0; background: var(--bg); color: var(--ink); }
 
 .setup-header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
 .badge-admin { background: #FCEFD9; color: #8A5A12; }
+
+/* Group Setup's collapsible sections — each expands independently so an
+   admin sees the shape of the whole setup (via the summary text) without
+   scrolling past every table to find the one thing they came to change. */
+.setup-section {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+.setup-section-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: #FAFBFC;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+}
+.setup-section-icon { font-size: 1.1rem; }
+.setup-section-title { font-weight: 700; color: var(--ink); font-size: 0.95rem; }
+.setup-section-summary {
+  margin-left: auto;
+  color: var(--ink-faint);
+  font-size: 0.8rem;
+  padding-right: 8px;
+}
+.setup-section-chevron {
+  color: var(--accent-2);
+  transition: transform 0.15s ease;
+  display: inline-block;
+}
+.setup-section-chevron-open { transform: rotate(90deg); }
+.setup-section-body { padding: 16px 14px; border-top: 1px solid var(--line); }
 .checkbox-field { flex-direction: row; align-items: center; gap: 8px; font-size: 0.85rem; }
 .cell-input-text { width: 100px; padding: 4px 6px; border: 1px solid var(--line); border-radius: 4px; }
 .cell-input-text.wide { width: 160px; }
@@ -241,6 +325,176 @@ body { margin: 0; background: var(--bg); color: var(--ink); }
   border-radius: 4px;
 }
 .card-warn { border-left-color: var(--red); }
+.card-highlight { border-left-color: var(--accent-2); }
+.card-highlight .card-value { color: #8A5A12; }
 .card-label { font-size: 0.7rem; text-transform: uppercase; color: var(--ink-faint); letter-spacing: 0.03em; }
 .card-value { font-size: 1.3rem; font-weight: 700; margin-top: 4px; }
 .card-warn .card-value { color: var(--red); }
+
+/* Notice board — admin-to-members announcements at the top of the dashboard */
+.notice-board {
+  background: #FFF8E8;
+  border: 1px solid var(--accent-2);
+  border-radius: 6px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+}
+.notice-item {
+  padding: 6px 0;
+  border-bottom: 1px dashed rgba(201, 154, 61, 0.35);
+}
+.notice-item:last-of-type { border-bottom: none; }
+.notice-message { font-size: 0.92rem; color: var(--ink); font-weight: 500; }
+.notice-meta { display: flex; justify-content: space-between; align-items: center; margin-top: 2px; }
+.notice-post-form { display: flex; gap: 8px; margin-top: 10px; }
+.notice-post-form input {
+  flex: 1;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+/* Payment destination cards — "Where to Pay" */
+.payment-methods-list { display: flex; flex-wrap: wrap; gap: 10px; }
+.payment-method-card {
+  background: #FAFBFC;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--green);
+  border-radius: 4px;
+  padding: 10px 14px;
+  min-width: 180px;
+  flex: 1 1 200px;
+}
+.payment-method-type { font-size: 0.7rem; text-transform: uppercase; color: var(--ink-faint); letter-spacing: 0.03em; }
+.payment-method-label { font-weight: 700; color: var(--ink); margin-top: 2px; }
+.payment-method-number {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 1rem;
+  color: var(--accent);
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+/* Calculator icon + modal */
+.calc-icon-btn { font-size: 1.1rem; padding: 4px 10px; }
+
+.calc-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 100;
+}
+@media (min-width: 480px) {
+  .calc-modal-backdrop { align-items: center; }
+}
+.calc-modal {
+  background: var(--panel);
+  border-radius: 12px 12px 0 0;
+  width: 100%;
+  max-width: 320px;
+  padding: 16px;
+  box-shadow: 0 -4px 24px rgba(0,0,0,0.2);
+}
+@media (min-width: 480px) {
+  .calc-modal { border-radius: 12px; }
+}
+.calc-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 10px;
+}
+.calc-close-btn {
+  background: none;
+  border: none;
+  font-size: 1rem;
+  color: var(--ink-faint);
+  cursor: pointer;
+  padding: 4px 8px;
+}
+.calc-display {
+  background: var(--ink);
+  color: white;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 1.8rem;
+  text-align: right;
+  padding: 14px 12px;
+  border-radius: 6px;
+  margin-bottom: 10px;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+.calc-keypad {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.calc-btn {
+  padding: 14px 0;
+  border: none;
+  border-radius: 6px;
+  background: #F0F2F4;
+  color: var(--ink);
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.calc-btn-op { background: var(--accent); color: white; }
+.calc-btn-equals { background: var(--accent-2); color: white; grid-row: span 1; }
+.calc-btn-fn { background: #E4E8EB; color: var(--ink-faint); }
+.calc-btn-zero { grid-column: span 2; }
+
+/* Payment confirmation bulb — green once an admin has actually seen the
+   money arrive; grey while it's only self-reported. This is a trust
+   indicator, not a gate — an unconfirmed payment still counts fully. */
+.confirm-bulb {
+  font-size: 0.7rem;
+  margin-right: 4px;
+  display: inline-block;
+}
+.confirm-bulb-on { color: var(--green); }
+.confirm-bulb-off { color: var(--line); }
+
+/* Walkthrough — reuses .calc-modal-backdrop for the overlay, own styling
+   for the card itself since it needs progress dots and multi-step nav. */
+.walkthrough-modal {
+  background: var(--panel);
+  border-radius: 12px 12px 0 0;
+  width: 100%;
+  max-width: 380px;
+  padding: 24px 22px 18px;
+  box-shadow: 0 -4px 24px rgba(0,0,0,0.2);
+  text-align: center;
+}
+@media (min-width: 480px) {
+  .walkthrough-modal { border-radius: 12px; }
+}
+.walkthrough-dots {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 18px;
+}
+.walkthrough-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--line);
+}
+.walkthrough-dot-active { background: var(--accent-2); width: 18px; border-radius: 4px; }
+.walkthrough-emoji { font-size: 2.4rem; margin-bottom: 8px; }
+.walkthrough-title { font-size: 1.15rem; font-weight: 700; color: var(--ink); margin: 0 0 10px; }
+.walkthrough-body { font-size: 0.92rem; color: var(--ink-faint); line-height: 1.5; margin: 0 0 20px; }
+.walkthrough-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.walkthrough-nav { display: flex; gap: 8px; margin-left: auto; }
+

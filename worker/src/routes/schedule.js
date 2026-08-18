@@ -16,6 +16,7 @@ export default function registerScheduleRoutes(router) {
       recipientExempt: !!row.recipient_exempt,
       schedule: JSON.parse(row.schedule_json),
       funds: JSON.parse(row.funds_json || "[]"),
+      paymentMethods: JSON.parse(row.payment_info_json || "[]"),
     }, 200, cors);
   });
 
@@ -23,10 +24,11 @@ export default function registerScheduleRoutes(router) {
     const admin = await requireAdmin(request, env);
     const body = await request.json();
     await env.DB.prepare(
-      `UPDATE groups SET group_name=?, cycle_name=?, recipient_exempt=?, schedule_json=?, funds_json=?, updated_at=datetime('now'), updated_by=? WHERE id=?`
+      `UPDATE groups SET group_name=?, cycle_name=?, recipient_exempt=?, schedule_json=?, funds_json=?, payment_info_json=?, updated_at=datetime('now'), updated_by=? WHERE id=?`
     ).bind(
       body.groupName, body.cycleName, body.recipientExempt ? 1 : 0,
-      JSON.stringify(body.schedule), JSON.stringify(body.funds || []), admin.name, admin.groupId
+      JSON.stringify(body.schedule), JSON.stringify(body.funds || []),
+      JSON.stringify(body.paymentMethods || []), admin.name, admin.groupId
     ).run();
     return json({ ok: true }, 200, cors);
   });

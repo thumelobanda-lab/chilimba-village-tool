@@ -42,8 +42,9 @@ export async function login(groupSlug, name, pin) {
       // locally doesn't have to reproduce the create-group flow just to
       // reach the admin-only tabs.
       role = isAdminName(name) ? "admin" : "member";
-      lsSet(key, { salt, hash, role });
+      lsSet(key, { salt, hash, role, active: true, joinedAt: new Date().toISOString() });
     } else {
+      if (existing.active === false) throw new Error("This account has been removed by an admin.");
       const ok = await verifyPin(pin, existing.salt, existing.hash);
       if (!ok) throw new Error("Incorrect PIN for this name.");
       role = existing.role;
@@ -100,7 +101,7 @@ export async function createGroup({ slug, groupName, adminName, pin }) {
 
     const salt = randomSalt();
     const hash = await hashPin(pin, salt);
-    lsSet(accountKey(normalizedSlug, adminName), { salt, hash, role: "admin" });
+    lsSet(accountKey(normalizedSlug, adminName), { salt, hash, role: "admin", active: true, joinedAt: new Date().toISOString() });
 
     const session = {
       name: adminName.trim(),

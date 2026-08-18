@@ -6,7 +6,7 @@ compatibility_flags = ["nodejs_compat"]
 [[d1_databases]]
 binding = "DB"
 database_name = "chilimba-db"
-database_id = "REPLACE_AFTER_WRANGLER_D1_CREATE"
+database_id = "ac20c439-5029-4f9e-8e14-6c97c847d9ba"
 
 [vars]
 ALLOWED_ORIGIN = "https://your-pages-project.pages.dev"

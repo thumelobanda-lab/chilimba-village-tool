@@ -35,7 +35,7 @@ async function runSweepForGroup(env, group) {
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-  const [usersResult, overridesResult, sentResult, subsResult] = await Promise.all([
+  const [usersResult, overridesResult, sentResult, subsResult, dateOverridesResult] = await Promise.all([
     env.DB.prepare(
       `SELECT u.id, u.name, u.display_name as displayName, r.push_enabled as pushEnabled,
               r.sms_enabled as smsEnabled, r.phone, r.lead_days as leadDays
@@ -49,6 +49,9 @@ async function runSweepForGroup(env, group) {
        WHERE u.group_id = ?`
     ).bind(group.id).all(),
     env.DB.prepare(`SELECT id, user_id, endpoint, p256dh, auth FROM push_subscriptions WHERE group_id = ?`).bind(group.id).all(),
+    env.DB.prepare(
+      `SELECT user_id, schedule_row_id, lead_days, muted FROM reminder_date_overrides WHERE group_id = ?`
+    ).bind(group.id).all(),
   ]);
 
   const users = usersResult.results || [];
@@ -65,8 +68,14 @@ async function runSweepForGroup(env, group) {
     if (!subsByUser.has(sub.user_id)) subsByUser.set(sub.user_id, []);
     subsByUser.get(sub.user_id).push(sub);
   }
+  const dateOverrides = new Map(
+    (dateOverridesResult.results || []).map((o) => [
+      `${o.user_id}|${o.schedule_row_id}`,
+      { leadDays: o.lead_days, muted: !!o.muted },
+    ])
+  );
 
-  const candidates = selectReminderCandidates({ schedule, users, dueOverrides, alreadySent, today, recipientExempt });
+  const candidates = selectReminderCandidates({ schedule, users, dueOverrides, dateOverrides, alreadySent, today, recipientExempt });
   if (candidates.length === 0) return;
 
   const logInserts = [];

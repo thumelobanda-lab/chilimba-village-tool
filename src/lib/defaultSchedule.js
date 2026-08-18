@@ -10,6 +10,10 @@ export const DEFAULT_CONFIG = {
     { id: "future", name: "Future Sharing Fund", amount: 100, loanable: true },
     { id: "hospital", name: "Hospital Emergency Fund", amount: 20, loanable: false },
   ],
+  // Where members should actually send their biweekly contribution —
+  // admin-edited from Group Setup, shown to every member so they know
+  // which account/number to pay into. Empty until an admin fills it in.
+  paymentMethods: [],
   schedule: [
     { id: "d1", date: "20 Jun 2026", group: "GROUP 1", payees: ["Doreen", "Dorothy"], due: 1200 },
     { id: "d2", date: "4 Jul 2026", group: "GROUP 2", payees: ["Harriet"], due: 1200 },

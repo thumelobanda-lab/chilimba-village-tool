@@ -54,7 +54,7 @@ export default function Community() {
               <div className="feed-list" style={{ marginBottom: 20 }}>
                 {data.loans.map((l) => (
                   <div className="feed-item" key={l.id}>
-                    <span className="feed-name">{l.borrowerName}</span>
+                    <span className="feed-name">A member</span>
                     <span className="muted small">
                       borrowed {money(l.amount)} from {l.fundName}
                     </span>

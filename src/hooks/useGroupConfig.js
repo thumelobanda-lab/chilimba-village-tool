@@ -7,6 +7,7 @@ const EMPTY_CONFIG = {
   recipientExempt: true,
   schedule: [],
   funds: [],
+  paymentMethods: [],
 };
 
 /**

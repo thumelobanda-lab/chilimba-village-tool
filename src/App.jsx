@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Login from "./components/Login.jsx";
 import CreateGroup from "./components/CreateGroup.jsx";
 import Onboarding from "./components/Onboarding.jsx";
@@ -9,6 +9,11 @@ import Reconciliation from "./components/Reconciliation.jsx";
 import Reminders from "./components/Reminders.jsx";
 import Community from "./components/Community.jsx";
 import Loans from "./components/Loans.jsx";
+import ScrollableTabs from "./components/ScrollableTabs.jsx";
+import PaymentInfo from "./components/PaymentInfo.jsx";
+import NoticeBoard from "./components/NoticeBoard.jsx";
+import QuickCalculator from "./components/QuickCalculator.jsx";
+import Walkthrough, { hasSeenWalkthrough } from "./components/Walkthrough.jsx";
 import { useSession } from "./hooks/useSession.js";
 import { useGroupConfig } from "./hooks/useGroupConfig.js";
 import { useLedger } from "./hooks/useLedger.js";
@@ -23,6 +28,13 @@ const TABS = [
   { id: "reconciliation", label: "Reconciliation", adminOnly: true },
   { id: "loans", label: "Loans", adminOnly: true },
 ];
+
+function greeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  return "Good evening";
+}
 
 export default function App() {
   const { session, login, createGroup, logout } = useSession();
@@ -43,6 +55,19 @@ export default function App() {
   const [subscribed, setSubscribed] = useState(false);
   const [tab, setTab] = useState("ledger");
   const [showCreateGroup, setShowCreateGroup] = useState(false);
+  const [showCalculator, setShowCalculator] = useState(false);
+  const [showWalkthrough, setShowWalkthrough] = useState(false);
+
+  // Auto-opens once per account, the first time the dashboard is actually
+  // reached (after login, onboarding, and the subscription gate) —
+  // showing it any earlier would explain tabs the person can't see yet.
+  // Reopenable any time from the ? icon in the header, which is why
+  // "seen" is tracked separately from whether this effect has fired.
+  useEffect(() => {
+    if (session && subscribed && !hasSeenWalkthrough(session)) {
+      setShowWalkthrough(true);
+    }
+  }, [session, subscribed]);
 
   const handleLogin = async (groupSlug, name, pin) => {
     const user = await login(groupSlug, name, pin);
@@ -87,11 +112,31 @@ export default function App() {
         </div>
         {session && (
           <div className="header-right">
-            <span className="muted small">Signed in as <strong>{session.name}</strong></span>
+            <button
+              className="btn-ghost calc-icon-btn"
+              onClick={() => setShowWalkthrough(true)}
+              aria-label="Open walkthrough"
+              title="How this app works"
+            >
+              ?
+            </button>
+            <button
+              className="btn-ghost calc-icon-btn"
+              onClick={() => setShowCalculator(true)}
+              aria-label="Open calculator"
+              title="Calculator"
+            >
+              🧮
+            </button>
             <button className="btn-ghost" onClick={handleLogout}>Log out</button>
           </div>
         )}
       </header>
+
+      {showCalculator && <QuickCalculator onClose={() => setShowCalculator(false)} />}
+      {showWalkthrough && session && (
+        <Walkthrough session={session} onClose={() => setShowWalkthrough(false)} />
+      )}
 
       <main className="app-main">
         {!session ? (
@@ -107,10 +152,17 @@ export default function App() {
             onSkip={onboarding.skip}
           />
         ) : !subscribed ? (
-          <Subscription onActive={() => setSubscribed(true)} />
+          <Subscription session={session} onActive={() => setSubscribed(true)} />
         ) : (
           <>
-            <nav className="tabs" role="tablist" aria-label="Sections">
+            <div className="dashboard-greeting">
+              <span className="greeting-emoji">👋</span> {greeting()}, <strong>{session.name}</strong>
+              {session.role === "admin" && <span className="tag tag-rate" style={{ marginLeft: 8 }}>admin</span>}
+            </div>
+
+            <NoticeBoard isAdmin={session.role === "admin"} />
+
+            <ScrollableTabs>
               {TABS.filter((t) => !t.adminOnly || session.role === "admin").map((t) => (
                 <button
                   key={t.id}
@@ -124,30 +176,31 @@ export default function App() {
                   {t.label}
                 </button>
               ))}
-            </nav>
+            </ScrollableTabs>
 
             {tab === "ledger" && (
               <div className="panel" role="tabpanel" id="panel-ledger" aria-labelledby="tab-ledger">
-                <p className="muted tiny" style={{ marginBottom: 10 }}>
-                  Tap an "Amount Paid" figure to log a new payment or view the history for that date.
-                  Tap "Amount Due" to set your own agreed rate for a date if it differs from the group
-                  default — not everyone is charged the same amount, since payout totals differ too.
-                  Entries are never overwritten — corrections are made by voiding and re-logging.
-                </p>
+                <PaymentInfo paymentMethods={config.paymentMethods} />
 
                 {config.schedule.length === 0 ? (
                   <p className="muted small" style={{ padding: "20px 0" }}>
                     No payout dates are set up yet. An admin can add them from Group Setup.
                   </p>
                 ) : (
-                  <LedgerTable
-                    rowsComputed={totals.rowsComputed}
-                    totals={totals}
-                    isRecipientRow={isRecipientRow}
-                    onAddPayment={addPayment}
-                    onVoidPayment={voidPayment}
-                    onSetDueOverride={setDueOverride}
-                  />
+                  <>
+                    <p className="muted tiny" style={{ marginBottom: 10 }}>
+                      Tap "Amount Paid" to log a payment or view its history. Tap "Amount Due" to
+                      set your own agreed rate for a date.
+                    </p>
+                    <LedgerTable
+                      rowsComputed={totals.rowsComputed}
+                      totals={totals}
+                      isRecipientRow={isRecipientRow}
+                      onAddPayment={addPayment}
+                      onVoidPayment={voidPayment}
+                      onSetDueOverride={setDueOverride}
+                    />
+                  </>
                 )}
 
                 <div className="payout-block">
@@ -195,7 +248,7 @@ export default function App() {
                 <Card label="Required to Date" value={money(totals.due)} />
                 <Card label="Amount You've Put In" value={money(totals.paid)} />
                 <Card label="Outstanding Balance" value={money(totals.balance)} warn={totals.balance > 0} />
-                <Card label="Payout Received" value={money(ledger.payoutInfo?.amount)} />
+                <Card label="Payout Received" value={money(ledger.payoutInfo?.amount)} highlight />
                 <Card label="Net Position" value={money(totals.net)} warn={totals.net > 0} />
                 <Card
                   label="Suggested Rate / Remaining Date"
@@ -221,7 +274,7 @@ export default function App() {
             )}
 
             {tab === "reminders" && (
-              <div role="tabpanel" id="panel-reminders" aria-labelledby="tab-reminders"><Reminders /></div>
+              <div role="tabpanel" id="panel-reminders" aria-labelledby="tab-reminders"><Reminders config={config} /></div>
             )}
 
             {tab === "community" && (
@@ -234,9 +287,10 @@ export default function App() {
   );
 }
 
-function Card({ label, value, warn }) {
+function Card({ label, value, warn, highlight }) {
+  const modifier = warn ? " card-warn" : highlight ? " card-highlight" : "";
   return (
-    <div className={"card" + (warn ? " card-warn" : "")}>
+    <div className={"card" + modifier}>
       <div className="card-label">{label}</div>
       <div className="card-value">{value}</div>
     </div>

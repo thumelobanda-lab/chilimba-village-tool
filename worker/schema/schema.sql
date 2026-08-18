@@ -34,6 +34,13 @@ CREATE TABLE IF NOT EXISTS groups (
   recipient_exempt INTEGER NOT NULL DEFAULT 1,
   schedule_json TEXT NOT NULL DEFAULT '[]', -- JSON array of {id,date,group,payees,due}
   funds_json TEXT NOT NULL DEFAULT '[]',    -- JSON array of {id,name,amount,loanable}
+  payment_info_json TEXT NOT NULL DEFAULT '[]', -- JSON array of where members send
+                                             -- biweekly payments: mobile money / bank
+                                             -- details, admin-edited, member-visible
+  subscription_expires_at TEXT,             -- NULL until the group's admin pays;
+                                             -- see group_subscriptions for the K100/
+                                             -- 6-month history — this column is just
+                                             -- the fast active/expired check
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_by TEXT
@@ -53,6 +60,9 @@ CREATE TABLE IF NOT EXISTS users (
                                           -- it or a direct database write
   failed_attempts INTEGER NOT NULL DEFAULT 0,
   locked_until TEXT,                -- login rejected while now() < locked_until
+  active INTEGER NOT NULL DEFAULT 1, -- 0 once an admin removes them — soft
+                                      -- delete, their payment history stays intact
+  removed_at TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   UNIQUE(group_id, name)
 );
@@ -97,7 +107,12 @@ CREATE TABLE IF NOT EXISTS payments (
   recorded_by TEXT NOT NULL,         -- display name at time of entry
   recorded_at TEXT NOT NULL DEFAULT (datetime('now')),
   voided_at TEXT,
-  void_reason TEXT
+  void_reason TEXT,
+  confirmed_at TEXT,                 -- set once an admin has actually seen
+                                      -- the money arrive (statement, deposit
+                                      -- slip, etc.) — a trust flag, not a
+                                      -- gate; unconfirmed still counts fully
+  confirmed_by TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_payments_user ON payments(user_id);
 CREATE INDEX IF NOT EXISTS idx_payments_group ON payments(group_id);
@@ -124,6 +139,10 @@ CREATE TABLE IF NOT EXISTS due_overrides (
   PRIMARY KEY (user_id, schedule_row_id)
 );
 
+-- Superseded by group_subscriptions below (per-GROUP now, not per-user —
+-- see migrations/002 for the full explanation). Left in place, unused,
+-- rather than dropped, in case any already-deployed database has real
+-- rows in it.
 CREATE TABLE IF NOT EXISTS subscriptions (
   user_id TEXT PRIMARY KEY REFERENCES users(id),
   group_id TEXT NOT NULL REFERENCES groups(id),
@@ -134,6 +153,33 @@ CREATE TABLE IF NOT EXISTS subscriptions (
   paid_at TEXT NOT NULL,
   expires_at TEXT NOT NULL
 );
+
+-- The group's subscription IS its access to the app — K100 every 6
+-- months, paid once by an admin, benefits every member of the group.
+-- Regular members never see a payment prompt. groups.subscription_expires_at
+-- is the fast check; this table is the paid history (who, when, how).
+CREATE TABLE IF NOT EXISTS group_subscriptions (
+  id TEXT PRIMARY KEY,
+  group_id TEXT NOT NULL REFERENCES groups(id),
+  paid_by TEXT NOT NULL,          -- display name of the admin who paid
+  masked_phone TEXT NOT NULL,
+  network TEXT NOT NULL,
+  amount REAL NOT NULL,
+  reference TEXT NOT NULL,
+  paid_at TEXT NOT NULL,
+  expires_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_group_subscriptions_group ON group_subscriptions(group_id);
+
+-- Admin-to-members announcements, scoped to one group.
+CREATE TABLE IF NOT EXISTS notices (
+  id TEXT PRIMARY KEY,
+  group_id TEXT NOT NULL REFERENCES groups(id),
+  message TEXT NOT NULL,
+  posted_by TEXT NOT NULL,
+  posted_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_notices_group ON notices(group_id);
 
 -- Web push subscriptions — a member can have more than one (phone + laptop).
 CREATE TABLE IF NOT EXISTS push_subscriptions (
@@ -161,6 +207,20 @@ CREATE TABLE IF NOT EXISTS reminder_prefs (
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_reminder_prefs_group ON reminder_prefs(group_id);
+
+-- Per-date overrides on top of the blanket reminder_prefs above — a
+-- custom lead time for one date, or muted entirely. No row means "use
+-- my default"; only customized dates get a row here.
+CREATE TABLE IF NOT EXISTS reminder_date_overrides (
+  user_id TEXT NOT NULL REFERENCES users(id),
+  group_id TEXT NOT NULL REFERENCES groups(id),
+  schedule_row_id TEXT NOT NULL,
+  lead_days INTEGER,
+  muted INTEGER NOT NULL DEFAULT 0,
+  updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (user_id, schedule_row_id)
+);
+CREATE INDEX IF NOT EXISTS idx_reminder_date_overrides_group ON reminder_date_overrides(group_id);
 
 -- Prevents sending the same reminder twice if the cron runs more than once
 -- inside the lead window.

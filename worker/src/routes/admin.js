@@ -2,19 +2,68 @@ import { requireAdmin } from "../auth.js";
 import { HttpError } from "../httpError.js";
 import { uid } from "../crypto.js";
 import { json } from "../responses.js";
-import { isRecipient as isRecipientHelper, resolveDue } from "../scheduleUtils.js";
+import { isRecipient as isRecipientHelper, resolveDue, findNextDue } from "../scheduleUtils.js";
 import { wouldLeaveZeroAdmins } from "../adminUtils.js";
 
 export default function registerAdminRoutes(router) {
-  // Every member of the admin's OWN group, with their current role —
-  // powers the promote/demote UI in Group Setup. Never crosses groups:
-  // scoped by admin.groupId the same as every other admin route.
+  // The admin roster: every active member, their role, when they joined,
+  // and the next date they still owe something on — powers the
+  // promote/demote UI and answers "who's paid, who's next" at a glance.
+  // Deliberately a fixed, small number of queries (config + members +
+  // all due_overrides + all payments, once each) rather than looping a
+  // per-member query per schedule date — same batching discipline as the
+  // reminder sweep, for the same reason: this should stay fast whether
+  // the group has 5 members or 500.
   router.get("/api/admin/members", async ({ request, env, cors }) => {
     const admin = await requireAdmin(request, env);
-    const members = await env.DB.prepare(
-      `SELECT display_name as name, role FROM users WHERE group_id = ? ORDER BY display_name COLLATE NOCASE`
+
+    const config = await env.DB.prepare(`SELECT schedule_json, recipient_exempt FROM groups WHERE id = ?`)
+      .bind(admin.groupId).first();
+    const schedule = JSON.parse(config?.schedule_json || "[]");
+    const recipientExempt = !!config?.recipient_exempt;
+
+    const membersResult = await env.DB.prepare(
+      `SELECT display_name as name, role, created_at as joinedAt
+       FROM users WHERE group_id = ? AND active = 1 ORDER BY display_name COLLATE NOCASE`
     ).bind(admin.groupId).all();
-    return json({ members: members.results || [] }, 200, cors);
+    const members = membersResult.results || [];
+
+    const overridesResult = await env.DB.prepare(
+      `SELECT u.display_name as name, do.schedule_row_id as rowId, do.amount
+       FROM due_overrides do JOIN users u ON u.id = do.user_id
+       WHERE do.group_id = ?`
+    ).bind(admin.groupId).all();
+    const paidResult = await env.DB.prepare(
+      `SELECT u.display_name as name, p.schedule_row_id as rowId, SUM(p.amount) as paid
+       FROM payments p JOIN users u ON u.id = p.user_id
+       WHERE p.group_id = ? AND p.voided_at IS NULL
+       GROUP BY u.display_name, p.schedule_row_id`
+    ).bind(admin.groupId).all();
+
+    const overridesByMember = {};
+    for (const o of overridesResult.results || []) {
+      (overridesByMember[o.name] ||= {})[o.rowId] = o.amount;
+    }
+    const paidByMember = {};
+    for (const p of paidResult.results || []) {
+      (paidByMember[p.name] ||= {})[p.rowId] = p.paid;
+    }
+
+    const roster = members.map((m) => {
+      const next = findNextDue(
+        schedule, m.name, recipientExempt,
+        overridesByMember[m.name] || {}, paidByMember[m.name] || {}
+      );
+      return {
+        name: m.name,
+        role: m.role,
+        joinedAt: m.joinedAt,
+        nextDueDate: next?.row.date || null,
+        nextDueAmount: next?.balance || 0,
+      };
+    });
+
+    return json({ members: roster }, 200, cors);
   });
 
   // Self-service promotion: any existing admin can promote another
@@ -61,6 +110,32 @@ export default function registerAdminRoutes(router) {
     return json({ ok: true }, 200, cors);
   });
 
+  // Removes a member — soft delete (see migrations/003 for why). Their
+  // payment history is untouched; they simply can no longer log in and
+  // drop off the roster. Deliberately restricted to non-admins: to
+  // remove an admin, demote them first (existing, tested safeguard),
+  // then remove — this avoids a path where someone accidentally removes
+  // the group's only admin, or themselves, in one click.
+  router.post("/api/admin/remove", async ({ request, env, cors }) => {
+    const admin = await requireAdmin(request, env);
+    const body = await request.json();
+    if (!body.name || !body.name.trim()) throw new HttpError(400, "A name is required.");
+
+    const target = await env.DB.prepare(`SELECT id, role FROM users WHERE group_id = ? AND name = ?`)
+      .bind(admin.groupId, body.name.trim().toLowerCase()).first();
+    if (!target) throw new HttpError(404, "No member with that name in your group.");
+    if (target.role === "admin") {
+      throw new HttpError(400, "This member is an admin — demote them first, then remove.");
+    }
+
+    await env.DB.batch([
+      env.DB.prepare(`UPDATE users SET active = 0, removed_at = datetime('now') WHERE id = ?`).bind(target.id),
+      env.DB.prepare(`DELETE FROM sessions WHERE user_id = ?`).bind(target.id), // log them out immediately
+    ]);
+
+    return json({ ok: true }, 200, cors);
+  });
+
   // Aggregates every member's due/paid/balance for one schedule date —
   // the only place in the API that reads across members, and now the
   // only place that reads across GROUPS too if group_id is ever missed.
@@ -85,13 +160,60 @@ export default function registerAdminRoutes(router) {
        ORDER BY u.display_name COLLATE NOCASE`
     ).bind(rowId, rowId, admin.groupId).all();
 
+    // Individual entries too, not just the aggregate — this is what lets
+    // an admin confirm ONE payment without needing to know its id in
+    // advance. One extra query, still scoped to this date + group.
+    const entriesResult = await env.DB.prepare(
+      `SELECT p.id, u.display_name as memberName, p.amount, p.recorded_at as recordedAt,
+              p.confirmed_at as confirmedAt, p.confirmed_by as confirmedBy
+       FROM payments p JOIN users u ON u.id = p.user_id
+       WHERE p.schedule_row_id = ? AND p.group_id = ? AND p.voided_at IS NULL
+       ORDER BY p.recorded_at ASC`
+    ).bind(rowId, admin.groupId).all();
+    const entriesByMember = {};
+    for (const e of entriesResult.results || []) {
+      (entriesByMember[e.memberName] ||= []).push(e);
+    }
+
     const results = (members.results || []).map((m) => {
       const isRecipient = isRecipientHelper(row, m.name, recipientExempt);
       const due = resolveDue(row, m.name, recipientExempt, m.overrideAmount);
-      return { name: m.name, due, paid: m.paid, balance: due - m.paid, isRecipient };
+      return {
+        name: m.name, due, paid: m.paid, balance: due - m.paid, isRecipient,
+        entries: entriesByMember[m.name] || [],
+      };
     });
 
     return json({ row, members: results }, 200, cors);
+  });
+
+  // Marks one payment entry as confirmed — this is a trust flag, not a
+  // gate; the payment already counts fully toward due/paid/balance
+  // whether confirmed or not. Scoped by joining through users so an
+  // admin can only ever confirm a payment that belongs to their own
+  // group's member, never one they happen to guess the id of.
+  router.post("/api/admin/payments/:id/confirm", async ({ request, env, params, cors }) => {
+    const admin = await requireAdmin(request, env);
+    const owned = await env.DB.prepare(
+      `SELECT p.id FROM payments p JOIN users u ON u.id = p.user_id WHERE p.id = ? AND u.group_id = ?`
+    ).bind(params.id, admin.groupId).first();
+    if (!owned) throw new HttpError(404, "Payment not found in your group.");
+
+    await env.DB.prepare(`UPDATE payments SET confirmed_at = datetime('now'), confirmed_by = ? WHERE id = ?`)
+      .bind(admin.name, params.id).run();
+    return json({ ok: true }, 200, cors);
+  });
+
+  router.post("/api/admin/payments/:id/unconfirm", async ({ request, env, params, cors }) => {
+    const admin = await requireAdmin(request, env);
+    const owned = await env.DB.prepare(
+      `SELECT p.id FROM payments p JOIN users u ON u.id = p.user_id WHERE p.id = ? AND u.group_id = ?`
+    ).bind(params.id, admin.groupId).first();
+    if (!owned) throw new HttpError(404, "Payment not found in your group.");
+
+    await env.DB.prepare(`UPDATE payments SET confirmed_at = NULL, confirmed_by = NULL WHERE id = ?`)
+      .bind(params.id).run();
+    return json({ ok: true }, 200, cors);
   });
 
   router.post("/api/admin/loans", async ({ request, env, cors }) => {

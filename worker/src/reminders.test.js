@@ -12,7 +12,7 @@ import { sendPush } from "./push.js";
  * group_id so a query that forgets a WHERE group_id = ? clause would
  * show up immediately as cross-group data leaking into results.
  */
-function makeFakeD1({ groups, usersByGroup, overridesByGroup, sentByGroup, subsByGroup }) {
+function makeFakeD1({ groups, usersByGroup, overridesByGroup, sentByGroup, subsByGroup, dateOverridesByGroup = {} }) {
   let roundTrips = 0;
   const batchCallsByStatementCount = [];
 
@@ -46,6 +46,10 @@ function makeFakeD1({ groups, usersByGroup, overridesByGroup, sentByGroup, subsB
           if (sql.includes("FROM push_subscriptions")) {
             const groupId = this._bound[0];
             return { results: subsByGroup[groupId] || [] };
+          }
+          if (sql.includes("FROM reminder_date_overrides")) {
+            const groupId = this._bound[0];
+            return { results: dateOverridesByGroup[groupId] || [] };
           }
           return { results: [] };
         },
@@ -144,10 +148,43 @@ describe("runReminderSweep (multi-tenant)", () => {
     await runReminderSweep({ DB: small.DB });
     await runReminderSweep({ DB: large.DB });
 
-    // 1 (groups) + 4 (Promise.all: users, overrides, sent, subs) + 1 (batch) = 6,
-    // whether the group has 1 member or 20.
-    expect(small.getRoundTrips()).toBe(6);
-    expect(large.getRoundTrips()).toBe(6);
+    // 1 (groups) + 5 (Promise.all: users, overrides, sent, subs, date-overrides)
+    // + 1 (batch) = 7, whether the group has 1 member or 20.
+    expect(small.getRoundTrips()).toBe(7);
+    expect(large.getRoundTrips()).toBe(7);
+  });
+
+  it("skips a date entirely for a member who has muted it, even though it would otherwise fire", () => {
+    const groups = [{ id: "g", schedule_json: JSON.stringify([{ id: "d1", date: dueDate, group: "G1", payees: [], due: 1000 }]), funds_json: "[]", recipient_exempt: 1 }];
+    const fake = makeFakeD1({
+      groups,
+      usersByGroup: { g: [makeUser("alice")] },
+      overridesByGroup: {}, sentByGroup: {}, subsByGroup: {},
+      dateOverridesByGroup: { g: [{ user_id: "alice", schedule_row_id: "d1", lead_days: null, muted: 1 }] },
+    });
+
+    return runReminderSweep({ DB: fake.DB }).then(() => {
+      expect(sendPush).not.toHaveBeenCalled();
+      expect(fake.getBatchCalls()).toEqual([]); // nothing to log, since nothing fired
+    });
+  });
+
+  it("uses a member's custom lead time for one date instead of their blanket default", () => {
+    // alice's blanket default is 2 days (see makeUser); the date is 2
+    // days out, so WITHOUT an override it would fire. A custom
+    // leadDays of 5 for this specific date means it should NOT fire
+    // today, since 2 !== 5.
+    const groups = [{ id: "g", schedule_json: JSON.stringify([{ id: "d1", date: dueDate, group: "G1", payees: [], due: 1000 }]), funds_json: "[]", recipient_exempt: 1 }];
+    const fake = makeFakeD1({
+      groups,
+      usersByGroup: { g: [makeUser("alice")] },
+      overridesByGroup: {}, sentByGroup: {}, subsByGroup: {},
+      dateOverridesByGroup: { g: [{ user_id: "alice", schedule_row_id: "d1", lead_days: 5, muted: 0 }] },
+    });
+
+    return runReminderSweep({ DB: fake.DB }).then(() => {
+      expect(sendPush).not.toHaveBeenCalled();
+    });
   });
 
   it("skips a group entirely when its schedule is empty, without erroring", async () => {

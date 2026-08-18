@@ -1,6 +1,8 @@
 import React, { useState } from "react";
-import { getGroupMembers, promoteMember, demoteMember } from "../lib/api.js";
+import { getGroupMembers, promoteMember, demoteMember, removeMember } from "../lib/api.js";
 import { useApiData } from "../lib/useApiData.js";
+
+const money = (n) => "K" + (Number(n) || 0).toLocaleString("en-ZM", { maximumFractionDigits: 0 });
 
 export default function AdminManagement() {
   const { data, error: loadError, loading, refresh } = useApiData(getGroupMembers, []);
@@ -40,13 +42,28 @@ export default function AdminManagement() {
     }
   };
 
+  const handleRemove = async (name) => {
+    if (!window.confirm(`Remove ${name} from the group? They'll no longer be able to log in. Their payment history is kept.`)) return;
+    setActionError("");
+    setBusy(true);
+    try {
+      await removeMember(name);
+      await refresh();
+    } catch (e) {
+      setActionError(e.message || "Could not remove that member.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <div style={{ marginTop: 20 }}>
-      <h3 className="panel-subtitle">Admins</h3>
+      <h3 className="panel-subtitle">Roster & Admins</h3>
       <p className="muted tiny" style={{ marginBottom: 10 }}>
-        Any existing admin can promote another member of this group — the group is never
-        left without at least one. Promoting the first admin of a brand-new group only
-        happens when that group is created.
+        Every active member, when they joined, and the next date they still owe something
+        on. Any admin can promote another member, demote another admin (the group is never
+        left without at least one), or remove a member entirely — removing keeps their
+        payment history, it just revokes access. To remove an admin, demote them first.
       </p>
 
       {loading && !data && <p className="muted small" aria-live="polite">Loading…</p>}
@@ -54,26 +71,49 @@ export default function AdminManagement() {
 
       {data && (
         <>
-          <div className="feed-list" style={{ marginBottom: 12 }}>
-            {data.members.map((m) => (
-              <div className="feed-item" key={m.name}>
-                <span className="feed-name">{m.name}</span>
-                {m.role === "admin" ? (
-                  <>
-                    <span className="tag tag-rate">admin</span>
-                    <button className="btn-link" disabled={busy} onClick={() => handleDemote(m.name)}>
-                      remove admin
-                    </button>
-                  </>
-                ) : (
-                  <span className="muted tiny">member</span>
+          <div className="grid-wrap">
+            <table className="grid-table">
+              <thead>
+                <tr>
+                  <th className="al">Name</th>
+                  <th className="al">Role</th>
+                  <th className="al">Joined</th>
+                  <th className="al">Next Due</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.members.map((m) => (
+                  <tr key={m.name}>
+                    <td className="al">{m.name}</td>
+                    <td className="al">
+                      {m.role === "admin" ? <span className="tag tag-rate">admin</span> : <span className="muted tiny">member</span>}
+                    </td>
+                    <td className="al muted small">
+                      {m.joinedAt ? new Date(m.joinedAt).toLocaleDateString() : "—"}
+                    </td>
+                    <td className="al small">
+                      {m.nextDueDate
+                        ? <>{m.nextDueDate} <span className="muted tiny">({money(m.nextDueAmount)})</span></>
+                        : <span className="muted tiny">settled</span>}
+                    </td>
+                    <td>
+                      {m.role === "admin" ? (
+                        <button className="btn-link" disabled={busy} onClick={() => handleDemote(m.name)}>demote</button>
+                      ) : (
+                        <button className="btn-link" disabled={busy} onClick={() => handleRemove(m.name)}>remove</button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+                {data.members.length === 0 && (
+                  <tr><td colSpan={5} className="muted small">No members yet.</td></tr>
                 )}
-              </div>
-            ))}
-            {data.members.length === 0 && <p className="muted small">No members yet.</p>}
+              </tbody>
+            </table>
           </div>
 
-          <div className="field-row" style={{ alignItems: "flex-end" }}>
+          <div className="field-row" style={{ alignItems: "flex-end", marginTop: 12 }}>
             <label className="field">
               Promote a member by name
               <input

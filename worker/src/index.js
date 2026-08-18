@@ -12,6 +12,7 @@ import registerReminderRoutes from "./routes/reminders.js";
 import registerPushRoutes from "./routes/push.js";
 import registerFundsRoutes from "./routes/funds.js";
 import registerAdminRoutes from "./routes/admin.js";
+import registerNoticeRoutes from "./routes/notices.js";
 
 const router = createRouter();
 router.use(registerAuthRoutes);
@@ -23,6 +24,7 @@ router.use(registerReminderRoutes);
 router.use(registerPushRoutes);
 router.use(registerFundsRoutes);
 router.use(registerAdminRoutes);
+router.use(registerNoticeRoutes);
 
 export default {
   async fetch(request, env, ctx) {

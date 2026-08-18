@@ -1,5 +1,5 @@
 import { isRecipient as isRecipientHelper, resolveDue } from "../scheduleUtils.js";
-import { MOCK_MODE, lsGet, realFetch, currentSession, groupScopedKey } from "./core.js";
+import { MOCK_MODE, lsGet, lsSet, realFetch, currentSession, groupScopedKey } from "./core.js";
 
 // Aggregates every member's due/paid/balance for one schedule date. The
 // only place in this API that reads across members — admin-gated both
@@ -35,14 +35,56 @@ export async function getReconciliation(scheduleRowId) {
       const ledger = lsGet(ledgerKey, { payments: [], dueOverrides: {} });
       const isRecipient = isRecipientHelper(row, nameKey, config?.recipientExempt);
       const due = resolveDue(row, nameKey, config?.recipientExempt, ledger.dueOverrides?.[scheduleRowId]);
-      const paid = (ledger.payments || [])
-        .filter((p) => p.scheduleRowId === scheduleRowId && !p.voidedAt)
-        .reduce((s, p) => s + p.amount, 0);
-      return { name: nameKey, due, paid, balance: due - paid, isRecipient };
+      const entries = (ledger.payments || []).filter((p) => p.scheduleRowId === scheduleRowId && !p.voidedAt);
+      const paid = entries.reduce((s, p) => s + p.amount, 0);
+      return {
+        name: nameKey, due, paid, balance: due - paid, isRecipient,
+        entries: entries.map((e) => ({ ...e, memberName: nameKey })),
+      };
     }).sort((a, b) => a.name.localeCompare(b.name));
 
     return { row, members };
   }
 
   return realFetch(`/api/admin/reconciliation?rowId=${encodeURIComponent(scheduleRowId)}`);
+}
+
+// Marks one payment entry as confirmed — a trust flag, not a gate; the
+// payment already counts fully toward due/paid/balance either way.
+// Mock mode needs memberName + rowId to locate the entry (there's no
+// cross-account index in localStorage), which the Reconciliation screen
+// already has in context since it's confirming from within one member's
+// row for one date.
+export async function confirmPayment({ paymentId, memberName, scheduleRowId }) {
+  const session = currentSession();
+  if (!session || session.role !== "admin") throw new Error("Admin access required.");
+
+  if (MOCK_MODE) {
+    const ledgerKey = groupScopedKey(session, "ledger", memberName);
+    const ledger = lsGet(ledgerKey, { payments: [] });
+    ledger.payments = (ledger.payments || []).map((p) =>
+      p.id === paymentId ? { ...p, confirmedAt: new Date().toISOString(), confirmedBy: session.name } : p
+    );
+    lsSet(ledgerKey, ledger);
+    return { ok: true };
+  }
+
+  return realFetch(`/api/admin/payments/${paymentId}/confirm`, { method: "POST" });
+}
+
+export async function unconfirmPayment({ paymentId, memberName }) {
+  const session = currentSession();
+  if (!session || session.role !== "admin") throw new Error("Admin access required.");
+
+  if (MOCK_MODE) {
+    const ledgerKey = groupScopedKey(session, "ledger", memberName);
+    const ledger = lsGet(ledgerKey, { payments: [] });
+    ledger.payments = (ledger.payments || []).map((p) =>
+      p.id === paymentId ? { ...p, confirmedAt: null, confirmedBy: null } : p
+    );
+    lsSet(ledgerKey, ledger);
+    return { ok: true };
+  }
+
+  return realFetch(`/api/admin/payments/${paymentId}/unconfirm`, { method: "POST" });
 }

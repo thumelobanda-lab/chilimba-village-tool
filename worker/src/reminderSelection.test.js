@@ -156,3 +156,88 @@ describe("selectReminderCandidates", () => {
     expect(result[0].user.id).toBe("u1");
   });
 });
+
+describe("selectReminderCandidates — per-date overrides", () => {
+  it("skips a (user, date) pair entirely when muted, even though the blanket setting would otherwise fire", () => {
+    const result = selectReminderCandidates({
+      schedule,
+      users: [baseUser()], // leadDays: 2, today is exactly 2 days before d1
+      dueOverrides: new Map(),
+      dateOverrides: new Map([["u1|d1", { muted: true }]]),
+      alreadySent: new Set(),
+      today,
+      recipientExempt: true,
+    });
+    expect(result).toHaveLength(0);
+  });
+
+  it("mutes only the specific date, not every date for that user", () => {
+    const todayForD2 = new Date("2026-07-02T00:00:00Z"); // 2 days before d2
+    const result = selectReminderCandidates({
+      schedule,
+      users: [baseUser({ displayName: "Fridah" })], // not the recipient of d2
+      dueOverrides: new Map(),
+      dateOverrides: new Map([["u1|d1", { muted: true }]]), // only d1 is muted
+      alreadySent: new Set(),
+      today: todayForD2,
+      recipientExempt: true,
+    });
+    expect(result).toHaveLength(1);
+    expect(result[0].row.id).toBe("d2");
+  });
+
+  it("uses a custom leadDays override instead of the user's blanket default", () => {
+    // blanket default is 2, but override says 5 for this date — today
+    // is 2 days out, so it should NOT fire under the override.
+    const result = selectReminderCandidates({
+      schedule,
+      users: [baseUser()],
+      dueOverrides: new Map(),
+      dateOverrides: new Map([["u1|d1", { leadDays: 5 }]]),
+      alreadySent: new Set(),
+      today,
+      recipientExempt: true,
+    });
+    expect(result).toHaveLength(0);
+  });
+
+  it("fires when today matches the custom override lead time, even if it doesn't match the blanket default", () => {
+    const fiveDaysBefore = new Date("2026-06-15T00:00:00Z"); // 5 days before d1's June 20 due date
+    const result = selectReminderCandidates({
+      schedule,
+      users: [baseUser()], // blanket leadDays is 2 — would NOT fire on its own here
+      dueOverrides: new Map(),
+      dateOverrides: new Map([["u1|d1", { leadDays: 5 }]]),
+      alreadySent: new Set(),
+      today: fiveDaysBefore,
+      recipientExempt: true,
+    });
+    expect(result).toHaveLength(1);
+    expect(result[0].row.id).toBe("d1");
+  });
+
+  it("falls back to the blanket default when no override exists for that date", () => {
+    const result = selectReminderCandidates({
+      schedule,
+      users: [baseUser()],
+      dueOverrides: new Map(),
+      dateOverrides: new Map(), // no overrides at all
+      alreadySent: new Set(),
+      today,
+      recipientExempt: true,
+    });
+    expect(result).toHaveLength(1);
+  });
+
+  it("defaults dateOverrides to an empty map when the caller doesn't pass one, preserving old behavior", () => {
+    const result = selectReminderCandidates({
+      schedule,
+      users: [baseUser()],
+      dueOverrides: new Map(),
+      alreadySent: new Set(),
+      today,
+      recipientExempt: true,
+    });
+    expect(result).toHaveLength(1);
+  });
+});
