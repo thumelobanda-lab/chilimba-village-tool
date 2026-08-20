@@ -102,7 +102,8 @@ another's data. The same rule applies to admin promotion/demotion
 own group, and a group can never be left with zero admins
 (`wouldLeaveZeroAdmins`, enforced both client-side and re-checked
 server-side). See `PRIVACY.md` for the full data/security model,
-including PIN hashing (PBKDF2-SHA256, 120k iterations, per-account salt —
+including PIN hashing (PBKDF2-SHA256, 100k iterations — the max
+Cloudflare Workers' crypto.subtle supports for PBKDF2 — per-account salt —
 `worker/src/crypto.js` / `src/lib/crypto.js` for the mock-mode
 equivalent) and mobile-money number masking.
 

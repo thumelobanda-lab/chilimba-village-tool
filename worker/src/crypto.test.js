@@ -30,7 +30,7 @@ describe("hashPin / verifyPin (PBKDF2)", () => {
     const hash = await hashPin("1234", randomSalt());
     expect(isLegacyHash(hash)).toBe(false);
   });
-}, 20000); // PBKDF2 at 120k iterations takes real time — give the suite room
+}, 20000); // PBKDF2 at 100k iterations takes real time — give the suite room
 
 describe("legacy hash backward compatibility", () => {
   // Simulates an account created before the PBKDF2 switch: single-round

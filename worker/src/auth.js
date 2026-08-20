@@ -152,23 +152,44 @@ export async function createGroup(env, { slug, groupName, adminName, pin }) {
   if (existing) throw new HttpError(409, "That group code is already taken.");
 
   const groupId = uid();
-  await env.DB.prepare(
-    `INSERT INTO groups (id, slug, group_name, cycle_name, recipient_exempt, schedule_json, funds_json)
-     VALUES (?, ?, ?, 'Cycle 1', 1, '[]', '[]')`
-  ).bind(groupId, normalizedSlug, groupName.trim()).run();
-
   const userId = uid();
   const salt = randomSalt();
   const hash = await hashPin(pin, salt);
   const key = adminName.trim().toLowerCase();
-  await env.DB.prepare(
-    `INSERT INTO users (id, group_id, name, display_name, pin_salt, pin_hash, role) VALUES (?, ?, ?, ?, ?, ?, 'admin')`
-  ).bind(userId, groupId, key, adminName.trim(), salt, hash).run();
-
   const token = newToken();
   const expiresAt = new Date(Date.now() + SESSION_TTL_HOURS * 60 * 60 * 1000).toISOString();
-  await env.DB.prepare(`INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)`)
-    .bind(token, userId, expiresAt).run();
+
+  // The group, its first admin, and their session must land together or
+  // not at all — batch() runs them as one D1 transaction, same pattern
+  // as the multi-write mutations elsewhere (contributions.js, admin.js,
+  // subscription.js). Previously these were three separate awaited
+  // .run() calls: if the request got interrupted between them (e.g. the
+  // client disconnecting mid-request — Cloudflare Workers can abort
+  // in-flight execution when that happens), the group row could commit
+  // with no admin ever created for it. That group then permanently
+  // squats its slug — every future attempt at the same code correctly
+  // gets 409'd against a group nobody can actually log into. A UNIQUE
+  // constraint failure on slug (two concurrent creates for the same
+  // code racing past the check above) is caught and reported as the
+  // same clean 409, instead of leaking as a raw D1 error.
+  try {
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO groups (id, slug, group_name, cycle_name, recipient_exempt, schedule_json, funds_json)
+         VALUES (?, ?, ?, 'Cycle 1', 1, '[]', '[]')`
+      ).bind(groupId, normalizedSlug, groupName.trim()),
+      env.DB.prepare(
+        `INSERT INTO users (id, group_id, name, display_name, pin_salt, pin_hash, role) VALUES (?, ?, ?, ?, ?, ?, 'admin')`
+      ).bind(userId, groupId, key, adminName.trim(), salt, hash),
+      env.DB.prepare(`INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)`)
+        .bind(token, userId, expiresAt),
+    ]);
+  } catch (e) {
+    if (String(e?.message || e).includes("UNIQUE constraint failed")) {
+      throw new HttpError(409, "That group code is already taken.");
+    }
+    throw e;
+  }
 
   return {
     name: adminName.trim(),

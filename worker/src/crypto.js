@@ -1,4 +1,4 @@
-const PBKDF2_ITERATIONS = 120000; // see the note below for how this was chosen
+const PBKDF2_ITERATIONS = 100000; // see the note below for how this was chosen
 const PBKDF2_PREFIX = "pbkdf2";
 
 function bufToHex(buf) {
@@ -21,13 +21,15 @@ export function randomSalt() {
  * salt stops rainbow-table reuse across accounts but does nothing to
  * slow down attacking one specific hash, which is the actual threat here.
  *
- * PBKDF2-SHA256 makes each guess deliberately expensive instead. 120,000
- * iterations was chosen empirically against this Worker's CPU-time limit
- * — high enough to meaningfully slow bulk offline cracking, comfortably
- * under Cloudflare's per-request CPU budget so login stays fast for a
- * real user (~tens of milliseconds). Stored as `pbkdf2$<iterations>$<hex>`
- * so the iteration count travels with the hash and can be raised later
- * without breaking older accounts.
+ * PBKDF2-SHA256 makes each guess deliberately expensive instead. 100,000
+ * iterations is the ceiling Cloudflare Workers' crypto.subtle.deriveBits
+ * actually enforces for PBKDF2 (a higher count throws
+ * NotSupportedError at call time, not a CPU-budget concern — this isn't
+ * a tunable-for-performance number, it's the runtime's hard cap), and
+ * still high enough to meaningfully slow bulk offline cracking while
+ * keeping login fast for a real user (~tens of milliseconds). Stored as
+ * `pbkdf2$<iterations>$<hex>` so the iteration count travels with the
+ * hash and can be changed later without breaking older accounts.
  *
  * Accounts created before this change have a hash with no `pbkdf2$`
  * prefix — verifyPin() detects that and falls back to the old
