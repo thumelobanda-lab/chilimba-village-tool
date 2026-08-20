@@ -28,31 +28,31 @@ echo "==> Writing .env"
 } > .env
 cat .env
 
-echo "==> Switching src/lib/api.js out of mock mode"
-sed -i.bak "s/const MOCK_MODE = true;/const MOCK_MODE = false;/" src/lib/api.js
-rm -f src/lib/api.js.bak
+echo "==> Switching src/lib/api/core.js out of mock mode"
+sed -i.bak "s/export const MOCK_MODE = true;/export const MOCK_MODE = false;/" src/lib/api/core.js
+rm -f src/lib/api/core.js.bak
 
 echo "==> Building"
 npm run build
 
 echo "==> Deploying to Cloudflare Pages (project: ${PROJECT_NAME})"
-DEPLOY_OUTPUT=$(npx wrangler pages deploy dist --project-name="${PROJECT_NAME}")
-echo "$DEPLOY_OUTPUT"
-PAGES_URL=$(echo "$DEPLOY_OUTPUT" | grep -oE 'https://[a-zA-Z0-9.-]+\.pages\.dev' | head -1)
+npx wrangler pages deploy dist --project-name="${PROJECT_NAME}"
 
-if [ -n "$PAGES_URL" ]; then
-  echo "==> Updating Worker CORS to allow ${PAGES_URL}"
-  sed -i.bak "s#ALLOWED_ORIGIN = \".*\"#ALLOWED_ORIGIN = \"${PAGES_URL}\"#" worker/wrangler.toml
-  rm -f worker/wrangler.toml.bak
-  (cd worker && npx wrangler deploy)
-else
-  echo "Could not auto-detect the Pages URL. Set ALLOWED_ORIGIN in"
-  echo "worker/wrangler.toml manually, then: cd worker && npx wrangler deploy"
-fi
+# wrangler only prints the per-deployment hash URL (e.g.
+# https://<hash>.<project>.pages.dev), which changes on every deploy —
+# not the stable production alias. Cloudflare Pages always serves
+# production from https://<project-name>.pages.dev, so build that
+# directly rather than parsing it out of the deploy output.
+PAGES_URL="https://${PROJECT_NAME}.pages.dev"
+
+echo "==> Updating Worker CORS to allow ${PAGES_URL}"
+sed -i.bak "s#ALLOWED_ORIGIN = \".*\"#ALLOWED_ORIGIN = \"${PAGES_URL}\"#" worker/wrangler.toml
+rm -f worker/wrangler.toml.bak
+(cd worker && npx wrangler deploy)
 
 echo
 echo "==> Done."
-echo "App URL:    ${PAGES_URL:-<check output above>}"
+echo "App URL:    ${PAGES_URL}"
 echo "Worker URL: ${WORKER_URL}"
 echo
 echo "Next: after your admins have logged in once, run:"
