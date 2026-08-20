@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>What does your Chilimba tool actually cost you? — Chilimba Village Tool</title>
+<meta name="description" content="Compare Chilimba Village Tool's flat pricing against VillageSavers, Chamasoft, StokFella, and other savings-circle apps." />
+<style>
+  :root {
+    --ink: #1B3A5C;
+    --ink-faint: #5C7188;
+    --line: #DDE3E8;
+    --bg: #F6F8FA;
+    --panel: #FFFFFF;
+    --accent: #1F4B3F;
+    --accent-2: #C99A3D;
+    --red: #B3232F;
+    --green: #2F6B4F;
+    font-family: "Inter", "IBM Plex Sans", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); line-height: 1.5; }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 24px 20px 60px; }
+  header {
+    background: linear-gradient(135deg, var(--accent), #163a30);
+    color: white;
+    padding: 32px 20px;
+    border-bottom: 3px solid var(--accent-2);
+    text-align: center;
+  }
+  header h1 { margin: 0 0 8px; font-size: 1.5rem; }
+  header p { margin: 0; opacity: 0.85; font-size: 0.95rem; }
+
+  .hook {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--accent-2);
+    border-radius: 8px;
+    padding: 18px 20px;
+    margin: 24px 0;
+    font-size: 1.05rem;
+  }
+  .hook strong { color: var(--accent); }
+
+  .calc-panel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 24px;
+  }
+  .calc-panel h2 { margin-top: 0; font-size: 1.1rem; }
+  .field-row { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 14px; }
+  .field { flex: 1; min-width: 140px; }
+  .field label { display: block; font-size: 0.8rem; color: var(--ink-faint); margin-bottom: 4px; }
+  .field input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    font-size: 1rem;
+  }
+
+  .cards { display: flex; flex-direction: column; gap: 12px; margin-top: 24px; }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-left: 5px solid var(--ink-faint);
+    border-radius: 8px;
+    padding: 16px 18px;
+  }
+  .card.you { border-left-color: var(--accent-2); background: #FFF8E8; }
+  .card-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .card-name { font-weight: 700; font-size: 1.05rem; }
+  .card.you .card-name::after { content: " ★ You"; color: var(--accent-2); font-weight: 700; }
+  .card-price { font-weight: 700; font-size: 1.15rem; color: var(--ink); white-space: nowrap; }
+  .card.you .card-price { color: #8A5A12; }
+  .card-note { color: var(--ink-faint); font-size: 0.88rem; margin-top: 6px; }
+  .card-structure {
+    display: inline-block;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--ink-faint);
+    background: #EDF0F2;
+    border-radius: 4px;
+    padding: 2px 8px;
+    margin-top: 8px;
+  }
+  .card.you .card-structure { background: rgba(201,154,61,0.18); color: #8A5A12; }
+
+  .disclosure {
+    font-size: 0.78rem;
+    color: var(--ink-faint);
+    margin-top: 28px;
+    padding-top: 16px;
+    border-top: 1px dashed var(--line);
+  }
+  .disclosure a { color: var(--accent); }
+
+  .cta {
+    text-align: center;
+    margin-top: 28px;
+  }
+  .cta a {
+    display: inline-block;
+    background: var(--accent);
+    color: white;
+    padding: 14px 28px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 700;
+    box-shadow: 0 -3px 0 var(--accent-2) inset;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🤝 What does your chilimba tool actually cost you?</h1>
+  <p>Most savings-circle apps charge more the more successful your group gets. This one doesn't.</p>
+</header>
+
+<div class="wrap">
+
+  <div class="hook">
+    Nearly every alternative charges either <strong>a percentage of what your group saves</strong>,
+    or <strong>a fee per member</strong> — meaning the better your chilimba does, the more it costs
+    you to keep using the tool. Chilimba Village Tool charges one flat fee, for the whole group,
+    no matter how big it gets or how much you save.
+  </div>
+
+  <div class="calc-panel">
+    <h2>See it for your group</h2>
+    <div class="field-row">
+      <div class="field">
+        <label for="groupSize">Group size (members)</label>
+        <input type="number" id="groupSize" value="15" min="1" max="200" />
+      </div>
+      <div class="field">
+        <label for="monthlyAmount">Monthly contribution per member (K)</label>
+        <input type="number" id="monthlyAmount" value="200" min="0" step="10" />
+      </div>
+    </div>
+  </div>
+
+  <div class="cards" id="cards"></div>
+
+  <div class="cta">
+    <a href="/">Try Chilimba Village Tool free →</a>
+  </div>
+
+  <div class="disclosure">
+    <strong>How we compare fairly:</strong> prices shown are in each provider's own currency,
+    from their published pricing where available. We don't convert between currencies here,
+    since exchange rates change — what doesn't change is the <em>structure</em>: a flat fee stays
+    flat regardless of your group's size or savings, while a percentage-of-savings or
+    per-member fee grows as your group succeeds. ComGrow charges via payment-processing fees on
+    each transaction rather than a flat rate, so no single number is shown for them. Figures are
+    illustrative based on publicly available information as of 2026 and may have changed —
+    check each provider's own site for current pricing.
+  </div>
+
+</div>
+
+<script>
+function money(n, currency) {
+  return currency + " " + Math.round(n).toLocaleString();
+}
+
+function render() {
+  var groupSize = Math.max(1, Number(document.getElementById('groupSize').value) || 1);
+  var monthly = Math.max(0, Number(document.getElementById('monthlyAmount').value) || 0);
+  var groupMonthlySavings = groupSize * monthly;
+  var groupAnnualSavings = groupMonthlySavings * 12;
+
+  var villageSaversAnnual = groupAnnualSavings * 0.025;
+  var chamasoftAnnual = 1500 + Math.max(0, groupSize - 20) * 120;
+  var stokFellaAnnual = groupSize * 200;
+
+  var cards = [
+    {
+      name: "Chilimba Village Tool",
+      price: "K200 / year",
+      note: "K100 every 6 months, for the whole group — paid once by your admin, never by members. Doesn't change no matter how large the group gets or how much you save.",
+      structure: "Flat, per group",
+      you: true
+    },
+    {
+      name: "VillageSavers",
+      price: money(villageSaversAnnual, "R") + " / year (est.)",
+      note: "2.5% of what your group saves every month. The more successful your chilimba is, the more this costs.",
+      structure: "% of savings"
+    },
+    {
+      name: "Chamasoft",
+      price: money(chamasoftAnnual, "KES") + " / year (est.)",
+      note: "KES 1,500/year for the first 20 members, plus KES 120 for every member beyond that.",
+      structure: "Per member"
+    },
+    {
+      name: "StokFella",
+      price: money(stokFellaAnnual, "R") + " / year (est.)",
+      note: "R200 minimum per member per year — a larger group costs proportionally more.",
+      structure: "Per member"
+    },
+    {
+      name: "ComGrow",
+      price: "Varies",
+      note: "Routes your group's transactions through payment partners and charges accordingly — pricing depends on transaction volume, not a flat group fee.",
+      structure: "Per transaction"
+    },
+    {
+      name: "Ajo App / AjoMoney",
+      price: "Free",
+      note: "Free and WhatsApp-native — but built for Nigeria/Ghana's ajo/susu model, without the scheduled payout, per-date reminders, or admin roster tools built here.",
+      structure: "Free (limited features)"
+    }
+  ];
+
+  var container = document.getElementById('cards');
+  container.innerHTML = cards.map(function(c) {
+    return '<div class="card ' + (c.you ? 'you' : '') + '">' +
+      '<div class="card-top">' +
+        '<span class="card-name">' + c.name + '</span>' +
+        '<span class="card-price">' + c.price + '</span>' +
+      '</div>' +
+      '<div class="card-note">' + c.note + '</div>' +
+      '<span class="card-structure">' + c.structure + '</span>' +
+    '</div>';
+  }).join('');
+}
+
+document.getElementById('groupSize').addEventListener('input', render);
+document.getElementById('monthlyAmount').addEventListener('input', render);
+render();
+</script>
+
+</body>
+</html>

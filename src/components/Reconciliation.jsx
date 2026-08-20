@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { getReconciliation, confirmPayment, unconfirmPayment } from "../lib/api.js";
 import { payeesLabel } from "../lib/scheduleUtils.js";
 import { useApiData } from "../lib/useApiData.js";
@@ -6,10 +6,24 @@ import { useApiData } from "../lib/useApiData.js";
 const money = (n) => "K" + (Number(n) || 0).toLocaleString("en-ZM", { maximumFractionDigits: 0 });
 
 export default function Reconciliation({ config }) {
-  const upcoming = pickDefaultRow(config.schedule);
-  const [rowId, setRowId] = useState(upcoming?.id || config.schedule[0]?.id);
+  const [rowId, setRowId] = useState(() => pickDefaultRow(config.schedule)?.id);
   const [expanded, setExpanded] = useState(null); // one member's name at a time
   const [busyEntryId, setBusyEntryId] = useState(null);
+
+  // config loads asynchronously — if this component mounted before it
+  // arrived, the useState initializer above locked onto an empty
+  // schedule and rowId became stuck on undefined forever, even once
+  // real dates showed up in the dropdown. This keeps rowId in sync with
+  // whatever schedule is actually loaded, and re-picks a sensible
+  // default if the previously-selected date was removed entirely.
+  useEffect(() => {
+    if (config.schedule.length === 0) return;
+    const stillExists = config.schedule.some((r) => r.id === rowId);
+    if (!rowId || !stillExists) {
+      setRowId(pickDefaultRow(config.schedule)?.id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [config.schedule]);
 
   const { data, error, loading, refresh } = useApiData(
     () => (rowId ? getReconciliation(rowId) : Promise.resolve(null)),

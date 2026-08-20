@@ -69,6 +69,18 @@ export default function App() {
     }
   }, [session, subscribed]);
 
+  // A separate, generic preview shown before anyone's even signed in —
+  // tracked independently (see PRE_LOGIN_SEEN_KEY in Walkthrough.jsx) so
+  // seeing this one doesn't skip the personalized, role-aware one above
+  // once they actually log in. Runs once on mount, only matters if
+  // there's no session yet.
+  useEffect(() => {
+    if (!session && !hasSeenWalkthrough(null)) {
+      setShowWalkthrough(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleLogin = async (groupSlug, name, pin) => {
     const user = await login(groupSlug, name, pin);
     if (user.isNew) onboarding.trigger();
@@ -126,7 +138,7 @@ export default function App() {
               aria-label="Open calculator"
               title="Calculator"
             >
-              🧮
+              🧮 <span className="calc-icon-label">Calc</span>
             </button>
             <button className="btn-ghost" onClick={handleLogout}>Log out</button>
           </div>
@@ -134,7 +146,7 @@ export default function App() {
       </header>
 
       {showCalculator && <QuickCalculator onClose={() => setShowCalculator(false)} />}
-      {showWalkthrough && session && (
+      {showWalkthrough && (
         <Walkthrough session={session} onClose={() => setShowWalkthrough(false)} />
       )}
 
@@ -259,7 +271,7 @@ export default function App() {
 
             {tab === "setup" && session.role === "admin" && (
               <div role="tabpanel" id="panel-setup" aria-labelledby="tab-setup">
-                <GroupSetup config={config} onSaved={setConfig} />
+                <GroupSetup config={config} onSaved={setConfig} session={session} />
               </div>
             )}
 

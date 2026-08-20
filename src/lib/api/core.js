@@ -4,7 +4,7 @@
  * MOCK_MODE = true  -> everything is stored in the browser (localStorage)
  * MOCK_MODE = false -> calls hit your real Cloudflare Worker (see /worker)
  */
-export const MOCK_MODE = true;
+export const MOCK_MODE = false;
 export const API_BASE = import.meta.env.VITE_API_BASE || "https://your-worker.your-subdomain.workers.dev";
 
 export function lsGet(key, fallback) {

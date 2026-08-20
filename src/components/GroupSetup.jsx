@@ -3,8 +3,9 @@ import { saveSchedule } from "../lib/api.js";
 import { getPayees, generateScheduleDates, SCHEDULE_FREQUENCIES } from "../lib/scheduleUtils.js";
 import AdminManagement from "./AdminManagement.jsx";
 import CollapsibleSection from "./CollapsibleSection.jsx";
+import InviteCard from "./InviteCard.jsx";
 
-export default function GroupSetup({ config, onSaved }) {
+export default function GroupSetup({ config, onSaved, session }) {
   const [draft, setDraft] = useState(() => {
     const cloned = JSON.parse(JSON.stringify(config));
     cloned.schedule = cloned.schedule.map((r) => ({
@@ -36,6 +37,7 @@ export default function GroupSetup({ config, onSaved }) {
     });
   };
 
+  const [missingRecipientIds, setMissingRecipientIds] = useState([]);
   const [genFrequency, setGenFrequency] = useState("biweekly");
   const [genStartDate, setGenStartDate] = useState("");
   const [genCount, setGenCount] = useState(10);
@@ -126,11 +128,21 @@ export default function GroupSetup({ config, onSaved }) {
             .filter(Boolean),
         })),
       };
-      if (toSave.schedule.some((r) => r.payees.length === 0)) {
-        throw new Error("Every date needs at least one recipient.");
+      // Name the actual offending date(s), not just "something's wrong" —
+      // with the Generate Payout Dates tool creating many empty rows at
+      // once, "every date needs a recipient" alone gives no way to find
+      // the one row that got missed on a long table.
+      const missingRecipient = toSave.schedule.filter((r) => r.payees.length === 0);
+      if (missingRecipient.length > 0) {
+        setMissingRecipientIds(missingRecipient.map((r) => r.id));
+        const list = missingRecipient.map((r) => r.date || r.group || "an unlabeled date").join(", ");
+        throw new Error(`Missing a recipient for: ${list}. Every date needs at least one.`);
       }
-      if (toSave.schedule.some((r) => r.payees.length > 3)) {
-        throw new Error("A date can have at most 3 recipients.");
+      setMissingRecipientIds([]);
+      const tooManyRecipients = toSave.schedule.filter((r) => r.payees.length > 3);
+      if (tooManyRecipients.length > 0) {
+        const list = tooManyRecipients.map((r) => r.date || r.group || "an unlabeled date").join(", ");
+        throw new Error(`Too many recipients for: ${list}. A date can have at most 3.`);
       }
       if ((toSave.funds || []).some((f) => !f.name.trim())) {
         throw new Error("Every fund needs a name.");
@@ -230,22 +242,26 @@ export default function GroupSetup({ config, onSaved }) {
               </tr>
             </thead>
             <tbody>
-              {draft.schedule.map((r) => (
-                <tr key={r.id}>
-                  <td><input className="cell-input-text" value={r.date} onChange={(e) => editRow(r.id, "date", e.target.value)} /></td>
-                  <td><input className="cell-input-text" value={r.group} onChange={(e) => editRow(r.id, "group", e.target.value)} /></td>
-                  <td>
+              {draft.schedule.map((r) => {
+                const isMissing = missingRecipientIds.includes(r.id) && !r.payeesText.trim();
+                return (
+                <tr key={r.id} className={isMissing ? "row-flagged" : ""}>
+                  <td data-label="Date"><input className="cell-input-text" value={r.date} onChange={(e) => editRow(r.id, "date", e.target.value)} /></td>
+                  <td data-label="Group"><input className="cell-input-text" value={r.group} onChange={(e) => editRow(r.id, "group", e.target.value)} /></td>
+                  <td data-label="Recipient(s)">
                     <input
-                      className="cell-input-text wide"
+                      className={"cell-input-text wide" + (isMissing ? " input-flagged" : "")}
                       value={r.payeesText}
                       onChange={(e) => editRow(r.id, "payeesText", e.target.value)}
                       placeholder="e.g. Doreen, Dorothy, Fridah"
                     />
+                    {isMissing && <div className="error-text tiny">Needs a recipient</div>}
                   </td>
-                  <td className="ar"><input type="number" className="cell-input" value={r.due} onChange={(e) => editRow(r.id, "due", e.target.value)} /></td>
-                  <td><button className="btn-icon" onClick={() => removeRow(r.id)} title="Remove row" aria-label={`Remove ${r.date || "this"} date`}>✕</button></td>
+                  <td className="ar" data-label="Due (K)"><input type="number" className="cell-input" value={r.due} onChange={(e) => editRow(r.id, "due", e.target.value)} /></td>
+                  <td className="cell-action"><button className="btn-icon" onClick={() => removeRow(r.id)} title="Remove row" aria-label={`Remove ${r.date || "this"} date`}>✕</button></td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -274,16 +290,16 @@ export default function GroupSetup({ config, onSaved }) {
             <tbody>
               {(draft.funds || []).map((f) => (
                 <tr key={f.id}>
-                  <td><input className="cell-input-text wide" value={f.name} onChange={(e) => editFund(f.id, "name", e.target.value)} placeholder="e.g. Future Sharing Fund" /></td>
-                  <td className="ar"><input type="number" className="cell-input" value={f.amount} onChange={(e) => editFund(f.id, "amount", e.target.value)} /></td>
-                  <td>
+                  <td data-label="Fund name"><input className="cell-input-text wide" value={f.name} onChange={(e) => editFund(f.id, "name", e.target.value)} placeholder="e.g. Future Sharing Fund" /></td>
+                  <td className="ar" data-label="Amount (K)"><input type="number" className="cell-input" value={f.amount} onChange={(e) => editFund(f.id, "amount", e.target.value)} /></td>
+                  <td data-label="Loanable">
                     <input
                       type="checkbox"
                       checked={!!f.loanable}
                       onChange={(e) => editFund(f.id, "loanable", e.target.checked)}
                     />
                   </td>
-                  <td><button className="btn-icon" onClick={() => removeFund(f.id)} title="Remove fund" aria-label={`Remove ${f.name || "this"} fund`}>✕</button></td>
+                  <td className="cell-action"><button className="btn-icon" onClick={() => removeFund(f.id)} title="Remove fund" aria-label={`Remove ${f.name || "this"} fund`}>✕</button></td>
                 </tr>
               ))}
               {(!draft.funds || draft.funds.length === 0) && (
@@ -318,7 +334,7 @@ export default function GroupSetup({ config, onSaved }) {
             <tbody>
               {(draft.paymentMethods || []).map((m) => (
                 <tr key={m.id}>
-                  <td>
+                  <td data-label="Type">
                     <select
                       className="cell-input-text"
                       value={m.type}
@@ -328,7 +344,7 @@ export default function GroupSetup({ config, onSaved }) {
                       <option value="bank">Bank</option>
                     </select>
                   </td>
-                  <td>
+                  <td data-label="Label">
                     <input
                       className="cell-input-text"
                       value={m.label}
@@ -336,7 +352,7 @@ export default function GroupSetup({ config, onSaved }) {
                       placeholder={m.type === "bank" ? "e.g. Zanaco" : "e.g. MTN Money"}
                     />
                   </td>
-                  <td>
+                  <td data-label="Account name">
                     <input
                       className="cell-input-text"
                       value={m.accountName}
@@ -344,7 +360,7 @@ export default function GroupSetup({ config, onSaved }) {
                       placeholder="e.g. Hillcrest Chilimba"
                     />
                   </td>
-                  <td>
+                  <td data-label="Number">
                     <input
                       className="cell-input-text wide"
                       value={m.accountNumber}
@@ -352,7 +368,7 @@ export default function GroupSetup({ config, onSaved }) {
                       placeholder={m.type === "bank" ? "Account number" : "Phone number"}
                     />
                   </td>
-                  <td><button className="btn-icon" onClick={() => removePaymentMethod(m.id)} title="Remove" aria-label={`Remove ${m.label || "this"} payment method`}>✕</button></td>
+                  <td className="cell-action"><button className="btn-icon" onClick={() => removePaymentMethod(m.id)} title="Remove" aria-label={`Remove ${m.label || "this"} payment method`}>✕</button></td>
                 </tr>
               ))}
               {(!draft.paymentMethods || draft.paymentMethods.length === 0) && (
@@ -362,6 +378,14 @@ export default function GroupSetup({ config, onSaved }) {
           </table>
         </div>
         <button className="btn-ghost-dark" style={{ marginTop: 10 }} onClick={addPaymentMethod}>+ Add payment method</button>
+      </CollapsibleSection>
+
+      <CollapsibleSection icon="📣" title="Invite Members" summary="WhatsApp-ready invite card">
+        <p className="muted tiny" style={{ marginBottom: 10 }}>
+          A shareable card with your group's name and code — post it straight to WhatsApp,
+          or download it to send however you like.
+        </p>
+        <InviteCard groupName={config.groupName} groupSlug={session?.groupSlug} cycleName={config.cycleName} />
       </CollapsibleSection>
 
       <CollapsibleSection icon="👥" title="Roster & Admins" summary="Members, roles, next due dates">

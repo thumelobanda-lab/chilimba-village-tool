@@ -1,15 +1,25 @@
 import React, { useState } from "react";
 import { groupScopedKey } from "../lib/api/core.js";
 
+// Used before anyone's signed in — there's no group/account yet to scope
+// a key to, so this is a single, universal "have they seen the generic
+// intro" flag, separate from the per-account key below.
+export const PRE_LOGIN_SEEN_KEY = "chilimba:pre-login-intro-seen";
+
 export function walkthroughSeenKey(session) {
   return groupScopedKey(session, "walkthrough-seen", session.name.toLowerCase());
 }
 
 export function hasSeenWalkthrough(session) {
+  if (!session) return localStorage.getItem(PRE_LOGIN_SEEN_KEY) === "1";
   return localStorage.getItem(walkthroughSeenKey(session)) === "1";
 }
 
 function markWalkthroughSeen(session) {
+  if (!session) {
+    localStorage.setItem(PRE_LOGIN_SEEN_KEY, "1");
+    return;
+  }
   localStorage.setItem(walkthroughSeenKey(session), "1");
 }
 

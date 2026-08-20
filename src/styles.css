@@ -264,6 +264,56 @@ body { margin: 0; background: var(--bg); color: var(--ink); }
 .checkbox-field { flex-direction: row; align-items: center; gap: 8px; font-size: 0.85rem; }
 .cell-input-text { width: 100px; padding: 4px 6px; border: 1px solid var(--line); border-radius: 4px; }
 .cell-input-text.wide { width: 160px; }
+
+/* Below this width, the schedule/funds/payment-method tables were
+   overflowing horizontally — the Recipient(s) input in particular sat
+   off-screen, reachable only by swiping the table sideways, with no
+   indication it was even there. Below the breakpoint, each row becomes
+   a stacked card instead: every field fully visible, no horizontal
+   scroll needed at all. data-label attributes on each <td> (see
+   GroupSetup.jsx) supply the label text via ::before, since the real
+   <thead> is hidden once rows stop being laid out as a table. */
+@media (max-width: 640px) {
+  .grid-wrap { overflow-x: visible; }
+  .grid-table thead { display: none; }
+  .grid-table, .grid-table tbody, .grid-table tr, .grid-table td {
+    display: block;
+    width: 100%;
+  }
+  .grid-table tr {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    margin-bottom: 10px;
+    padding: 10px;
+  }
+  .grid-table td {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 0;
+    border: none;
+  }
+  .grid-table td::before {
+    content: attr(data-label);
+    flex: 0 0 92px;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: var(--ink-faint);
+    font-weight: 700;
+  }
+  .grid-table td.cell-action {
+    justify-content: flex-end;
+    padding-top: 4px;
+  }
+  .grid-table td.cell-action::before { content: none; flex: 0; }
+  .grid-table td input,
+  .grid-table td select {
+    width: 100% !important;
+    flex: 1;
+  }
+}
+
 .btn-icon { background: none; border: none; color: var(--red); cursor: pointer; font-size: 0.9rem; }
 .btn-ghost-dark {
   background: transparent;
@@ -377,7 +427,8 @@ body { margin: 0; background: var(--bg); color: var(--ink); }
 }
 
 /* Calculator icon + modal */
-.calc-icon-btn { font-size: 1.1rem; padding: 4px 10px; }
+.calc-icon-btn { font-size: 1.1rem; padding: 6px 12px; min-height: 40px; }
+.calc-icon-label { font-size: 0.7rem; font-weight: 600; margin-left: 2px; vertical-align: middle; }
 
 .calc-modal-backdrop {
   position: fixed;
@@ -395,8 +446,8 @@ body { margin: 0; background: var(--bg); color: var(--ink); }
   background: var(--panel);
   border-radius: 12px 12px 0 0;
   width: 100%;
-  max-width: 320px;
-  padding: 16px;
+  max-width: 360px;
+  padding: 20px;
   box-shadow: 0 -4px 24px rgba(0,0,0,0.2);
 }
 @media (min-width: 480px) {
@@ -413,10 +464,13 @@ body { margin: 0; background: var(--bg); color: var(--ink); }
 .calc-close-btn {
   background: none;
   border: none;
-  font-size: 1rem;
+  font-size: 1.2rem;
   color: var(--ink-faint);
   cursor: pointer;
-  padding: 4px 8px;
+  padding: 8px 12px;
+  min-width: 44px;
+  min-height: 44px;
+  touch-action: manipulation;
 }
 .calc-display {
   background: var(--ink);
@@ -433,18 +487,23 @@ body { margin: 0; background: var(--bg); color: var(--ink); }
 .calc-keypad {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
+  gap: 10px;
 }
 .calc-btn {
+  min-height: 56px;
   padding: 14px 0;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   background: #F0F2F4;
   color: var(--ink);
-  font-size: 1.1rem;
-  font-weight: 600;
+  font-size: 1.3rem;
+  font-weight: 700;
   cursor: pointer;
+  touch-action: manipulation; /* removes the ~300ms tap delay some mobile browsers add */
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.05s ease;
 }
+.calc-btn:active { transform: scale(0.94); }
 .calc-btn-op { background: var(--accent); color: white; }
 .calc-btn-equals { background: var(--accent-2); color: white; grid-row: span 1; }
 .calc-btn-fn { background: #E4E8EB; color: var(--ink-faint); }
@@ -497,4 +556,23 @@ body { margin: 0; background: var(--bg); color: var(--ink); }
   align-items: center;
 }
 .walkthrough-nav { display: flex; gap: 8px; margin-left: auto; }
+
+.row-flagged { background: #FDECEC; }
+.input-flagged { border-color: var(--red) !important; }
+.error-text.tiny { font-size: 0.7rem; margin-top: 2px; }
+
+.invite-card-wrap { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.invite-card-canvas {
+  width: 100%;
+  max-width: 320px;
+  aspect-ratio: 1 / 1;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+}
+.invite-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
 

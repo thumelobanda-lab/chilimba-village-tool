@@ -9,9 +9,9 @@ database_name = "chilimba-db"
 database_id = "ac20c439-5029-4f9e-8e14-6c97c847d9ba"
 
 [vars]
-ALLOWED_ORIGIN = "https://your-pages-project.pages.dev"
+ALLOWED_ORIGIN = "https://chilimba-village-tool.pages.dev"
 VAPID_SUBJECT = "mailto:admin@example.com"
-VAPID_PUBLIC_KEY = "REPLACE_WITH_GENERATED_VAPID_PUBLIC_KEY"
+VAPID_PUBLIC_KEY = "BFnLvWRoyJYy4LCgJgX2dRHieZVeENfTecORl7-8UaL0_2RXtnAJ82vZcEsWzk_3GhgvbQnWvN4n7O4lcVUUEz0"
 
 [triggers]
 # Runs daily — reminders/reminders.js only actually sends on the day a

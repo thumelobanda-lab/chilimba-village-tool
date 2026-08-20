@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { walkthroughSeenKey, hasSeenWalkthrough } from "./Walkthrough.jsx";
+import { walkthroughSeenKey, hasSeenWalkthrough, PRE_LOGIN_SEEN_KEY } from "./Walkthrough.jsx";
 
 // No jsdom in this project's test setup (see vite.config.js), so
 // localStorage isn't a real global here — a minimal in-memory stand-in
@@ -40,5 +40,30 @@ describe("walkthrough seen tracking", () => {
     localStorage.setItem(walkthroughSeenKey(session), "1");
     const otherGroupSession = { groupSlug: "kanyama", name: "Harriet" };
     expect(hasSeenWalkthrough(otherGroupSession)).toBe(false);
+  });
+});
+
+describe("pre-login walkthrough (no session yet)", () => {
+  beforeEach(() => {
+    installFakeLocalStorage();
+    localStorage.clear();
+  });
+
+  it("is unseen by default when there's no session", () => {
+    expect(hasSeenWalkthrough(null)).toBe(false);
+  });
+
+  it("does not throw when session is null, unlike the per-account path would", () => {
+    expect(() => hasSeenWalkthrough(null)).not.toThrow();
+  });
+
+  it("is seen once the pre-login key is set", () => {
+    localStorage.setItem(PRE_LOGIN_SEEN_KEY, "1");
+    expect(hasSeenWalkthrough(null)).toBe(true);
+  });
+
+  it("is tracked independently from any account's per-group seen state", () => {
+    localStorage.setItem(PRE_LOGIN_SEEN_KEY, "1");
+    expect(hasSeenWalkthrough(session)).toBe(false); // the logged-in one is still unseen
   });
 });

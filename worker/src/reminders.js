@@ -32,8 +32,15 @@ async function runSweepForGroup(env, group) {
   const recipientExempt = !!group.recipient_exempt;
   if (schedule.length === 0) return;
 
+  // Built from UTC components, not local ones: reminderSelection.js parses
+  // each schedule row's date ("YYYY-MM-DD") as UTC midnight, so comparing
+  // against a locally-constructed "today" would drift by a day whenever
+  // the runtime's local clock has crossed into the next UTC day (harmless
+  // on Cloudflare Workers, which have no local timezone and are always
+  // UTC, but wrong — and flaky — when this runs on a developer machine in
+  // a non-UTC timezone, e.g. in tests).
   const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
 
   const [usersResult, overridesResult, sentResult, subsResult, dateOverridesResult] = await Promise.all([
     env.DB.prepare(
