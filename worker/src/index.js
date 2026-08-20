@@ -4,6 +4,7 @@ import { createRouter } from "./router.js";
 import { runReminderSweep } from "./reminders.js";
 
 import registerAuthRoutes from "./routes/auth.js";
+import registerProfileRoutes from "./routes/profile.js";
 import registerGroupRoutes from "./routes/groups.js";
 import registerScheduleRoutes from "./routes/schedule.js";
 import registerContributionsRoutes from "./routes/contributions.js";
@@ -16,6 +17,7 @@ import registerNoticeRoutes from "./routes/notices.js";
 
 const router = createRouter();
 router.use(registerAuthRoutes);
+router.use(registerProfileRoutes);
 router.use(registerGroupRoutes);
 router.use(registerScheduleRoutes);
 router.use(registerContributionsRoutes);

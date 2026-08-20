@@ -8,6 +8,7 @@ import GroupSetup from "./components/GroupSetup.jsx";
 import Reconciliation from "./components/Reconciliation.jsx";
 import Reminders from "./components/Reminders.jsx";
 import Community from "./components/Community.jsx";
+import Profile from "./components/Profile.jsx";
 import Loans from "./components/Loans.jsx";
 import ScrollableTabs from "./components/ScrollableTabs.jsx";
 import PaymentInfo from "./components/PaymentInfo.jsx";
@@ -24,6 +25,7 @@ const TABS = [
   { id: "calc", label: "Calculator" },
   { id: "reminders", label: "Reminders" },
   { id: "community", label: "Community" },
+  { id: "account", label: "My Account" },
   { id: "setup", label: "Group Setup", adminOnly: true },
   { id: "reconciliation", label: "Reconciliation", adminOnly: true },
   { id: "loans", label: "Loans", adminOnly: true },
@@ -37,7 +39,7 @@ function greeting() {
 }
 
 export default function App() {
-  const { session, login, createGroup, logout } = useSession();
+  const { session, login, createGroup, logout, renameSession } = useSession();
   const { config, setConfig } = useGroupConfig(session);
   const {
     ledger,
@@ -291,6 +293,12 @@ export default function App() {
 
             {tab === "community" && (
               <div role="tabpanel" id="panel-community" aria-labelledby="tab-community"><Community /></div>
+            )}
+
+            {tab === "account" && (
+              <div role="tabpanel" id="panel-account" aria-labelledby="tab-account">
+                <Profile session={session} onRenamed={renameSession} />
+              </div>
             )}
           </>
         )}

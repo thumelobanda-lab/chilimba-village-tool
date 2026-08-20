@@ -28,5 +28,14 @@ export function useSession() {
     setSession(null);
   };
 
-  return { session, login, createGroup, logout };
+  // updateProfile() (lib/api/profile.js) already persists the new display
+  // name to the stored session in localStorage — this just mirrors that
+  // into the in-memory session so the header greeting and every other
+  // component reading `session.name` update immediately, without needing
+  // a full page reload to pick the change back up.
+  const renameSession = (name) => {
+    setSession((prev) => (prev ? { ...prev, name } : prev));
+  };
+
+  return { session, login, createGroup, logout, renameSession };
 }
