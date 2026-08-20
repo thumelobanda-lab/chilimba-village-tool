@@ -1,4 +1,4 @@
-# Chilimba Village Tool — starter scaffold
+# Chilimba Circle — starter scaffold
 
 A Vite + React PWA, styled as a clean spreadsheet grid matching the
 Hillcrest Chilimba tracker, with a subscription gate (K25/cycle,

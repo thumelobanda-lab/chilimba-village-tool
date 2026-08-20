@@ -12,7 +12,7 @@ export default defineConfig({
       registerType: "autoUpdate",
       includeAssets: ["favicon.svg"],
       manifest: {
-        name: "Chilimba Village Tool",
+        name: "Chilimba Circle",
         short_name: "Chilimba",
         description: "Shared savings-circle ledger and subscription tracker",
         theme_color: "#1F4B3F",

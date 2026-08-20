@@ -40,69 +40,59 @@ body { margin: 0; background: var(--bg); color: var(--ink); }
 
 .app-main { max-width: 880px; margin: 0 auto; padding: 20px; width: 100%; }
 
-.tabs-scroll-wrap { position: relative; }
-
-.tabs {
-  display: flex;
-  gap: 4px;
-  margin-bottom: 0;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: thin;
-}
-.tab { flex: 0 0 auto; }
-
-/* Fade + tap-to-scroll chevron, shown only when there's genuinely more
-   content off-screen in that direction — the visual cue the plain
-   scrolling tab bar was missing. */
-.tabs-edge-fade {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 40px;
+/* Nav menu — hamburger trigger + dropdown panel replacing the old
+   always-visible tab bar. Everything that isn't the home dashboard
+   (ledger, calculator, reminders, community, account, admin tools) is a
+   destination in here now, so the home screen stays vital-records-only. */
+.nav-menu { position: relative; margin-bottom: 16px; }
+.nav-menu-trigger {
   display: flex;
   align-items: center;
-  border: none;
-  cursor: pointer;
-  z-index: 2;
-  padding: 0;
-}
-.tabs-edge-fade-right {
-  right: 0;
-  justify-content: flex-end;
-  background: linear-gradient(to right, transparent, var(--bg) 70%);
-}
-.tabs-edge-fade-left {
-  left: 0;
-  justify-content: flex-start;
-  background: linear-gradient(to left, transparent, var(--bg) 70%);
-}
-.tabs-chevron {
-  font-size: 1.4rem;
-  font-weight: 700;
-  color: var(--accent);
-  padding: 0 6px;
-}
-.tab {
-  padding: 8px 16px;
+  gap: 6px;
+  padding: 8px 14px;
   border: 1px solid var(--line);
-  border-bottom: none;
-  background: #EDF0F2;
-  color: var(--ink-faint);
-  font-weight: 600;
-  cursor: pointer;
-  border-radius: 6px 6px 0 0;
-}
-.tab.active {
   background: var(--panel);
-  color: var(--accent);
-  box-shadow: inset 0 -3px 0 var(--accent-2);
+  color: var(--ink);
+  font-weight: 600;
+  font-size: 0.9rem;
+  border-radius: 6px;
+  cursor: pointer;
 }
+.nav-menu-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 20;
+  min-width: 220px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+}
+.nav-menu-item {
+  text-align: left;
+  padding: 10px 12px;
+  border: none;
+  background: none;
+  color: var(--ink);
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.nav-menu-item:hover { background: #F0F2F4; }
+.nav-menu-item-active { color: var(--accent); background: #EAF3EE; }
+.nav-menu-divider { border-top: 1px solid var(--line); margin: 6px 2px; }
+
+.back-link { display: inline-block; margin-bottom: 14px; }
 
 .panel {
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 0 8px 8px 8px;
+  border-radius: 8px;
   padding: 20px;
 }
 
@@ -574,5 +564,78 @@ body { margin: 0; background: var(--bg); color: var(--ink); }
   flex-wrap: wrap;
   gap: 8px;
   justify-content: center;
+}
+
+/* Home dashboard — the "vital records" the app opens to: next due date,
+   outstanding balance, community fund total, cycle progress. Everything
+   else lives behind the nav menu, so this is the only content competing
+   for space here. */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+}
+.vital-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--accent);
+  border-radius: 8px;
+  padding: 16px 18px;
+}
+.vital-card-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--ink-faint);
+  margin-bottom: 6px;
+}
+.vital-card-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.vital-card-value-warn { color: var(--red); }
+.vital-card-value-ok { color: var(--green); }
+
+.vital-card-ring { display: flex; flex-direction: column; align-items: flex-start; }
+.progress-ring-wrap { position: relative; display: inline-flex; align-items: center; justify-content: center; margin-top: 4px; }
+.progress-ring-arc { transition: stroke-dashoffset 0.9s ease; }
+.progress-ring-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.progress-ring-percent { font-size: 1.05rem; font-weight: 700; color: var(--ink); }
+.progress-ring-sublabel { margin-top: 6px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .progress-ring-arc { transition: none; }
+}
+
+/* Payment receipt — modal reuses .calc-modal-backdrop/.calc-modal (see
+   QuickCalculator), card canvas styled like InviteCard's but portrait to
+   fit a receipt's row-by-row layout. */
+.receipt-modal { max-width: 380px; }
+.receipt-card-canvas {
+  display: block;
+  width: 100%;
+  max-width: 280px;
+  margin: 0 auto;
+  aspect-ratio: 3 / 4;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+}
+.receipt-link {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
 }
 

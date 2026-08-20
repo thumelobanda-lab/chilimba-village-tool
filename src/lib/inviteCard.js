@@ -34,7 +34,7 @@ export function buildInviteCardFilename(groupSlug) {
  */
 export function buildCardContent({ groupName, groupSlug, cycleName, appUrl }) {
   return {
-    brand: "Chilimba Village Tool",
+    brand: "Chilimba Circle",
     groupName: groupName || "Your Chilimba",
     cycleLabel: cycleName ? `${cycleName}` : null,
     codeLabel: "GROUP CODE",

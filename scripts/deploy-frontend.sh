@@ -6,7 +6,7 @@
 set -euo pipefail
 
 STATE_FILE=".deploy-state"
-PROJECT_NAME="${PAGES_PROJECT_NAME:-chilimba-village-tool}"
+PROJECT_NAME="${PAGES_PROJECT_NAME:-chilimba-circle}"
 
 if [ ! -f "$STATE_FILE" ]; then
   echo "No .deploy-state found — run ./scripts/deploy-backend.sh first."

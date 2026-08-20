@@ -3,7 +3,11 @@ import { getSubscriptionStatus, initiateSubscriptionPayment, subscriptionPrice, 
 
 const NETWORKS = ["MTN Money", "Airtel Money", "Zamtel Kwacha"];
 
-export default function Subscription({ session, onActive }) {
+// Admin-only — App.jsx renders this exclusively for session.role === "admin"
+// and renders SubscriptionGate.jsx (no pricing, no payment controls) for
+// everyone else, so there's no non-admin branch (and no need for session
+// itself) to handle here anymore.
+export default function Subscription({ onActive }) {
   const [status, setStatus] = useState(null);
   const [phone, setPhone] = useState("");
   const [network, setNetwork] = useState(NETWORKS[0]);
@@ -12,7 +16,6 @@ export default function Subscription({ session, onActive }) {
 
   const price = subscriptionPrice();
   const months = Math.round(subscriptionDurationDays() / 30);
-  const isAdmin = session?.role === "admin";
 
   const refresh = async () => {
     const s = await getSubscriptionStatus();
@@ -51,23 +54,6 @@ export default function Subscription({ session, onActive }) {
         <div className="badge badge-ok">Subscription active</div>
         <p className="muted small">
           This group's access is valid until {new Date(status.expiresAt).toLocaleDateString()}.
-        </p>
-      </div>
-    );
-  }
-
-  // Regular members never see a payment form — the subscription belongs
-  // to the whole group, and only an admin can activate it. Showing every
-  // member a "pay K100" button would be actively wrong here, not just
-  // unnecessary.
-  if (!isAdmin) {
-    return (
-      <div className="panel">
-        <h2 className="panel-title">Waiting on your group's subscription</h2>
-        <p className="muted small">
-          This group's K{price} / {months}-month subscription isn't active yet. Only a group
-          admin can activate it — once they do, everyone in the group gets access automatically.
-          Nothing for you to pay here.
         </p>
       </div>
     );

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { getReconciliation, confirmPayment, unconfirmPayment } from "../lib/api.js";
 import { payeesLabel } from "../lib/scheduleUtils.js";
 import { useApiData } from "../lib/useApiData.js";
+import Receipt from "./Receipt.jsx";
 
 const money = (n) => "K" + (Number(n) || 0).toLocaleString("en-ZM", { maximumFractionDigits: 0 });
 
@@ -9,6 +10,7 @@ export default function Reconciliation({ config }) {
   const [rowId, setRowId] = useState(() => pickDefaultRow(config.schedule)?.id);
   const [expanded, setExpanded] = useState(null); // one member's name at a time
   const [busyEntryId, setBusyEntryId] = useState(null);
+  const [receiptFor, setReceiptFor] = useState(null); // { payment, memberName } | null
 
   // config loads asynchronously — if this component mounted before it
   // arrived, the useState initializer above locked onto an empty
@@ -164,6 +166,14 @@ export default function Reconciliation({ config }) {
                                 >●</span>
                                 <span>{money(e.amount)}</span>
                                 <span className="muted tiny">{new Date(e.recordedAt).toLocaleDateString()}</span>
+                                {e.confirmedAt && (
+                                  <button
+                                    className="receipt-link"
+                                    onClick={() => setReceiptFor({ payment: e, memberName: e.memberName })}
+                                  >
+                                    🧾 Receipt
+                                  </button>
+                                )}
                                 <button
                                   className="btn-link"
                                   disabled={busyEntryId === e.id}
@@ -190,6 +200,17 @@ export default function Reconciliation({ config }) {
             Export CSV
           </button>
         </>
+      )}
+
+      {receiptFor && (
+        <Receipt
+          payment={receiptFor.payment}
+          scheduleRow={data.row}
+          memberName={receiptFor.memberName}
+          groupName={config.groupName}
+          cycleName={config.cycleName}
+          onClose={() => setReceiptFor(null)}
+        />
       )}
     </div>
   );

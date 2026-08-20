@@ -1,9 +1,26 @@
 import React, { useState } from "react";
 import { payeesLabel } from "../lib/scheduleUtils.js";
+import Receipt from "./Receipt.jsx";
 
 const money = (n) => "K" + (Number(n) || 0).toLocaleString("en-ZM", { maximumFractionDigits: 0 });
 
-export default function LedgerTable({ rowsComputed, totals, isRecipientRow, onAddPayment, onVoidPayment, onSetDueOverride }) {
+export default function LedgerTable({
+  rowsComputed,
+  totals,
+  isRecipientRow,
+  onAddPayment,
+  onVoidPayment,
+  onEditPayment,
+  onSetDueOverride,
+  memberName,
+  groupName,
+  cycleName,
+}) {
+  // One receipt modal for the whole table (not per-row) — only one entry's
+  // receipt is ever open at a time, and keeping it here means Receipt
+  // isn't remounted/rebuilt as rows expand and collapse.
+  const [receiptFor, setReceiptFor] = useState(null); // { payment, row } | null
+
   return (
     <div className="grid-wrap">
       <table className="grid-table">
@@ -26,7 +43,9 @@ export default function LedgerTable({ rowsComputed, totals, isRecipientRow, onAd
               isRecipient={isRecipientRow(r)}
               onAddPayment={onAddPayment}
               onVoidPayment={onVoidPayment}
+              onEditPayment={onEditPayment}
               onSetDueOverride={onSetDueOverride}
+              onViewReceipt={(payment) => setReceiptFor({ payment, row: r })}
             />
           ))}
         </tbody>
@@ -41,16 +60,30 @@ export default function LedgerTable({ rowsComputed, totals, isRecipientRow, onAd
           </tr>
         </tfoot>
       </table>
+
+      {receiptFor && (
+        <Receipt
+          payment={receiptFor.payment}
+          scheduleRow={receiptFor.row}
+          memberName={memberName}
+          groupName={groupName}
+          cycleName={cycleName}
+          onClose={() => setReceiptFor(null)}
+        />
+      )}
     </div>
   );
 }
 
-function RowWithHistory({ row, isRecipient, onAddPayment, onVoidPayment, onSetDueOverride }) {
+function RowWithHistory({ row, isRecipient, onAddPayment, onVoidPayment, onEditPayment, onSetDueOverride, onViewReceipt }) {
   const [open, setOpen] = useState(false);
   const [editingDue, setEditingDue] = useState(false);
   const [dueDraft, setDueDraft] = useState(row.due);
   const [amount, setAmount] = useState("");
   const [busy, setBusy] = useState(false);
+  const [editingEntryId, setEditingEntryId] = useState(null);
+  const [entryDraft, setEntryDraft] = useState("");
+  const [entryBusy, setEntryBusy] = useState(false);
 
   const activeEntries = row.entries.filter((e) => !e.voidedAt);
   const voidedEntries = row.entries.filter((e) => e.voidedAt);
@@ -74,6 +107,22 @@ function RowWithHistory({ row, isRecipient, onAddPayment, onVoidPayment, onSetDu
   const resetDue = async () => {
     await onSetDueOverride(row.id, null);
     setEditingDue(false);
+  };
+
+  const startEditEntry = (entry) => {
+    setEntryDraft(entry.amount);
+    setEditingEntryId(entry.id);
+  };
+
+  const saveEntryEdit = async (entry) => {
+    if (!entryDraft || Number(entryDraft) <= 0) return;
+    setEntryBusy(true);
+    try {
+      await onEditPayment(entry.id, row.id, entryDraft);
+      setEditingEntryId(null);
+    } finally {
+      setEntryBusy(false);
+    }
   };
 
   return (
@@ -137,14 +186,47 @@ function RowWithHistory({ row, isRecipient, onAddPayment, onVoidPayment, onSetDu
                         title={e.confirmedAt ? `Confirmed by an admin (${e.confirmedBy})` : "Not yet confirmed by an admin"}
                       >●</span>
                     )}
-                    <span>{money(e.amount)}</span>
+                    {!e.voidedAt && editingEntryId === e.id ? (
+                      <span className="due-edit">
+                        <input
+                          type="number"
+                          className="cell-input"
+                          value={entryDraft}
+                          onChange={(ev) => setEntryDraft(ev.target.value)}
+                          autoFocus
+                        />
+                        <button className="btn-link" disabled={entryBusy} onClick={() => saveEntryEdit(e)}>
+                          {entryBusy ? "saving…" : "save"}
+                        </button>
+                        <button className="btn-link" disabled={entryBusy} onClick={() => setEditingEntryId(null)}>
+                          cancel
+                        </button>
+                      </span>
+                    ) : e.voidedAt ? (
+                      <span>{money(e.amount)}</span>
+                    ) : (
+                      <button
+                        className="link-amount"
+                        onClick={() => startEditEntry(e)}
+                        title="Edit this entry's amount"
+                      >
+                        {money(e.amount)}
+                      </button>
+                    )}
                     <span className="muted tiny">
                       {new Date(e.recordedAt).toLocaleDateString()} · {e.recordedBy}
                     </span>
                     {e.voidedAt ? (
                       <span className="muted tiny">voided</span>
                     ) : (
-                      <button className="btn-link" onClick={() => onVoidPayment(e.id)}>void</button>
+                      editingEntryId !== e.id && (
+                        <>
+                          {e.confirmedAt && (
+                            <button className="receipt-link" onClick={() => onViewReceipt(e)}>🧾 Receipt</button>
+                          )}
+                          <button className="btn-link" onClick={() => onVoidPayment(e.id)}>void</button>
+                        </>
+                      )
                     )}
                   </div>
                 ))}

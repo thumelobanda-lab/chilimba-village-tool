@@ -1,6 +1,8 @@
 import React from "react";
 import { getGroupFunds } from "../lib/api.js";
 import { useApiData } from "../lib/useApiData.js";
+import { sumFundBalances } from "../lib/dashboardMath.js";
+import GrowthProjection from "./GrowthProjection.jsx";
 
 const money = (n) => "K" + (Number(n) || 0).toLocaleString("en-ZM", { maximumFractionDigits: 0 });
 
@@ -47,6 +49,8 @@ export default function Community() {
               <p className="muted small">No community funds are set up yet.</p>
             )}
           </div>
+
+          {data.funds.length > 0 && <GrowthProjection fundTotal={sumFundBalances(data.funds)} />}
 
           {data.loans && data.loans.length > 0 && (
             <>

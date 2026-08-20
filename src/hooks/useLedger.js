@@ -61,6 +61,19 @@ export function useLedger(session, config) {
     await reload();
   };
 
+  // "Editing" a logged entry's amount in place — kept append-only under
+  // the hood, same invariant every other ledger mutation preserves: the
+  // old entry is voided (stays visible, struck through, tagged as
+  // superseded) and a fresh entry is logged for the corrected amount,
+  // rather than overwriting amount on the existing row. If the voided
+  // entry had already been confirmed by an admin, the new one starts
+  // unconfirmed again — a changed amount genuinely does need re-checking.
+  const editPaymentAndReload = async (paymentId, scheduleRowId, amount) => {
+    await voidPayment(paymentId, "Edited — replaced by a corrected entry");
+    await addPayment({ scheduleRowId, amount });
+    await reload();
+  };
+
   const setDueOverrideAndReload = async (scheduleRowId, amount) => {
     await setDueOverride(scheduleRowId, amount);
     await reload();
@@ -88,6 +101,7 @@ export function useLedger(session, config) {
     isRecipientRow,
     addPayment: addPaymentAndReload,
     voidPayment: voidPaymentAndReload,
+    editPayment: editPaymentAndReload,
     setDueOverride: setDueOverrideAndReload,
     updatePayout,
     applyFlatRate,

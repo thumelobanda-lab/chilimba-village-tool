@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-Chilimba Village Tool — a Vite + React PWA for tracking a Zambian-style
+Chilimba Circle — a Vite + React PWA for tracking a Zambian-style
 Chilimba (rotating savings circle): a shared payout schedule, per-member
 append-only contribution ledger, a K25/cycle mobile-money subscription
 gate, community fund tracking, loans, and push/SMS reminders. Multi-tenant:

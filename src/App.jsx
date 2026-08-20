@@ -3,6 +3,7 @@ import Login from "./components/Login.jsx";
 import CreateGroup from "./components/CreateGroup.jsx";
 import Onboarding from "./components/Onboarding.jsx";
 import Subscription from "./components/Subscription.jsx";
+import SubscriptionGate from "./components/SubscriptionGate.jsx";
 import LedgerTable, { money } from "./components/LedgerTable.jsx";
 import GroupSetup from "./components/GroupSetup.jsx";
 import Reconciliation from "./components/Reconciliation.jsx";
@@ -10,7 +11,8 @@ import Reminders from "./components/Reminders.jsx";
 import Community from "./components/Community.jsx";
 import Profile from "./components/Profile.jsx";
 import Loans from "./components/Loans.jsx";
-import ScrollableTabs from "./components/ScrollableTabs.jsx";
+import NavMenu from "./components/NavMenu.jsx";
+import Dashboard from "./components/Dashboard.jsx";
 import PaymentInfo from "./components/PaymentInfo.jsx";
 import NoticeBoard from "./components/NoticeBoard.jsx";
 import QuickCalculator from "./components/QuickCalculator.jsx";
@@ -47,6 +49,7 @@ export default function App() {
     isRecipientRow,
     addPayment,
     voidPayment,
+    editPayment,
     setDueOverride,
     updatePayout,
     applyFlatRate,
@@ -55,7 +58,7 @@ export default function App() {
   const onboarding = useOnboarding({ applyFlatRate });
 
   const [subscribed, setSubscribed] = useState(false);
-  const [tab, setTab] = useState("ledger");
+  const [tab, setTab] = useState("home");
   const [showCreateGroup, setShowCreateGroup] = useState(false);
   const [showCalculator, setShowCalculator] = useState(false);
   const [showWalkthrough, setShowWalkthrough] = useState(false);
@@ -63,8 +66,8 @@ export default function App() {
   // Auto-opens once per account, the first time the dashboard is actually
   // reached (after login, onboarding, and the subscription gate) —
   // showing it any earlier would explain tabs the person can't see yet.
-  // Reopenable any time from the ? icon in the header, which is why
-  // "seen" is tracked separately from whether this effect has fired.
+  // Reopenable any time from "How this app works" in the nav menu, which
+  // is why "seen" is tracked separately from whether this effect has fired.
   useEffect(() => {
     if (session && subscribed && !hasSeenWalkthrough(session)) {
       setShowWalkthrough(true);
@@ -115,7 +118,7 @@ export default function App() {
     <div className="app-shell">
       <header className="app-header">
         <div>
-          <div className="brand">Chilimba Village Tool</div>
+          <div className="brand">Chilimba Circle</div>
           <div className="muted small">
             {session
               ? config.cycleName
@@ -126,14 +129,6 @@ export default function App() {
         </div>
         {session && (
           <div className="header-right">
-            <button
-              className="btn-ghost calc-icon-btn"
-              onClick={() => setShowWalkthrough(true)}
-              aria-label="Open walkthrough"
-              title="How this app works"
-            >
-              ?
-            </button>
             <button
               className="btn-ghost calc-icon-btn"
               onClick={() => setShowCalculator(true)}
@@ -166,7 +161,11 @@ export default function App() {
             onSkip={onboarding.skip}
           />
         ) : !subscribed ? (
-          <Subscription session={session} onActive={() => setSubscribed(true)} />
+          session.role === "admin" ? (
+            <Subscription onActive={() => setSubscribed(true)} />
+          ) : (
+            <SubscriptionGate onActive={() => setSubscribed(true)} />
+          )
         ) : (
           <>
             <div className="dashboard-greeting">
@@ -174,23 +173,23 @@ export default function App() {
               {session.role === "admin" && <span className="tag tag-rate" style={{ marginLeft: 8 }}>admin</span>}
             </div>
 
-            <NoticeBoard isAdmin={session.role === "admin"} />
+            <NavMenu
+              items={TABS.filter((t) => !t.adminOnly || session.role === "admin")}
+              activeId={tab}
+              onSelect={setTab}
+              onOpenWalkthrough={() => setShowWalkthrough(true)}
+            />
 
-            <ScrollableTabs>
-              {TABS.filter((t) => !t.adminOnly || session.role === "admin").map((t) => (
-                <button
-                  key={t.id}
-                  role="tab"
-                  aria-selected={tab === t.id}
-                  id={`tab-${t.id}`}
-                  aria-controls={`panel-${t.id}`}
-                  className={tab === t.id ? "tab active" : "tab"}
-                  onClick={() => setTab(t.id)}
-                >
-                  {t.label}
-                </button>
-              ))}
-            </ScrollableTabs>
+            {tab === "home" && (
+              <>
+                <NoticeBoard isAdmin={session.role === "admin"} />
+                <Dashboard session={session} config={config} ledger={ledger} totals={totals} />
+              </>
+            )}
+
+            {tab !== "home" && (
+              <button className="btn-link back-link" onClick={() => setTab("home")}>← Back to Home</button>
+            )}
 
             {tab === "ledger" && (
               <div className="panel" role="tabpanel" id="panel-ledger" aria-labelledby="tab-ledger">
@@ -212,7 +211,11 @@ export default function App() {
                       isRecipientRow={isRecipientRow}
                       onAddPayment={addPayment}
                       onVoidPayment={voidPayment}
+                      onEditPayment={editPayment}
                       onSetDueOverride={setDueOverride}
+                      memberName={session.name}
+                      groupName={config.groupName}
+                      cycleName={config.cycleName}
                     />
                   </>
                 )}

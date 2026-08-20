@@ -4,7 +4,7 @@ import { precacheAndRoute } from "workbox-precaching";
 precacheAndRoute(self.__WB_MANIFEST);
 
 self.addEventListener("push", (event) => {
-  let data = { title: "Chilimba Village Tool", body: "You have a reminder.", url: "/" };
+  let data = { title: "Chilimba Circle", body: "You have a reminder.", url: "/" };
   try {
     if (event.data) data = { ...data, ...event.data.json() };
   } catch {

@@ -1,4 +1,4 @@
-# Privacy & Security — Chilimba Village Tool
+# Privacy & Security — Chilimba Circle
 
 ## What data this app holds
 
