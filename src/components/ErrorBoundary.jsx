@@ -25,14 +25,14 @@ export default class ErrorBoundary extends React.Component {
     if (this.state.error) {
       return (
         <div style={{ padding: 24, fontFamily: "system-ui, sans-serif", maxWidth: 480, margin: "40px auto" }}>
-          <h2 style={{ color: "#B3232F" }}>Something went wrong</h2>
-          <p style={{ color: "#5C7188" }}>
+          <h2 style={{ color: "#B5453A" }}>Something went wrong</h2>
+          <p style={{ color: "#6E685F" }}>
             This screen crashed instead of loading. A screenshot of the error below, sent to
             support, will help fix it.
           </p>
           <pre style={{
-            background: "#F6F8FA",
-            border: "1px solid #DDE3E8",
+            background: "#FAF7F0",
+            border: "1px solid #E6DFCF",
             borderRadius: 6,
             padding: 12,
             fontSize: 12,
@@ -47,7 +47,7 @@ export default class ErrorBoundary extends React.Component {
             style={{
               marginTop: 16,
               padding: "10px 20px",
-              background: "#1F4B3F",
+              background: "#0F4C3A",
               color: "white",
               border: "none",
               borderRadius: 6,

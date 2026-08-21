@@ -16,13 +16,13 @@ function drawCard(canvas, content) {
 
   // Background gradient — matches the app's deep-green/gold palette
   const bg = ctx.createLinearGradient(0, 0, w, h);
-  bg.addColorStop(0, "#1F4B3F");
-  bg.addColorStop(1, "#163a30");
+  bg.addColorStop(0, "#0F4C3A");
+  bg.addColorStop(1, "#0A3729");
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, w, h);
 
   // Gold accent stripe, top and bottom — echoes the in-app header
-  ctx.fillStyle = "#C99A3D";
+  ctx.fillStyle = "#C9962E";
   ctx.fillRect(0, 0, w, 14);
   ctx.fillRect(0, h - 14, w, 14);
 
@@ -50,7 +50,7 @@ function drawCard(canvas, content) {
 
   // Group code — the single most important thing on the card, given
   // maximum visual weight
-  ctx.fillStyle = "#C99A3D";
+  ctx.fillStyle = "#C9962E";
   ctx.font = "600 28px system-ui, sans-serif";
   ctx.fillText(content.codeLabel, w / 2, 680);
   ctx.fillStyle = "#FFFFFF";
@@ -63,7 +63,7 @@ function drawCard(canvas, content) {
   wrapText(ctx, content.tagline, w / 2, 880, w - 200, 40);
 
   // URL
-  ctx.fillStyle = "#C99A3D";
+  ctx.fillStyle = "#C9962E";
   ctx.font = "600 28px system-ui, sans-serif";
   ctx.fillText(content.url.replace(/^https?:\/\//, ""), w / 2, 990);
 }
