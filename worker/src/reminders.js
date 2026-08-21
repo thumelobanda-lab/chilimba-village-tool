@@ -1,6 +1,7 @@
 import { sendPush } from "./push.js";
 import { sendSms } from "./sms.js";
 import { selectReminderCandidates } from "./reminderSelection.js";
+import { isSubscriptionActive } from "./subscriptionUtils.js";
 
 /**
  * Runs on a schedule (see [triggers] in wrangler.toml — daily is enough;
@@ -20,7 +21,9 @@ import { selectReminderCandidates } from "./reminderSelection.js";
  * exactly one group, so it's scoped via a join to users instead.
  */
 export async function runReminderSweep(env) {
-  const groupsResult = await env.DB.prepare(`SELECT id, schedule_json, funds_json, recipient_exempt FROM groups`).all();
+  const groupsResult = await env.DB.prepare(
+    `SELECT id, schedule_json, funds_json, recipient_exempt, subscription_expires_at, suspended_at FROM groups`
+  ).all();
   const groups = groupsResult.results || [];
   for (const group of groups) {
     await runSweepForGroup(env, group);
@@ -28,6 +31,14 @@ export async function runReminderSweep(env) {
 }
 
 async function runSweepForGroup(env, group) {
+  // Automated reminders are a premium feature (see subscriptionUtils.js)
+  // — a free-tier group's members can still set their own preferences
+  // (PUT /api/reminders/prefs, harmless to store either way), but the
+  // sweep itself is the actual send, and this is where that's gated,
+  // authoritatively, not just hidden in the UI. A suspended group never
+  // sends anything either.
+  if (!isSubscriptionActive(group.subscription_expires_at) || group.suspended_at) return;
+
   const schedule = JSON.parse(group.schedule_json || "[]");
   const recipientExempt = !!group.recipient_exempt;
   if (schedule.length === 0) return;

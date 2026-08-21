@@ -1,5 +1,6 @@
 import { hashPin, verifyPin, isLegacyHash, randomSalt, newToken, uid } from "./crypto.js";
 import { HttpError } from "./httpError.js";
+import { isSubscriptionActive, FREE_TIER_MAX_MEMBERS } from "./subscriptionUtils.js";
 
 export { HttpError };
 
@@ -21,7 +22,8 @@ export async function getSessionUser(request, env) {
 
   const row = await env.DB.prepare(
     `SELECT s.expires_at, u.id, u.display_name, u.role, u.active,
-            u.group_id as groupId, g.slug as groupSlug, g.group_name as groupName
+            u.group_id as groupId, g.slug as groupSlug, g.group_name as groupName,
+            g.suspended_at as groupSuspendedAt
      FROM sessions s
      JOIN users u ON u.id = s.user_id
      JOIN groups g ON g.id = u.group_id
@@ -38,6 +40,13 @@ export async function getSessionUser(request, env) {
   // promotion is already correct server-side the instant it happens —
   // /api/me just lets the frontend catch up its own stale session state.
   if (!row.active) return null;
+  // A platform owner suspending a group (routes/owner.js) also deletes
+  // every session for it, but this is the second, ongoing half of that:
+  // it stops a NEW session — one that already existed elsewhere, or one
+  // issued in the instant between the suspend and its DELETE — from
+  // getting in either. A distinct error, not the generic 401, so the
+  // frontend can show what actually happened instead of "sign in again".
+  if (row.groupSuspendedAt) throw new HttpError(403, "This group has been suspended. Contact support.");
 
   return {
     id: row.id,
@@ -70,9 +79,12 @@ export async function requireAdmin(request, env) {
  */
 export async function resolveGroupBySlug(env, slug) {
   if (!slug || !slug.trim()) throw new HttpError(400, "Group code is required.");
-  const group = await env.DB.prepare(`SELECT id, slug, group_name as groupName FROM groups WHERE slug = ?`)
-    .bind(slug.trim().toLowerCase()).first();
+  const group = await env.DB.prepare(
+    `SELECT id, slug, group_name as groupName, subscription_expires_at as subscriptionExpiresAt, suspended_at as suspendedAt
+     FROM groups WHERE slug = ?`
+  ).bind(slug.trim().toLowerCase()).first();
   if (!group) throw new HttpError(404, "Unknown group code.");
+  if (group.suspendedAt) throw new HttpError(403, "This group has been suspended. Contact support.");
   return group;
 }
 
@@ -179,6 +191,24 @@ export async function joinGroup(env, groupSlug, name, phone, pin) {
   if (!pin || pin.length < 4) throw new HttpError(400, "Choose a PIN of at least 4 digits.");
 
   const group = await resolveGroupBySlug(env, groupSlug);
+
+  // Free tier's member cap — checked here, where membership is actually
+  // granted, not just displayed somewhere in the UI (a determined free
+  // tier group could otherwise just skip past a client-side warning).
+  // Premium groups (a real, confirmed subscription — see
+  // subscriptionUtils.js) have no cap at all.
+  if (!isSubscriptionActive(group.subscriptionExpiresAt)) {
+    const countRow = await env.DB.prepare(
+      `SELECT COUNT(*) as count FROM users WHERE group_id = ? AND active = 1`
+    ).bind(group.id).first();
+    if ((countRow?.count || 0) >= FREE_TIER_MAX_MEMBERS) {
+      throw new HttpError(
+        402,
+        `This group is on the free plan (max ${FREE_TIER_MAX_MEMBERS} members) — ask an admin to upgrade to add more.`
+      );
+    }
+  }
+
   const key = name.trim().toLowerCase();
 
   const id = uid();
@@ -221,7 +251,7 @@ export async function joinGroup(env, groupSlug, name, phone, pin) {
  * existing admin can promote a member — see /api/admin/promote in
  * routes/admin.js), never requiring database access anymore.
  */
-export async function createGroup(env, { slug, groupName, adminName, pin }) {
+export async function createGroup(env, { slug, groupName, adminName, pin, phone, createdIp }) {
   if (!slug || !slug.trim()) throw new HttpError(400, "Group code is required.");
   if (!groupName || !groupName.trim()) throw new HttpError(400, "Group name is required.");
   if (!adminName || !adminName.trim()) throw new HttpError(400, "Your name is required.");
@@ -238,6 +268,13 @@ export async function createGroup(env, { slug, groupName, adminName, pin }) {
   const key = adminName.trim().toLowerCase();
   const token = newToken();
   const expiresAt = new Date(Date.now() + SESSION_TTL_HOURS * 60 * 60 * 1000).toISOString();
+  // Phone isn't required to create a group (unlike joinGroup — creating
+  // a group is still a lighter-weight action) — but when it's given,
+  // storing it here (same normalizePhone as joinGroup) both on the
+  // admin's own account and on the group row is what lets the owner
+  // dashboard's fraud signal (fraudSignals.js) notice the same person
+  // spinning up several groups in a short window, not just the same IP.
+  const normalizedPhone = phone ? normalizePhone(phone) : null;
 
   // The group, its first admin, and their session must land together or
   // not at all — batch() runs them as one D1 transaction, same pattern
@@ -255,12 +292,12 @@ export async function createGroup(env, { slug, groupName, adminName, pin }) {
   try {
     await env.DB.batch([
       env.DB.prepare(
-        `INSERT INTO groups (id, slug, group_name, cycle_name, recipient_exempt, schedule_json, funds_json)
-         VALUES (?, ?, ?, 'Cycle 1', 1, '[]', '[]')`
-      ).bind(groupId, normalizedSlug, groupName.trim()),
+        `INSERT INTO groups (id, slug, group_name, cycle_name, recipient_exempt, schedule_json, funds_json, created_ip, created_by_phone)
+         VALUES (?, ?, ?, 'Cycle 1', 1, '[]', '[]', ?, ?)`
+      ).bind(groupId, normalizedSlug, groupName.trim(), createdIp || null, normalizedPhone),
       env.DB.prepare(
-        `INSERT INTO users (id, group_id, name, display_name, pin_salt, pin_hash, role) VALUES (?, ?, ?, ?, ?, ?, 'admin')`
-      ).bind(userId, groupId, key, adminName.trim(), salt, hash),
+        `INSERT INTO users (id, group_id, name, display_name, phone, pin_salt, pin_hash, role) VALUES (?, ?, ?, ?, ?, ?, ?, 'admin')`
+      ).bind(userId, groupId, key, adminName.trim(), normalizedPhone, salt, hash),
       env.DB.prepare(`INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)`)
         .bind(token, userId, expiresAt),
     ]);

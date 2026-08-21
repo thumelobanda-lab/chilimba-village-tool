@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { isSubscriptionActive, computeExpiryDate, subscriptionPrice, subscriptionDurationDays } from "./subscriptionUtils.js";
+import { isSubscriptionActive, computeExpiryDate, subscriptionPrice, subscriptionDurationDays, FREE_TIER_MAX_MEMBERS } from "./subscriptionUtils.js";
 
 describe("isSubscriptionActive", () => {
   it("is false when expiresAt is null (never paid)", () => {
@@ -51,5 +51,9 @@ describe("pricing constants", () => {
 
   it("subscription lasts approximately 6 months", () => {
     expect(subscriptionDurationDays()).toBe(182);
+  });
+
+  it("caps the free tier at 8 members", () => {
+    expect(FREE_TIER_MAX_MEMBERS).toBe(8);
   });
 });

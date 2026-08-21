@@ -1,6 +1,7 @@
 import { randomSalt, hashPin, verifyPin } from "../crypto.js";
 import { isAdminName } from "../adminConfig.js";
 import { MOCK_MODE, lsGet, lsSet, realFetch } from "./core.js";
+import { FREE_TIER_MAX_MEMBERS } from "./subscription.js";
 
 // Every group's data — schedule, funds, and every account — is scoped by
 // its slug (e.g. "hillcrest"). This mirrors the real backend's model:
@@ -128,6 +129,25 @@ export async function join(groupSlug, name, phone, pin) {
     const key = accountKey(slug, name);
     if (lsGet(key, null)) throw new Error("That name is already registered in this group.");
     if (findAccountByPhone(slug, phoneKey)) throw new Error("That phone number is already registered in this group.");
+
+    // Free tier's member cap — mirrors the check in worker/src/auth.js's
+    // joinGroup(), so mock mode behaves the same way once a browser has
+    // 8 active mock accounts for a group with no active subscription.
+    const sub = lsGet(["chilimba", "group-sub", slug].join(":"), null);
+    const subActive = !!(sub?.expiresAt && new Date(sub.expiresAt).getTime() > Date.now());
+    if (!subActive) {
+      const prefix = `chilimba:account:${slug}:`;
+      let activeCount = 0;
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (!k || !k.startsWith(prefix)) continue;
+        const acc = lsGet(k, null);
+        if (acc && acc.active !== false) activeCount++;
+      }
+      if (activeCount >= FREE_TIER_MAX_MEMBERS) {
+        throw new Error(`This group is on the free plan (max ${FREE_TIER_MAX_MEMBERS} members) — ask an admin to upgrade to add more.`);
+      }
+    }
 
     const salt = randomSalt();
     const hash = await hashPin(pin, salt);

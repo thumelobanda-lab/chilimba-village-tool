@@ -7,7 +7,7 @@ import { pushSupported, subscribeToPush, unsubscribeFromPush, getExistingSubscri
 
 const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || "";
 
-export default function Reminders({ config }) {
+export default function Reminders({ config, premiumActive }) {
   const [prefs, setPrefs] = useState({ pushEnabled: false, smsEnabled: false, phone: "", leadDays: 2 });
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
@@ -71,6 +71,22 @@ export default function Reminders({ config }) {
       setTimeout(() => setStatus(""), 1500);
     }
   };
+
+  // Automated reminders are premium-only — the cron sweep (worker/src/
+  // reminders.js) already skips a free-tier group entirely, so letting
+  // someone configure prefs here that would silently never fire is more
+  // confusing than just saying so upfront.
+  if (!premiumActive) {
+    return (
+      <div className="panel">
+        <h2 className="panel-title">Payment Reminders</h2>
+        <p className="muted small">
+          Automated push and SMS reminders are a premium feature. This group is on the free
+          plan — ask an admin to upgrade from the Subscription tab to turn these on.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="panel">

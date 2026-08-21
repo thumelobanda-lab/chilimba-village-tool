@@ -6,7 +6,7 @@ import CollapsibleSection from "./CollapsibleSection.jsx";
 import InviteCard from "./InviteCard.jsx";
 import PaymentMethodsEditor from "./PaymentMethodsEditor.jsx";
 
-export default function GroupSetup({ config, onSaved, session }) {
+export default function GroupSetup({ config, onSaved, session, premiumActive }) {
   const [draft, setDraft] = useState(() => {
     const cloned = JSON.parse(JSON.stringify(config));
     cloned.schedule = cloned.schedule.map((r) => ({
@@ -261,11 +261,18 @@ export default function GroupSetup({ config, onSaved, session }) {
           (shown in the Community tab and on the dashboard), separate from the named funds
           below. Set to K0 to turn it off.
         </p>
+        {!premiumActive && (
+          <p className="muted small" style={{ marginBottom: 10 }}>
+            This is a premium feature — this group is on the free plan. Upgrade from the
+            Subscription tab to enable it.
+          </p>
+        )}
         <label className="field" style={{ maxWidth: 220, marginBottom: 16 }}>
           Deduction per confirmed payment (K)
           <input
             type="number"
             min={0}
+            disabled={!premiumActive}
             value={draft.communityFundDeduction || 0}
             onChange={(e) => setDraft({ ...draft, communityFundDeduction: Number(e.target.value) || 0 })}
           />

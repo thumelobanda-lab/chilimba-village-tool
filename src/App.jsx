@@ -4,6 +4,7 @@ import CreateAnotherGroup from "./components/CreateAnotherGroup.jsx";
 import Onboarding from "./components/Onboarding.jsx";
 import Subscription from "./components/Subscription.jsx";
 import SubscriptionGate from "./components/SubscriptionGate.jsx";
+import FreeTierBanner from "./components/FreeTierBanner.jsx";
 import LedgerTable, { money } from "./components/LedgerTable.jsx";
 import GroupSetup from "./components/GroupSetup.jsx";
 import Reconciliation from "./components/Reconciliation.jsx";
@@ -22,6 +23,7 @@ import { useSession } from "./hooks/useSession.js";
 import { useGroupConfig } from "./hooks/useGroupConfig.js";
 import { useLedger } from "./hooks/useLedger.js";
 import { useOnboarding } from "./hooks/useOnboarding.js";
+import { useSubscription } from "./hooks/useSubscription.js";
 
 const TABS = [
   { id: "ledger", label: "My Ledger" },
@@ -29,6 +31,7 @@ const TABS = [
   { id: "summary", label: "Payment Summary" },
   { id: "reminders", label: "Reminders" },
   { id: "community", label: "Community" },
+  { id: "subscription", label: "Subscription" },
   { id: "account", label: "My Account" },
   { id: "setup", label: "Group Setup", adminOnly: true },
   { id: "reconciliation", label: "Reconciliation", adminOnly: true },
@@ -59,23 +62,24 @@ export default function App() {
     clearMyData,
   } = useLedger(session, config);
   const onboarding = useOnboarding({ applyFlatRate });
+  const subscription = useSubscription(session);
 
-  const [subscribed, setSubscribed] = useState(false);
   const [tab, setTab] = useState("home");
   const [showCalculator, setShowCalculator] = useState(false);
   const [showWalkthrough, setShowWalkthrough] = useState(false);
   const [sessionEndedNotice, setSessionEndedNotice] = useState(false);
 
   // Auto-opens once per account, the first time the dashboard is actually
-  // reached (after login, onboarding, and the subscription gate) —
-  // showing it any earlier would explain tabs the person can't see yet.
-  // Reopenable any time from "How this app works" in the nav menu, which
-  // is why "seen" is tracked separately from whether this effect has fired.
+  // reached (after login and onboarding) — a free-tier group reaches the
+  // dashboard immediately now (see FreeTierBanner below), so this no
+  // longer waits on subscription status at all. Reopenable any time from
+  // "How this app works" in the nav menu, which is why "seen" is tracked
+  // separately from whether this effect has fired.
   useEffect(() => {
-    if (session && subscribed && !hasSeenWalkthrough(session)) {
+    if (session && !onboarding.needsOnboarding && !hasSeenWalkthrough(session)) {
       setShowWalkthrough(true);
     }
-  }, [session, subscribed]);
+  }, [session, onboarding.needsOnboarding]);
 
   // A separate, generic preview shown before anyone's even signed in —
   // tracked independently (see PRE_LOGIN_SEEN_KEY in Walkthrough.jsx) so
@@ -126,7 +130,6 @@ export default function App() {
 
   const handleLogout = () => {
     logout();
-    setSubscribed(false);
   };
 
   const handleFinishOnboarding = (rate) => {
@@ -137,7 +140,6 @@ export default function App() {
   const handleDeleteData = async () => {
     if (!window.confirm("Delete all your saved contributions and subscription data? This can't be undone.")) return;
     await clearMyData();
-    setSubscribed(false);
   };
 
   return (
@@ -183,12 +185,6 @@ export default function App() {
             onComplete={handleFinishOnboarding}
             onSkip={onboarding.skip}
           />
-        ) : !subscribed ? (
-          session.role === "admin" ? (
-            <Subscription onActive={() => setSubscribed(true)} />
-          ) : (
-            <SubscriptionGate onActive={() => setSubscribed(true)} />
-          )
         ) : (
           <>
             <div className="dashboard-greeting">
@@ -206,6 +202,11 @@ export default function App() {
             {tab === "home" && (
               <>
                 <NoticeBoard isAdmin={session.role === "admin"} />
+                <FreeTierBanner
+                  status={subscription.status}
+                  isAdmin={session.role === "admin"}
+                  onUpgrade={() => setTab("subscription")}
+                />
                 <Dashboard session={session} config={config} ledger={ledger} totals={totals} />
               </>
             )}
@@ -240,6 +241,7 @@ export default function App() {
                       memberName={session.name}
                       groupName={config.groupName}
                       cycleName={config.cycleName}
+                      premiumActive={subscription.status?.active}
                     />
                   </>
                 )}
@@ -313,13 +315,13 @@ export default function App() {
 
             {tab === "setup" && session.role === "admin" && (
               <div role="tabpanel" id="panel-setup" aria-labelledby="tab-setup">
-                <GroupSetup config={config} onSaved={setConfig} session={session} />
+                <GroupSetup config={config} onSaved={setConfig} session={session} premiumActive={subscription.status?.active} />
               </div>
             )}
 
             {tab === "reconciliation" && session.role === "admin" && (
               <div role="tabpanel" id="panel-reconciliation" aria-labelledby="tab-reconciliation">
-                <Reconciliation config={config} />
+                <Reconciliation config={config} premiumActive={subscription.status?.active} />
               </div>
             )}
 
@@ -328,11 +330,23 @@ export default function App() {
             )}
 
             {tab === "reminders" && (
-              <div role="tabpanel" id="panel-reminders" aria-labelledby="tab-reminders"><Reminders config={config} /></div>
+              <div role="tabpanel" id="panel-reminders" aria-labelledby="tab-reminders">
+                <Reminders config={config} premiumActive={subscription.status?.active} />
+              </div>
             )}
 
             {tab === "community" && (
               <div role="tabpanel" id="panel-community" aria-labelledby="tab-community"><Community /></div>
+            )}
+
+            {tab === "subscription" && (
+              <div role="tabpanel" id="panel-subscription" aria-labelledby="tab-subscription">
+                {session.role === "admin" ? (
+                  <Subscription status={subscription.status} onPaid={subscription.refresh} />
+                ) : (
+                  <SubscriptionGate status={subscription.status} />
+                )}
+              </div>
             )}
 
             {tab === "account" && (

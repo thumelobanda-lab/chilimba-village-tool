@@ -1,6 +1,16 @@
 const SUBSCRIPTION_PRICE = 100; // K100
 const SUBSCRIPTION_DAYS = 182; // ~6 months
 
+// Every group without a CONFIRMED, unexpired subscription (see
+// isSubscriptionActive) is free tier — a real, usable state, not a
+// block screen: core ledger features work, capped at this many active
+// members, without premium features (receipts, automated reminders,
+// community-fund splitting — see communityFundSplit.js, Reminders.jsx,
+// and PUT /api/schedule's own check). One constant, checked in
+// joinGroup() (auth.js) so the cap is enforced where membership is
+// actually granted, not just displayed in the UI.
+export const FREE_TIER_MAX_MEMBERS = 8;
+
 export function subscriptionPrice() {
   return SUBSCRIPTION_PRICE;
 }

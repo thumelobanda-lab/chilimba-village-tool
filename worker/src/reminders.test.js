@@ -75,6 +75,16 @@ function dueDateTwoDaysOut() {
   return d.toISOString().slice(0, 10);
 }
 
+// Automated reminders are premium-only (see subscriptionUtils.js) — every
+// group fixture in this file needs an active subscription so these tests
+// keep exercising reminder-selection behavior, not the tier gate itself
+// (that gate has its own dedicated test below).
+function activeSubExpiry() {
+  const d = new Date();
+  d.setDate(d.getDate() + 60);
+  return d.toISOString();
+}
+
 function makeUser(id, overrides = {}) {
   return {
     id, name: id, displayName: id, pushEnabled: 1, smsEnabled: 0, phone: null, leadDays: 2,
@@ -89,8 +99,8 @@ describe("runReminderSweep (multi-tenant)", () => {
 
   it("runs an independent sweep per group and never mixes one group's members into another's", async () => {
     const groups = [
-      { id: "group-a", schedule_json: JSON.stringify([{ id: "d1", date: dueDate, group: "G1", payees: ["nobody"], due: 1000 }]), funds_json: "[]", recipient_exempt: 1 },
-      { id: "group-b", schedule_json: JSON.stringify([{ id: "d1", date: dueDate, group: "G1", payees: ["nobody"], due: 500 }]), funds_json: "[]", recipient_exempt: 1 },
+      { id: "group-a", schedule_json: JSON.stringify([{ id: "d1", date: dueDate, group: "G1", payees: ["nobody"], due: 1000 }]), funds_json: "[]", recipient_exempt: 1, subscription_expires_at: activeSubExpiry() },
+      { id: "group-b", schedule_json: JSON.stringify([{ id: "d1", date: dueDate, group: "G1", payees: ["nobody"], due: 500 }]), funds_json: "[]", recipient_exempt: 1, subscription_expires_at: activeSubExpiry() },
     ];
     const fake = makeFakeD1({
       groups,
@@ -111,8 +121,8 @@ describe("runReminderSweep (multi-tenant)", () => {
 
   it("scopes every per-group query by that group's id, not the previous group's", async () => {
     const groups = [
-      { id: "group-a", schedule_json: JSON.stringify([{ id: "d1", date: dueDate, group: "G1", payees: [], due: 1000 }]), funds_json: "[]", recipient_exempt: 1 },
-      { id: "group-b", schedule_json: JSON.stringify([{ id: "d1", date: dueDate, group: "G1", payees: [], due: 500 }]), funds_json: "[]", recipient_exempt: 1 },
+      { id: "group-a", schedule_json: JSON.stringify([{ id: "d1", date: dueDate, group: "G1", payees: [], due: 1000 }]), funds_json: "[]", recipient_exempt: 1, subscription_expires_at: activeSubExpiry() },
+      { id: "group-b", schedule_json: JSON.stringify([{ id: "d1", date: dueDate, group: "G1", payees: [], due: 500 }]), funds_json: "[]", recipient_exempt: 1, subscription_expires_at: activeSubExpiry() },
     ];
     const fake = makeFakeD1({
       groups,
@@ -133,7 +143,7 @@ describe("runReminderSweep (multi-tenant)", () => {
   });
 
   it("makes a fixed number of round trips per group regardless of how many members it has", async () => {
-    const oneGroupSmall = [{ id: "g", schedule_json: JSON.stringify([{ id: "d1", date: dueDate, group: "G1", payees: [], due: 1000 }]), funds_json: "[]", recipient_exempt: 1 }];
+    const oneGroupSmall = [{ id: "g", schedule_json: JSON.stringify([{ id: "d1", date: dueDate, group: "G1", payees: [], due: 1000 }]), funds_json: "[]", recipient_exempt: 1, subscription_expires_at: activeSubExpiry() }];
     const small = makeFakeD1({
       groups: oneGroupSmall,
       usersByGroup: { g: [makeUser("a")] },
@@ -155,7 +165,7 @@ describe("runReminderSweep (multi-tenant)", () => {
   });
 
   it("skips a date entirely for a member who has muted it, even though it would otherwise fire", () => {
-    const groups = [{ id: "g", schedule_json: JSON.stringify([{ id: "d1", date: dueDate, group: "G1", payees: [], due: 1000 }]), funds_json: "[]", recipient_exempt: 1 }];
+    const groups = [{ id: "g", schedule_json: JSON.stringify([{ id: "d1", date: dueDate, group: "G1", payees: [], due: 1000 }]), funds_json: "[]", recipient_exempt: 1, subscription_expires_at: activeSubExpiry() }];
     const fake = makeFakeD1({
       groups,
       usersByGroup: { g: [makeUser("alice")] },
@@ -174,7 +184,7 @@ describe("runReminderSweep (multi-tenant)", () => {
     // days out, so WITHOUT an override it would fire. A custom
     // leadDays of 5 for this specific date means it should NOT fire
     // today, since 2 !== 5.
-    const groups = [{ id: "g", schedule_json: JSON.stringify([{ id: "d1", date: dueDate, group: "G1", payees: [], due: 1000 }]), funds_json: "[]", recipient_exempt: 1 }];
+    const groups = [{ id: "g", schedule_json: JSON.stringify([{ id: "d1", date: dueDate, group: "G1", payees: [], due: 1000 }]), funds_json: "[]", recipient_exempt: 1, subscription_expires_at: activeSubExpiry() }];
     const fake = makeFakeD1({
       groups,
       usersByGroup: { g: [makeUser("alice")] },
@@ -188,11 +198,39 @@ describe("runReminderSweep (multi-tenant)", () => {
   });
 
   it("skips a group entirely when its schedule is empty, without erroring", async () => {
-    const groups = [{ id: "empty-group", schedule_json: "[]", funds_json: "[]", recipient_exempt: 1 }];
+    const groups = [{ id: "empty-group", schedule_json: "[]", funds_json: "[]", recipient_exempt: 1, subscription_expires_at: activeSubExpiry() }];
     const fake = makeFakeD1({ groups, usersByGroup: {}, overridesByGroup: {}, sentByGroup: {}, subsByGroup: {} });
 
     await expect(runReminderSweep({ DB: fake.DB })).resolves.not.toThrow();
     expect(fake.getBatchCalls()).toEqual([]);
+  });
+
+  it("skips a free-tier group entirely — automated reminders are premium-only", async () => {
+    const groups = [
+      { id: "free-group", schedule_json: JSON.stringify([{ id: "d1", date: dueDate, group: "G1", payees: [], due: 1000 }]), funds_json: "[]", recipient_exempt: 1, subscription_expires_at: null },
+    ];
+    const fake = makeFakeD1({ groups, usersByGroup: { "free-group": [makeUser("alice")] }, overridesByGroup: {}, sentByGroup: {}, subsByGroup: {} });
+
+    await runReminderSweep({ DB: fake.DB });
+    expect(sendPush).not.toHaveBeenCalled();
+    expect(fake.getBatchCalls()).toEqual([]);
+  });
+
+  it("skips a suspended group entirely, even with an active subscription", async () => {
+    const groups = [
+      {
+        id: "suspended-group",
+        schedule_json: JSON.stringify([{ id: "d1", date: dueDate, group: "G1", payees: [], due: 1000 }]),
+        funds_json: "[]",
+        recipient_exempt: 1,
+        subscription_expires_at: activeSubExpiry(),
+        suspended_at: "2026-08-01T00:00:00Z",
+      },
+    ];
+    const fake = makeFakeD1({ groups, usersByGroup: { "suspended-group": [makeUser("alice")] }, overridesByGroup: {}, sentByGroup: {}, subsByGroup: {} });
+
+    await runReminderSweep({ DB: fake.DB });
+    expect(sendPush).not.toHaveBeenCalled();
   });
 
   it("does nothing at all when there are no groups", async () => {

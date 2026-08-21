@@ -6,7 +6,7 @@ import Receipt from "./Receipt.jsx";
 
 const money = (n) => "K" + (Number(n) || 0).toLocaleString("en-ZM", { maximumFractionDigits: 0 });
 
-export default function Reconciliation({ config }) {
+export default function Reconciliation({ config, premiumActive }) {
   const [rowId, setRowId] = useState(() => pickDefaultRow(config.schedule)?.id);
   const [expanded, setExpanded] = useState(null); // one member's name at a time
   const [busyEntryId, setBusyEntryId] = useState(null);
@@ -167,7 +167,8 @@ export default function Reconciliation({ config }) {
                                   >●</span>
                                   <span>{money(e.amount)}</span>
                                   <span className="muted tiny">{new Date(e.recordedAt).toLocaleDateString()}</span>
-                                  {e.confirmedAt && (
+                                  {/* Receipts are a premium feature — see FreeTierBanner.jsx */}
+                                  {e.confirmedAt && premiumActive && (
                                     <button
                                       className="receipt-link"
                                       onClick={() => setReceiptFor({ payment: e, memberName: e.memberName })}

@@ -54,6 +54,17 @@ export async function realFetch(path, opts = {}) {
     },
     ...opts,
   });
-  if (!res.ok) throw new Error(`API error ${res.status}`);
+  if (!res.ok) {
+    // Every route in worker/src/routes/ throws an HttpError with a
+    // specific, user-facing message (e.g. "That group code is already
+    // taken", "This group is on the free plan...") which index.js
+    // returns as {error: "..."} — this used to be discarded entirely in
+    // favor of a generic "API error 409", so every one of those
+    // messages was silently unreachable in real (non-mock) mode. Falls
+    // back to the generic form only if the body isn't the expected
+    // shape (a malformed response, a proxy's own error page, etc.).
+    const body = await res.json().catch(() => null);
+    throw new Error(body?.error || `API error ${res.status}`);
+  }
   return res.json();
 }

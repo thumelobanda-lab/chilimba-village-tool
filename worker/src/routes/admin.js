@@ -5,6 +5,7 @@ import { json } from "../responses.js";
 import { isRecipient as isRecipientHelper, resolveDue, findNextDue } from "../scheduleUtils.js";
 import { wouldLeaveZeroAdmins } from "../adminUtils.js";
 import { computeCommunityFundSplit, EFFECTIVE_CONTRIBUTION_SQL, COMMUNITY_FUND_ID } from "../communityFundSplit.js";
+import { isSubscriptionActive } from "../subscriptionUtils.js";
 
 export default function registerAdminRoutes(router) {
   // The admin roster: every active member, their role, when they joined,
@@ -247,9 +248,15 @@ export default function registerAdminRoutes(router) {
     if (!owned) throw new HttpError(404, "Payment not found in your group.");
     if (owned.confirmedAt) return json({ ok: true }, 200, cors); // already confirmed — no-op
 
-    const group = await env.DB.prepare(`SELECT community_fund_deduction FROM groups WHERE id = ?`)
+    const group = await env.DB.prepare(`SELECT community_fund_deduction, subscription_expires_at FROM groups WHERE id = ?`)
       .bind(admin.groupId).first();
-    const { fundAmount } = computeCommunityFundSplit(owned.amount, group?.community_fund_deduction || 0);
+    // Defense in depth: PUT /api/schedule already refuses to SET a
+    // deduction rate on a free-tier group, but a subscription can also
+    // EXPIRE after one was set — this makes sure a lapsed group's
+    // payments stop splitting the moment it drops to free tier, not
+    // just at the point someone tries to raise the rate again.
+    const deductionRate = isSubscriptionActive(group?.subscription_expires_at) ? (group?.community_fund_deduction || 0) : 0;
+    const { fundAmount } = computeCommunityFundSplit(owned.amount, deductionRate);
 
     const stmts = [
       env.DB.prepare(

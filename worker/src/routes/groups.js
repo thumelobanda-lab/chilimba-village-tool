@@ -12,7 +12,11 @@ export default function registerGroupRoutes(router) {
     if (!body.slug || !body.groupName || !body.adminName || !body.pin) {
       throw new HttpError(400, "slug, groupName, adminName, and pin are all required.");
     }
-    const session = await createGroup(env, body);
+    // A fraud-detection fingerprint only (routes/owner.js's overview),
+    // never used to gate creation itself — group creation stays
+    // self-service regardless of what this header does or doesn't say.
+    const createdIp = request.headers.get("CF-Connecting-IP") || null;
+    const session = await createGroup(env, { ...body, createdIp });
     return json(session, 201, cors);
   });
 }

@@ -15,6 +15,7 @@ import registerFundsRoutes from "./routes/funds.js";
 import registerAdminRoutes from "./routes/admin.js";
 import registerNoticeRoutes from "./routes/notices.js";
 import registerDashboardRoutes from "./routes/dashboard.js";
+import registerOwnerRoutes from "./routes/owner.js";
 
 const router = createRouter();
 router.use(registerAuthRoutes);
@@ -29,6 +30,7 @@ router.use(registerFundsRoutes);
 router.use(registerAdminRoutes);
 router.use(registerNoticeRoutes);
 router.use(registerDashboardRoutes);
+router.use(registerOwnerRoutes);
 
 export default {
   async fetch(request, env, ctx) {

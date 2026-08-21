@@ -40,11 +40,26 @@ CREATE TABLE IF NOT EXISTS groups (
   community_fund_deduction REAL NOT NULL DEFAULT 0, -- fixed K amount split off
                                              -- every payment into the community
                                              -- fund once an admin confirms it
-                                             -- (see migration 007) — 0 means off
-  subscription_expires_at TEXT,             -- NULL until the group's admin pays;
-                                             -- see group_subscriptions for the K100/
-                                             -- 6-month history — this column is just
-                                             -- the fast active/expired check
+                                             -- (see migration 007) — 0 means off;
+                                             -- a PREMIUM-only feature (see
+                                             -- subscriptionUtils.js) — rejected by
+                                             -- PUT /api/schedule on a free-tier group
+  subscription_expires_at TEXT,             -- NULL until a platform owner CONFIRMS a
+                                             -- real payment (see group_subscriptions'
+                                             -- pending/confirmed/rejected workflow,
+                                             -- migration 008) — every group without
+                                             -- this set is free tier: usable, but
+                                             -- capped (FREE_TIER_MAX_MEMBERS) and
+                                             -- without premium features
+  created_ip TEXT,                          -- cf-connecting-ip at creation — a fraud
+                                             -- signal for the owner dashboard (same
+                                             -- IP spinning up several groups fast)
+  created_by_phone TEXT,                    -- optional, if the creating admin gave one
+  suspended_at TEXT,                        -- set by a platform owner; a suspended
+                                             -- group's members are all signed out and
+                                             -- can't sign back in until unsuspended
+  suspended_reason TEXT,
+  suspended_by TEXT,                        -- owner email
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_by TEXT
@@ -177,22 +192,56 @@ CREATE TABLE IF NOT EXISTS subscriptions (
   expires_at TEXT NOT NULL
 );
 
--- The group's subscription IS its access to the app — K100 every 6
--- months, paid once by an admin, benefits every member of the group.
--- Regular members never see a payment prompt. groups.subscription_expires_at
--- is the fast check; this table is the paid history (who, when, how).
+-- The group's subscription IS its access to premium features — K100
+-- every 6 months, submitted once by an admin, benefits every member of
+-- the group. Regular members never see a payment form. A submission
+-- lands here as 'pending' and does NOT touch groups.subscription_expires_at
+-- by itself (see routes/subscription.js) — only a platform owner
+-- confirming it (routes/owner.js, after checking the money actually
+-- arrived, same trust model as migration 004's payment confirmation)
+-- sets expires_at here and on the group. This is what actually closes
+-- the "always succeeds" gap the pre-migration-008 charge endpoint had.
 CREATE TABLE IF NOT EXISTS group_subscriptions (
   id TEXT PRIMARY KEY,
   group_id TEXT NOT NULL REFERENCES groups(id),
-  paid_by TEXT NOT NULL,          -- display name of the admin who paid
+  paid_by TEXT NOT NULL,          -- display name of the admin who submitted the claim
   masked_phone TEXT NOT NULL,
   network TEXT NOT NULL,
   amount REAL NOT NULL,
   reference TEXT NOT NULL,
-  paid_at TEXT NOT NULL,
-  expires_at TEXT NOT NULL
+  paid_at TEXT NOT NULL,          -- when the claim was submitted
+  status TEXT NOT NULL DEFAULT 'pending', -- 'pending' | 'confirmed' | 'rejected'
+  expires_at TEXT,                -- set only once confirmed, from confirm time
+  confirmed_at TEXT,
+  confirmed_by TEXT,              -- owner email
+  notes TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_group_subscriptions_group ON group_subscriptions(group_id);
+CREATE INDEX IF NOT EXISTS idx_group_subscriptions_status ON group_subscriptions(status);
+
+-- Platform owner — entirely separate from any group's admin. Its own
+-- table with its own primary-key/token space (see owner_sessions below)
+-- so a compromised group-admin session can never be looked up here; no
+-- HTTP path creates a row in this table (see scripts/create-owner.sh,
+-- which writes the first — and any subsequent — owner directly via
+-- `wrangler d1 execute`, requiring actual Cloudflare account access).
+CREATE TABLE IF NOT EXISTS owners (
+  id TEXT PRIMARY KEY,
+  email TEXT NOT NULL UNIQUE,
+  password_hash TEXT NOT NULL,    -- PBKDF2-SHA256, same crypto.js as PINs, applied
+                                   -- to a real password instead of a 4-digit PIN
+  password_salt TEXT NOT NULL,
+  failed_attempts INTEGER NOT NULL DEFAULT 0,
+  locked_until TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS owner_sessions (
+  token TEXT PRIMARY KEY,
+  owner_id TEXT NOT NULL REFERENCES owners(id),
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  expires_at TEXT NOT NULL
+);
 
 -- Admin-to-members announcements, scoped to one group.
 CREATE TABLE IF NOT EXISTS notices (

@@ -15,6 +15,7 @@ export default function LedgerTable({
   memberName,
   groupName,
   cycleName,
+  premiumActive,
 }) {
   // One receipt modal for the whole table (not per-row) — only one entry's
   // receipt is ever open at a time, and keeping it here means Receipt
@@ -46,6 +47,7 @@ export default function LedgerTable({
               onEditPayment={onEditPayment}
               onSetDueOverride={onSetDueOverride}
               onViewReceipt={(payment) => setReceiptFor({ payment, row: r })}
+              premiumActive={premiumActive}
             />
           ))}
         </tbody>
@@ -75,7 +77,7 @@ export default function LedgerTable({
   );
 }
 
-function RowWithHistory({ row, isRecipient, onAddPayment, onVoidPayment, onEditPayment, onSetDueOverride, onViewReceipt }) {
+function RowWithHistory({ row, isRecipient, onAddPayment, onVoidPayment, onEditPayment, onSetDueOverride, onViewReceipt, premiumActive }) {
   const [open, setOpen] = useState(false);
   const [editingDue, setEditingDue] = useState(false);
   const [dueDraft, setDueDraft] = useState(row.due);
@@ -233,7 +235,8 @@ function RowWithHistory({ row, isRecipient, onAddPayment, onVoidPayment, onEditP
                       ) : (
                         editingEntryId !== e.id && (
                           <>
-                            {e.confirmedAt && (
+                            {/* Receipts are a premium feature — see FreeTierBanner.jsx */}
+                            {e.confirmedAt && premiumActive && (
                               <button className="receipt-link" onClick={() => onViewReceipt(e)}>🧾 Receipt</button>
                             )}
                             <button className="btn-link" onClick={() => onVoidPayment(e.id)}>void</button>

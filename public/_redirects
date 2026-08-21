@@ -1,0 +1,4 @@
+# Cloudflare Pages SPA fallback — without this, navigating straight to
+# /owner (or reloading on it) 404s at the edge instead of ever reaching
+# main.jsx's path check, since there's no actual /owner file on disk.
+/*    /index.html   200
