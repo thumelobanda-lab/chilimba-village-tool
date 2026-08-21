@@ -17,6 +17,24 @@ import { json } from "../responses.js";
 // admin's job (there's no self-service path for that, same as removing
 // or promoting a member).
 export default function registerProfileRoutes(router) {
+  // Refreshes a member's own session info — name, role, group — from
+  // the database. requireSession() already re-reads `role` fresh on
+  // every authenticated request (see the comment in auth.js), so the
+  // backend side of a promotion/demotion is correct the instant it
+  // happens; what's stale is the frontend's cached session object,
+  // which only gets set once at login. Called on window focus (see
+  // useSession.js's refreshSession) so a member promoted in another tab
+  // sees their new admin access without needing to sign out and back in.
+  router.get("/api/me", async ({ request, env, cors }) => {
+    const session = await requireSession(request, env);
+    return json({
+      name: session.name,
+      role: session.role,
+      groupSlug: session.groupSlug,
+      groupName: session.groupName,
+    }, 200, cors);
+  });
+
   router.put("/api/me", async ({ request, env, cors }) => {
     const session = await requireSession(request, env);
     const { displayName, currentPin, newPin } = await request.json();

@@ -13,7 +13,7 @@ function getInviteSlugFromUrl() {
   return new URLSearchParams(window.location.search).get("join") || "";
 }
 
-export default function Login({ onLogin }) {
+export default function Login({ onLogin, sessionEndedNotice }) {
   const [inviteSlug] = useState(getInviteSlugFromUrl);
   const [mode, setMode] = useState(inviteSlug ? "join" : "signin"); // "join" | "signin"
   const [groupSlug, setGroupSlug] = useState(
@@ -55,6 +55,13 @@ export default function Login({ onLogin }) {
 
   return (
     <div className="panel login-panel">
+      {sessionEndedNotice && (
+        <div className="error-text" role="alert" style={{ marginBottom: 14 }}>
+          Your session ended — this can happen if your access changed (e.g. you were
+          promoted or removed) while you were signed in elsewhere. Sign in again to
+          continue with your current access.
+        </div>
+      )}
       <div className="auth-mode-toggle" role="tablist" aria-label="Sign up or sign in">
         <button
           role="tab"

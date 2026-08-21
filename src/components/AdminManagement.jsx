@@ -17,6 +17,11 @@ function isNewMember(joinedAt) {
 
 export default function AdminManagement() {
   const { data, error: loadError, loading, refresh } = useApiData(getGroupMembers, []);
+  // Selectable, not free-text — picking straight from the real roster
+  // rules out typos or promoting the wrong person entirely, rather than
+  // just reducing the risk. Already-admin members are excluded since
+  // promoting one again is a no-op.
+  const promotableMembers = (data?.members || []).filter((m) => m.role !== "admin");
   const [promoteName, setPromoteName] = useState("");
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState("");
@@ -155,16 +160,23 @@ export default function AdminManagement() {
 
           <div className="field-row" style={{ alignItems: "flex-end", marginTop: 12 }}>
             <label className="field">
-              Promote a member by name
-              <input
-                value={promoteName}
-                onChange={(e) => setPromoteName(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handlePromote()}
-                placeholder="e.g. Doreen"
-                disabled={busy}
-              />
+              Promote a member
+              {promotableMembers.length === 0 ? (
+                <span className="muted small">Everyone here is already an admin.</span>
+              ) : (
+                <select
+                  value={promoteName}
+                  onChange={(e) => setPromoteName(e.target.value)}
+                  disabled={busy}
+                >
+                  <option value="">Select a member…</option>
+                  {promotableMembers.map((m) => (
+                    <option key={m.name} value={m.name}>{m.name}</option>
+                  ))}
+                </select>
+              )}
             </label>
-            <button className="btn-ghost-dark" disabled={busy || !promoteName.trim()} onClick={handlePromote}>
+            <button className="btn-ghost-dark" disabled={busy || !promoteName} onClick={handlePromote}>
               Promote
             </button>
             <span className="muted small" aria-live="polite">{status}</span>

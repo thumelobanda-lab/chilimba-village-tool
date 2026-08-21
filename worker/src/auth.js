@@ -20,7 +20,8 @@ export async function getSessionUser(request, env) {
   if (!token) return null;
 
   const row = await env.DB.prepare(
-    `SELECT s.expires_at, u.id, u.display_name, u.role, u.active, u.group_id as groupId, g.slug as groupSlug
+    `SELECT s.expires_at, u.id, u.display_name, u.role, u.active,
+            u.group_id as groupId, g.slug as groupSlug, g.group_name as groupName
      FROM sessions s
      JOIN users u ON u.id = s.user_id
      JOIN groups g ON g.id = u.group_id
@@ -31,10 +32,22 @@ export async function getSessionUser(request, env) {
   if (new Date(row.expires_at).getTime() < Date.now()) return null;
   // Checked on every request, not just at login — if an admin removes
   // this member while they're mid-session, access is revoked immediately
-  // rather than lingering until their token naturally expires.
+  // rather than lingering until their token naturally expires. The same
+  // freshness is why GET /api/me (routes/profile.js) exists: role here
+  // is read from `users` on every call, never cached on the token, so a
+  // promotion is already correct server-side the instant it happens —
+  // /api/me just lets the frontend catch up its own stale session state.
   if (!row.active) return null;
 
-  return { id: row.id, name: row.display_name, role: row.role, groupId: row.groupId, groupSlug: row.groupSlug, token };
+  return {
+    id: row.id,
+    name: row.display_name,
+    role: row.role,
+    groupId: row.groupId,
+    groupSlug: row.groupSlug,
+    groupName: row.groupName,
+    token,
+  };
 }
 
 export async function requireSession(request, env) {

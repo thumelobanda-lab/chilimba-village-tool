@@ -42,7 +42,7 @@ function greeting() {
 }
 
 export default function App() {
-  const { session, login, createAdditionalGroup, logout, renameSession } = useSession();
+  const { session, login, createAdditionalGroup, logout, renameSession, refreshSession } = useSession();
   const { config, setConfig } = useGroupConfig(session);
   const {
     ledger,
@@ -62,6 +62,7 @@ export default function App() {
   const [tab, setTab] = useState("home");
   const [showCalculator, setShowCalculator] = useState(false);
   const [showWalkthrough, setShowWalkthrough] = useState(false);
+  const [sessionEndedNotice, setSessionEndedNotice] = useState(false);
 
   // Auto-opens once per account, the first time the dashboard is actually
   // reached (after login, onboarding, and the subscription gate) —
@@ -86,8 +87,32 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Catches up a stale session (most importantly: role, after being
+  // promoted/demoted elsewhere) whenever this tab regains focus — covers
+  // the realistic case of "an admin promoted me while I had this tab in
+  // the background" without polling constantly. If the session turns
+  // out to be invalid outright (expired, account removed), refreshSession
+  // already logs out cleanly; this just surfaces why, instead of
+  // silently dropping back to the login screen with no explanation.
+  useEffect(() => {
+    if (!session) return;
+    const onFocus = () => {
+      if (document.visibilityState !== "hidden") {
+        refreshSession().catch(() => setSessionEndedNotice(true));
+      }
+    };
+    document.addEventListener("visibilitychange", onFocus);
+    window.addEventListener("focus", onFocus);
+    return () => {
+      document.removeEventListener("visibilitychange", onFocus);
+      window.removeEventListener("focus", onFocus);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.token]);
+
   const handleLogin = async (groupSlug, name, pin) => {
     const user = await login(groupSlug, name, pin);
+    setSessionEndedNotice(false);
     if (user.isNew) onboarding.trigger();
   };
 
@@ -142,7 +167,7 @@ export default function App() {
 
       <main className="app-main">
         {!session ? (
-          <Login onLogin={handleLogin} />
+          <Login onLogin={handleLogin} sessionEndedNotice={sessionEndedNotice} />
         ) : onboarding.needsOnboarding ? (
           <Onboarding
             groupName={session.groupName}

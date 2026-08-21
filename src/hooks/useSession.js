@@ -1,5 +1,11 @@
 import { useState } from "react";
-import { currentSession, login as apiLogin, createGroup as apiCreateGroup, logout as apiLogout } from "../lib/api.js";
+import {
+  currentSession,
+  login as apiLogin,
+  createGroup as apiCreateGroup,
+  logout as apiLogout,
+  getMe as apiGetMe,
+} from "../lib/api.js";
 
 /**
  * Owns just the session lifecycle. Doesn't know about the ledger or
@@ -39,6 +45,27 @@ export function useSession() {
     setSession(null);
   };
 
+  // Catches up a stale session — most notably role, after being
+  // promoted/demoted by another admin in a different tab/session — by
+  // re-reading it from the backend (getMe(), which requireSession()
+  // already checks fresh on every request server-side; this just syncs
+  // the frontend's cached copy). App.jsx calls this on window
+  // focus/visibility. If the session is no longer valid at all (token
+  // expired, account removed) rather than merely changed, this logs out
+  // cleanly and rethrows so the caller can show a "sign in again"
+  // message — never leaves a half-stale session sitting around.
+  const refreshSession = async () => {
+    if (!session) return;
+    try {
+      const fresh = await apiGetMe();
+      setSession((prev) => (prev ? { ...prev, ...fresh } : prev));
+    } catch (e) {
+      apiLogout();
+      setSession(null);
+      throw e;
+    }
+  };
+
   // updateProfile() (lib/api/profile.js) already persists the new display
   // name to the stored session in localStorage — this just mirrors that
   // into the in-memory session so the header greeting and every other
@@ -48,5 +75,5 @@ export function useSession() {
     setSession((prev) => (prev ? { ...prev, name } : prev));
   };
 
-  return { session, login, createGroup, createAdditionalGroup, logout, renameSession };
+  return { session, login, createGroup, createAdditionalGroup, logout, renameSession, refreshSession };
 }

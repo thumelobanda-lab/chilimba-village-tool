@@ -12,7 +12,7 @@ vi.mock("./core.js", () => ({
   groupScopedKey: vi.fn(),
 }));
 
-import { updateProfile } from "./profile.js";
+import { updateProfile, getMe } from "./profile.js";
 import { lsSet, realFetch, currentSession } from "./core.js";
 
 const baseSession = {
@@ -63,6 +63,43 @@ describe("updateProfile (real-mode branch)", () => {
     realFetch.mockRejectedValue(new Error("API error 401"));
 
     await expect(updateProfile({ currentPin: "0000", newPin: "1111" })).rejects.toThrow("API error 401");
+    expect(lsSet).not.toHaveBeenCalled();
+  });
+});
+
+describe("getMe (real-mode branch)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    currentSession.mockReturnValue(baseSession);
+  });
+
+  it("rejects when nobody is signed in", async () => {
+    currentSession.mockReturnValue(null);
+    await expect(getMe()).rejects.toThrow(/not signed in/i);
+    expect(realFetch).not.toHaveBeenCalled();
+  });
+
+  it("GETs /api/me with no body", async () => {
+    realFetch.mockResolvedValue({ name: "Harriet", role: "admin", groupSlug: "hillcrest", groupName: "Hillcrest Chilimba" });
+
+    await getMe();
+
+    expect(realFetch).toHaveBeenCalledWith("/api/me");
+  });
+
+  it("persists the refreshed role/name/group into the session, keeping the token", async () => {
+    realFetch.mockResolvedValue({ name: "Harriet", role: "admin", groupSlug: "hillcrest", groupName: "Hillcrest Chilimba" });
+
+    const result = await getMe();
+
+    expect(lsSet).toHaveBeenCalledWith("chilimba:session", { ...baseSession, role: "admin" });
+    expect(result.role).toBe("admin");
+  });
+
+  it("propagates a Worker rejection (e.g. session no longer valid) instead of persisting anything", async () => {
+    realFetch.mockRejectedValue(new Error("API error 401"));
+
+    await expect(getMe()).rejects.toThrow("API error 401");
     expect(lsSet).not.toHaveBeenCalled();
   });
 });
