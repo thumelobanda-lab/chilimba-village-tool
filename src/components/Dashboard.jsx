@@ -35,7 +35,7 @@ function formatDate(dateISO) {
  * behind NavMenu now, reachable but no longer competing for space on the
  * screen you land on.
  */
-export default function Dashboard({ session, config, ledger, totals, onOpenReconciliation }) {
+export default function Dashboard({ session, config, ledger, totals, onOpenReconciliation, onOpenLedger, onOpenGroupSetup }) {
   const { data: fundsData, loading: fundsLoading } = useApiData(getGroupFunds, []);
   const { data: pulseData, loading: pulseLoading } = useApiData(getGroupPulse, []);
   // Admin-only — a regular member has no access to this endpoint (see
@@ -93,7 +93,14 @@ export default function Dashboard({ session, config, ledger, totals, onOpenRecon
       {recentPayout && <PayoutAcknowledgment groupSlug={session.groupSlug} row={recentPayout} />}
 
       <div className="dashboard-grid">
-        <div className="vital-card">
+        <div
+          className={"vital-card" + (onOpenLedger ? " vital-card-clickable" : "")}
+          onClick={onOpenLedger}
+          onKeyDown={onOpenLedger ? (e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onOpenLedger()) : undefined}
+          role={onOpenLedger ? "button" : undefined}
+          tabIndex={onOpenLedger ? 0 : undefined}
+          title={onOpenLedger ? "Go to My Ledger" : undefined}
+        >
           <div className="vital-card-label">Next Payment Due</div>
           {nextDue ? (
             <>
@@ -129,6 +136,15 @@ export default function Dashboard({ session, config, ledger, totals, onOpenRecon
           <div>
             <div className="vital-card-label">Cycle Progress</div>
             {config.cycleName && <div className="panel-subtitle" style={{ margin: "2px 0 0" }}>{config.cycleName}</div>}
+            {session?.role === "admin" && onOpenGroupSetup && (
+              <button
+                className="btn-link"
+                style={{ display: "block", marginTop: 4 }}
+                onClick={onOpenGroupSetup}
+              >
+                ⚙ Manage schedule
+              </button>
+            )}
           </div>
           <ProgressRing
             percent={cycle.percent}

@@ -1,13 +1,24 @@
+/* Theme: "money growth, health, prosperity" — deep forest green as the
+   primary brand color (header, primary buttons, progress-ring base
+   state), warm gold reserved for meaningful moments only (progress-ring
+   glow, confirmations, milestones, the admin badge — never a default/
+   neutral UI color), warm ivory instead of stark white, deep charcoal
+   instead of near-black text. --green/--pending/--red are status colors,
+   deliberately distinct hues from the brand pair above so "this succeeded"
+   reads differently from "this is gold-branded" at a glance. */
 :root {
-  --ink: #1B3A5C;
-  --ink-faint: #5C7188;
-  --line: #DDE3E8;
-  --bg: #F6F8FA;
-  --panel: #FFFFFF;
-  --accent: #1F4B3F;
-  --accent-2: #C99A3D;
-  --red: #B3232F;
-  --green: #2F6B4F;
+  --ink: #2A2A28;
+  --ink-faint: #6E685F;
+  --line: #E6DFCF;
+  --bg: #FAF7F0;
+  --panel: #FFFDF8;
+  --accent: #0F4C3A;
+  --accent-light: #1B5E42;
+  --accent-2: #C9962E;
+  --accent-2-light: #D4A94A;
+  --red: #B5453A;
+  --green: #3A8B5C;
+  --pending: #E0A458;
   font-family: "Inter", "IBM Plex Sans", system-ui, sans-serif;
 }
 
@@ -17,7 +28,7 @@ body { margin: 0; background: var(--bg); color: var(--ink); }
 .app-shell { min-height: 100vh; display: flex; flex-direction: column; }
 
 .app-header {
-  background: linear-gradient(135deg, var(--accent), #163a30);
+  background: linear-gradient(135deg, var(--accent), #0A3729);
   color: white;
   padding: 14px 20px;
   display: flex;
@@ -84,7 +95,7 @@ body { margin: 0; background: var(--bg); color: var(--ink); }
   cursor: pointer;
 }
 .nav-menu-item:hover { background: #F0F2F4; }
-.nav-menu-item-active { color: var(--accent); background: #EAF3EE; }
+.nav-menu-item-active { color: var(--accent); background: #E7F1EB; }
 .nav-menu-divider { border-top: 1px solid var(--line); margin: 6px 2px; }
 
 .back-link { display: inline-block; margin-bottom: 14px; }
@@ -213,7 +224,7 @@ body { margin: 0; background: var(--bg); color: var(--ink); }
 .status-paid { color: var(--green); font-weight: 600; font-size: 0.85rem; }
 
 .setup-header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
-.badge-admin { background: #FCEFD9; color: #8A5A12; }
+.badge-admin { background: #FBF0DC; color: #8A6A1C; }
 
 /* Group Setup's collapsible sections — each expands independently so an
    admin sees the shape of the whole setup (via the summary text) without
@@ -336,7 +347,7 @@ body { margin: 0; background: var(--bg); color: var(--ink); }
   .btn-confirmed { animation: none; }
 }
 
-.tag-rate { background: #FCEFD9; color: #8A5A12; }
+.tag-rate { background: #FBF0DC; color: #8A6A1C; }
 .due-edit { display: inline-flex; align-items: center; gap: 6px; }
 
 .link-amount {
@@ -391,14 +402,14 @@ body { margin: 0; background: var(--bg); color: var(--ink); }
 }
 .card-warn { border-left-color: var(--red); }
 .card-highlight { border-left-color: var(--accent-2); }
-.card-highlight .card-value { color: #8A5A12; }
+.card-highlight .card-value { color: #8A6A1C; }
 .card-label { font-size: 0.7rem; text-transform: uppercase; color: var(--ink-faint); letter-spacing: 0.03em; }
 .card-value { font-size: 1.3rem; font-weight: 700; margin-top: 4px; }
 .card-warn .card-value { color: var(--red); }
 
 /* Notice board — admin-to-members announcements at the top of the dashboard */
 .notice-board {
-  background: #FFF8E8;
+  background: #FDF3E2;
   border: 1px solid var(--accent-2);
   border-radius: 6px;
   padding: 12px 16px;
@@ -406,7 +417,7 @@ body { margin: 0; background: var(--bg); color: var(--ink); }
 }
 .notice-item {
   padding: 6px 0;
-  border-bottom: 1px dashed rgba(201, 154, 61, 0.35);
+  border-bottom: 1px dashed rgba(201, 150, 46, 0.35);
 }
 .notice-item:last-of-type { border-bottom: none; }
 .notice-message { font-size: 0.92rem; color: var(--ink); font-weight: 500; }
@@ -534,15 +545,15 @@ body { margin: 0; background: var(--bg); color: var(--ink); }
 }
 .confirm-bulb-on { color: var(--green); }
 .confirm-bulb-off { color: var(--line); }
-.confirm-bulb-pending { color: #B8860B; }
+.confirm-bulb-pending { color: var(--pending); }
 .confirm-bulb-rejected { color: var(--red); }
 .rejected-reason { color: var(--red); }
 
 /* Admin's "N pending confirmations" queue (Reconciliation.jsx) and the
    matching callout on the dashboard (Dashboard.jsx). */
 .pending-queue-banner {
-  background: #FFF8E6;
-  border: 1px solid #B8860B;
+  background: #FBEFDD;
+  border: 1px solid var(--pending);
   border-radius: 10px;
   padding: 10px 14px;
   margin-bottom: 16px;
@@ -630,6 +641,14 @@ body { margin: 0; background: var(--bg); color: var(--ink); }
   border-radius: 8px;
   padding: 16px 18px;
 }
+.vital-card-clickable {
+  cursor: pointer;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.vital-card-clickable:hover, .vital-card-clickable:focus-visible {
+  border-color: var(--accent);
+  box-shadow: 0 2px 10px rgba(15, 76, 58, 0.15);
+}
 .vital-card-label {
   font-size: 0.72rem;
   text-transform: uppercase;
@@ -692,7 +711,7 @@ body { margin: 0; background: var(--bg); color: var(--ink); }
 .cycle-node-past .cycle-node-dot { background: var(--accent); }
 .cycle-node-next .cycle-node-dot {
   background: var(--accent-2);
-  box-shadow: 0 0 0 3px rgba(201, 154, 61, 0.22);
+  box-shadow: 0 0 0 3px rgba(201, 150, 46, 0.22);
 }
 .cycle-node-future .cycle-node-dot { background: var(--panel); border: 2px solid var(--line); }
 .cycle-node-date { font-size: 0.68rem; color: var(--ink-faint); margin-top: 4px; }
@@ -707,7 +726,7 @@ body { margin: 0; background: var(--bg); color: var(--ink); }
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.cycle-node-next .cycle-node-payee { color: #8A5A12; }
+.cycle-node-next .cycle-node-payee { color: #8A6A1C; }
 
 /* Upcoming — the next few group-wide payout dates, so there's always
    something relevant even between the member's own due dates. */
@@ -758,7 +777,7 @@ body { margin: 0; background: var(--bg); color: var(--ink); }
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  background: #FFF8E8;
+  background: #FDF3E2;
   border: 1px solid var(--accent-2);
   border-radius: 8px;
   padding: 10px 14px;
@@ -793,7 +812,7 @@ body { margin: 0; background: var(--bg); color: var(--ink); }
 }
 
 .progress-ring-glow .progress-ring-arc {
-  filter: drop-shadow(0 0 6px rgba(201, 154, 61, 0.65));
+  filter: drop-shadow(0 0 6px rgba(201, 150, 46, 0.65));
 }
 @media (prefers-reduced-motion: no-preference) {
   .progress-ring-glow .progress-ring-arc {
@@ -801,8 +820,8 @@ body { margin: 0; background: var(--bg); color: var(--ink); }
   }
 }
 @keyframes progress-ring-pulse {
-  0%, 100% { filter: drop-shadow(0 0 4px rgba(201, 154, 61, 0.5)); }
-  50% { filter: drop-shadow(0 0 10px rgba(201, 154, 61, 0.9)); }
+  0%, 100% { filter: drop-shadow(0 0 4px rgba(201, 150, 46, 0.5)); }
+  50% { filter: drop-shadow(0 0 10px rgba(201, 150, 46, 0.9)); }
 }
 
 /* Payment receipt — modal reuses .calc-modal-backdrop/.calc-modal (see

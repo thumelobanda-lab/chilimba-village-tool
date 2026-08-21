@@ -213,6 +213,8 @@ export default function App() {
                   ledger={ledger}
                   totals={totals}
                   onOpenReconciliation={session.role === "admin" ? () => setTab("reconciliation") : undefined}
+                  onOpenLedger={() => setTab("ledger")}
+                  onOpenGroupSetup={session.role === "admin" ? () => setTab("setup") : undefined}
                 />
               </>
             )}
