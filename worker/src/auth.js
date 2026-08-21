@@ -76,15 +76,30 @@ export async function loginOrCreate(env, groupSlug, name, pin) {
   let user = await env.DB.prepare(`SELECT * FROM users WHERE group_id = ? AND name = ?`)
     .bind(group.id, key).first();
   const isNew = !user;
+  // An admin-reset account (see POST /api/admin/reset-pin) has its
+  // pin_hash cleared to '' rather than the row being deleted — role,
+  // display name, and payment history all stay intact, only the PIN
+  // itself needs setting again. Treated the same as a brand-new signup
+  // for this one login: whatever PIN is submitted here becomes the
+  // account's new PIN, since there's no old hash left to verify against.
+  const needsPinSet = isNew || !user.pin_hash;
 
-  if (!user) {
+  if (needsPinSet) {
+    if (user && !user.active) throw new HttpError(403, "This account has been removed by an admin.");
     const salt = randomSalt();
     const hash = await hashPin(pin, salt);
-    const id = uid();
-    await env.DB.prepare(
-      `INSERT INTO users (id, group_id, name, display_name, pin_salt, pin_hash) VALUES (?, ?, ?, ?, ?, ?)`
-    ).bind(id, group.id, key, name.trim(), salt, hash).run();
-    user = { id, group_id: group.id, name: key, display_name: name.trim(), role: "member" };
+    if (isNew) {
+      const id = uid();
+      await env.DB.prepare(
+        `INSERT INTO users (id, group_id, name, display_name, pin_salt, pin_hash) VALUES (?, ?, ?, ?, ?, ?)`
+      ).bind(id, group.id, key, name.trim(), salt, hash).run();
+      user = { id, group_id: group.id, name: key, display_name: name.trim(), role: "member" };
+    } else {
+      await env.DB.prepare(
+        `UPDATE users SET pin_salt = ?, pin_hash = ?, failed_attempts = 0, locked_until = NULL WHERE id = ?`
+      ).bind(salt, hash, user.id).run();
+      user = { ...user, pin_salt: salt, pin_hash: hash };
+    }
   } else {
     if (!user.active) {
       throw new HttpError(403, "This account has been removed by an admin.");

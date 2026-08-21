@@ -95,9 +95,11 @@ export default function CreateGroup({ onCreate, onBackToLogin }) {
       <button className="btn-primary" disabled={busy} onClick={submit}>
         {busy ? "Creating…" : "Create group"}
       </button>
-      <button className="btn-link" style={{ display: "block", margin: "10px auto 0" }} onClick={onBackToLogin} disabled={busy}>
-        Already have a group code? Sign in instead
-      </button>
+      {onBackToLogin && (
+        <button className="btn-link" style={{ display: "block", margin: "10px auto 0" }} onClick={onBackToLogin} disabled={busy}>
+          Already have a group code? Sign in instead
+        </button>
+      )}
     </div>
   );
 }

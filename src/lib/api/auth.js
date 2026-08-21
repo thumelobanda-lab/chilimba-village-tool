@@ -31,18 +31,29 @@ export async function login(groupSlug, name, pin) {
     const key = accountKey(slug, name);
     const existing = lsGet(key, null);
     let role = "member";
+    // An admin-reset account (see resetMemberPin in members.js) has its
+    // hash/salt cleared rather than being deleted — treated the same as
+    // a brand-new signup for PIN purposes: whatever's typed here becomes
+    // the new PIN, since there's no old one left to verify against.
+    const needsPinSet = !existing || !existing.hash;
 
-    if (!existing) {
+    if (needsPinSet) {
+      if (existing?.active === false) throw new Error("This account has been removed by an admin.");
       const salt = randomSalt();
       const hash = await hashPin(pin, salt);
-      // adminConfig.js is a mock-only developer shortcut for quick local
-      // testing — the real backend has no equivalent; there, the only way
-      // to become an admin is creating the group (see createGroup below)
-      // or a direct database write. Kept here so a solo dev testing
-      // locally doesn't have to reproduce the create-group flow just to
-      // reach the admin-only tabs.
-      role = isAdminName(name) ? "admin" : "member";
-      lsSet(key, { salt, hash, role, active: true, joinedAt: new Date().toISOString() });
+      if (!existing) {
+        // adminConfig.js is a mock-only developer shortcut for quick local
+        // testing — the real backend has no equivalent; there, the only way
+        // to become an admin is creating the group (see createGroup below)
+        // or a direct database write. Kept here so a solo dev testing
+        // locally doesn't have to reproduce the create-group flow just to
+        // reach the admin-only tabs.
+        role = isAdminName(name) ? "admin" : "member";
+        lsSet(key, { salt, hash, role, active: true, joinedAt: new Date().toISOString() });
+      } else {
+        role = existing.role;
+        lsSet(key, { ...existing, salt, hash });
+      }
     } else {
       if (existing.active === false) throw new Error("This account has been removed by an admin.");
       const ok = await verifyPin(pin, existing.salt, existing.hash);

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import Login from "./components/Login.jsx";
-import CreateGroup from "./components/CreateGroup.jsx";
+import CreateAnotherGroup from "./components/CreateAnotherGroup.jsx";
 import Onboarding from "./components/Onboarding.jsx";
 import Subscription from "./components/Subscription.jsx";
 import SubscriptionGate from "./components/SubscriptionGate.jsx";
@@ -31,6 +31,7 @@ const TABS = [
   { id: "setup", label: "Group Setup", adminOnly: true },
   { id: "reconciliation", label: "Reconciliation", adminOnly: true },
   { id: "loans", label: "Loans", adminOnly: true },
+  { id: "creategroup", label: "Create a New Group", adminOnly: true },
 ];
 
 function greeting() {
@@ -41,7 +42,7 @@ function greeting() {
 }
 
 export default function App() {
-  const { session, login, createGroup, logout, renameSession } = useSession();
+  const { session, login, createAdditionalGroup, logout, renameSession } = useSession();
   const { config, setConfig } = useGroupConfig(session);
   const {
     ledger,
@@ -59,7 +60,6 @@ export default function App() {
 
   const [subscribed, setSubscribed] = useState(false);
   const [tab, setTab] = useState("home");
-  const [showCreateGroup, setShowCreateGroup] = useState(false);
   const [showCalculator, setShowCalculator] = useState(false);
   const [showWalkthrough, setShowWalkthrough] = useState(false);
 
@@ -91,16 +91,9 @@ export default function App() {
     if (user.isNew) onboarding.trigger();
   };
 
-  const handleCreateGroup = async (fields) => {
-    const user = await createGroup(fields);
-    setShowCreateGroup(false);
-    if (user.isNew) onboarding.trigger();
-  };
-
   const handleLogout = () => {
     logout();
     setSubscribed(false);
-    setShowCreateGroup(false);
   };
 
   const handleFinishOnboarding = (rate) => {
@@ -149,11 +142,7 @@ export default function App() {
 
       <main className="app-main">
         {!session ? (
-          showCreateGroup ? (
-            <CreateGroup onCreate={handleCreateGroup} onBackToLogin={() => setShowCreateGroup(false)} />
-          ) : (
-            <Login onLogin={handleLogin} onShowCreateGroup={() => setShowCreateGroup(true)} />
-          )
+          <Login onLogin={handleLogin} />
         ) : onboarding.needsOnboarding ? (
           <Onboarding
             groupDefaultRate={config.schedule.find((r) => !isRecipientRow(r))?.due}
@@ -301,6 +290,12 @@ export default function App() {
             {tab === "account" && (
               <div role="tabpanel" id="panel-account" aria-labelledby="tab-account">
                 <Profile session={session} onRenamed={renameSession} />
+              </div>
+            )}
+
+            {tab === "creategroup" && session.role === "admin" && (
+              <div role="tabpanel" id="panel-creategroup" aria-labelledby="tab-creategroup">
+                <CreateAnotherGroup onCreate={createAdditionalGroup} />
               </div>
             )}
           </>

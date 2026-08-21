@@ -136,6 +136,36 @@ export default function registerAdminRoutes(router) {
     return json({ ok: true }, 200, cors);
   });
 
+  // PINs are one-way hashed (see crypto.js) — there is no way to recover
+  // or look up a forgotten one, only reset it. Clears pin_hash/pin_salt
+  // (rather than deleting the account) so role, display name, and
+  // payment history all survive untouched; loginOrCreate() in auth.js
+  // treats an existing account with an empty pin_hash the same as a
+  // brand-new signup for PIN purposes — whatever PIN the member types on
+  // their next login simply becomes their new one, no old PIN needed.
+  // Also clears any lockout, and signs them out of every existing
+  // session immediately (same as remove) since the old PIN they're
+  // signed in with is being invalidated.
+  router.post("/api/admin/reset-pin", async ({ request, env, cors }) => {
+    const admin = await requireAdmin(request, env);
+    const body = await request.json();
+    if (!body.name || !body.name.trim()) throw new HttpError(400, "A name is required.");
+
+    const target = await env.DB.prepare(`SELECT id, active FROM users WHERE group_id = ? AND name = ?`)
+      .bind(admin.groupId, body.name.trim().toLowerCase()).first();
+    if (!target) throw new HttpError(404, "No member with that name in your group.");
+    if (!target.active) throw new HttpError(400, "This member has been removed — nothing to reset.");
+
+    await env.DB.batch([
+      env.DB.prepare(
+        `UPDATE users SET pin_hash = '', pin_salt = '', failed_attempts = 0, locked_until = NULL WHERE id = ?`
+      ).bind(target.id),
+      env.DB.prepare(`DELETE FROM sessions WHERE user_id = ?`).bind(target.id),
+    ]);
+
+    return json({ ok: true }, 200, cors);
+  });
+
   // Aggregates every member's due/paid/balance for one schedule date —
   // the only place in the API that reads across members, and now the
   // only place that reads across GROUPS too if group_id is ever missed.

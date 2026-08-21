@@ -38,8 +38,11 @@ any change that touches `src/lib/` or `worker/src/`.
   (schedule loading, scoped to the signed-in member's group), `useLedger`
   (ledger state + every payment/payout/override mutation + derived
   totals), `useOnboarding` (the one-time new-member rate prompt)
-- `src/components/Login.jsx` / `CreateGroup.jsx` — sign in with a group
-  code + name + PIN, or start a brand-new group as its founding admin
+- `src/components/Login.jsx` — sign in with a group code + name + PIN
+  (first login with a new name joins the group automatically).
+  `CreateGroup.jsx` / `CreateAnotherGroup.jsx` — starting a brand-new
+  group is an admin-only, in-app action now (nav menu → "Create a New
+  Group"), not something reachable from the login screen
 - `src/components/LedgerTable.jsx` — the 7-column spreadsheet grid, with
   each "Amount Paid" cell expandable into an **append-only payment
   history** — every logged payment is its own timestamped entry;

@@ -23,6 +23,17 @@ export function useSession() {
     return user;
   };
 
+  // Lets an already-signed-in admin spin up a brand-new, unrelated group
+  // (see NavMenu's admin-only "Create a New Group") without losing their
+  // current session — unlike createGroup() above, used pre-login where
+  // there's no session yet to preserve, this deliberately does NOT call
+  // setSession. The admin stays in their current group; the new group's
+  // details are returned so the caller can show them (its code, to hand
+  // to that group's own members), not silently switch context into it.
+  const createAdditionalGroup = async (fields) => {
+    return apiCreateGroup(fields);
+  };
+
   const logout = () => {
     apiLogout();
     setSession(null);
@@ -37,5 +48,5 @@ export function useSession() {
     setSession((prev) => (prev ? { ...prev, name } : prev));
   };
 
-  return { session, login, createGroup, logout, renameSession };
+  return { session, login, createGroup, createAdditionalGroup, logout, renameSession };
 }

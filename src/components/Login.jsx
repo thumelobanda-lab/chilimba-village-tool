@@ -2,7 +2,7 @@ import React, { useState } from "react";
 
 const LAST_GROUP_KEY = "chilimba:last-group-slug";
 
-export default function Login({ onLogin, onShowCreateGroup }) {
+export default function Login({ onLogin }) {
   const [groupSlug, setGroupSlug] = useState(() => localStorage.getItem(LAST_GROUP_KEY) || "");
   const [name, setName] = useState("");
   const [pin, setPin] = useState("");
@@ -70,11 +70,10 @@ export default function Login({ onLogin, onShowCreateGroup }) {
       </button>
       <p className="muted tiny">
         First time signing in with this name sets your PIN. Your PIN is never stored
-        or sent in plain text — only a one-way hash of it is checked.
+        or sent in plain text — only a one-way hash of it is checked. If your group
+        doesn't have a code yet, ask its admin — starting a brand-new Chilimba group is
+        an admin action now, not something anyone can do from here.
       </p>
-      <button className="btn-link" style={{ display: "block", margin: "10px auto 0" }} onClick={onShowCreateGroup} disabled={busy}>
-        Starting a new Chilimba group? Create one
-      </button>
     </div>
   );
 }

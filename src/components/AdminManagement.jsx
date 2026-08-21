@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { getGroupMembers, promoteMember, demoteMember, removeMember } from "../lib/api.js";
+import { getGroupMembers, promoteMember, demoteMember, removeMember, resetMemberPin } from "../lib/api.js";
 import { useApiData } from "../lib/useApiData.js";
 
 const money = (n) => "K" + (Number(n) || 0).toLocaleString("en-ZM", { maximumFractionDigits: 0 });
@@ -56,14 +56,31 @@ export default function AdminManagement() {
     }
   };
 
+  const handleResetPin = async (name) => {
+    if (!window.confirm(`Reset ${name}'s PIN? They'll be signed out everywhere and will set a new PIN the next time they sign in.`)) return;
+    setActionError("");
+    setBusy(true);
+    try {
+      await resetMemberPin(name);
+      setStatus(`${name}'s PIN was reset`);
+    } catch (e) {
+      setActionError(e.message || "Could not reset that member's PIN.");
+    } finally {
+      setBusy(false);
+      setTimeout(() => setStatus(""), 2500);
+    }
+  };
+
   return (
     <div style={{ marginTop: 20 }}>
       <h3 className="panel-subtitle">Roster & Admins</h3>
       <p className="muted tiny" style={{ marginBottom: 10 }}>
         Every active member, when they joined, and the next date they still owe something
         on. Any admin can promote another member, demote another admin (the group is never
-        left without at least one), or remove a member entirely — removing keeps their
-        payment history, it just revokes access. To remove an admin, demote them first.
+        left without at least one), remove a member entirely (keeps their payment history,
+        just revokes access), or reset a member's PIN if they've forgotten it — PINs are
+        one-way hashed, so this is the only recovery path. To remove an admin, demote them
+        first.
       </p>
 
       {loading && !data && <p className="muted small" aria-live="polite">Loading…</p>}
@@ -98,6 +115,14 @@ export default function AdminManagement() {
                         : <span className="muted tiny">settled</span>}
                     </td>
                     <td>
+                      <button
+                        className="btn-link"
+                        style={{ marginRight: 10 }}
+                        disabled={busy}
+                        onClick={() => handleResetPin(m.name)}
+                      >
+                        reset PIN
+                      </button>
                       {m.role === "admin" ? (
                         <button className="btn-link" disabled={busy} onClick={() => handleDemote(m.name)}>demote</button>
                       ) : (

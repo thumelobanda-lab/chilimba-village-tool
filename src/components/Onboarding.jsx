@@ -24,10 +24,6 @@ export default function Onboarding({ groupDefaultRate, onComplete, onSkip }) {
   return (
     <div className="panel login-panel">
       <h2 className="panel-title">Welcome — one quick step</h2>
-      <p className="muted small">
-        Not everyone pays the same amount each date, since payout totals differ too. What
-        have you agreed to contribute per date?
-      </p>
 
       <label className="field">
         Your agreed rate (K)

@@ -111,3 +111,26 @@ export async function removeMember(name) {
 
   return realFetch("/api/admin/remove", { method: "POST", body: JSON.stringify({ name }) });
 }
+
+// PINs are one-way hashed — there is no way to recover a forgotten one,
+// only reset it. Clears the stored hash/salt rather than touching the
+// account otherwise (role, join date, payment history all survive) —
+// login() above treats an account with no hash/salt the same as a
+// brand-new signup for PIN purposes, so whatever the member types on
+// their next login simply becomes their new PIN.
+export async function resetMemberPin(name) {
+  const session = currentSession();
+  if (!session || session.role !== "admin") throw new Error("Admin access required.");
+  if (!name || !name.trim()) throw new Error("A name is required.");
+
+  if (MOCK_MODE) {
+    const key = groupScopedKey(session, "account", name.trim().toLowerCase());
+    const account = lsGet(key, null);
+    if (!account) throw new Error("No member with that name in your group.");
+    if (account.active === false) throw new Error("This member has been removed — nothing to reset.");
+    lsSet(key, { ...account, hash: "", salt: "" });
+    return { ok: true };
+  }
+
+  return realFetch("/api/admin/reset-pin", { method: "POST", body: JSON.stringify({ name }) });
+}
