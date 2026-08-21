@@ -3,6 +3,7 @@ import {
   getOwnerOverview, getOwnerGroups, getPendingSubscriptions,
   confirmSubscription, rejectSubscription, suspendGroup, unsuspendGroup, ownerLogout,
 } from "../../lib/api/owner.js";
+import OwnerMessaging from "./OwnerMessaging.jsx";
 
 const money = (n) => "K" + (Number(n) || 0).toLocaleString("en-ZM", { maximumFractionDigits: 0 });
 
@@ -227,6 +228,8 @@ export default function OwnerDashboard({ session, onSignedOut }) {
             </div>
           </div>
         )}
+
+        {groups && groups.length > 0 && <OwnerMessaging groups={groups} />}
       </main>
     </div>
   );

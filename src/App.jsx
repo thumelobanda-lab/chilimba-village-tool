@@ -16,6 +16,7 @@ import NavMenu from "./components/NavMenu.jsx";
 import Dashboard from "./components/Dashboard.jsx";
 import PaymentInfo from "./components/PaymentInfo.jsx";
 import NoticeBoard from "./components/NoticeBoard.jsx";
+import PlatformMessageBanner from "./components/PlatformMessageBanner.jsx";
 import PaymentOptions from "./components/PaymentOptions.jsx";
 import QuickCalculator from "./components/QuickCalculator.jsx";
 import Walkthrough, { hasSeenWalkthrough } from "./components/Walkthrough.jsx";
@@ -201,6 +202,7 @@ export default function App() {
 
             {tab === "home" && (
               <>
+                <PlatformMessageBanner />
                 <NoticeBoard isAdmin={session.role === "admin"} />
                 <FreeTierBanner
                   status={subscription.status}

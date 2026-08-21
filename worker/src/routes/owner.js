@@ -1,8 +1,10 @@
 import { requireOwner, ownerLogin, ownerLogout } from "../ownerAuth.js";
 import { HttpError } from "../httpError.js";
 import { json } from "../responses.js";
+import { uid } from "../crypto.js";
 import { isSubscriptionActive, computeExpiryDate } from "../subscriptionUtils.js";
 import { detectSharedSignalFraud } from "../fraudSignals.js";
+import { isValidTargetType, buildTargetLabel, validateMessageBody } from "../ownerMessages.js";
 
 /**
  * Platform-owner routes — entirely separate surface from every other
@@ -167,5 +169,112 @@ export default function registerOwnerRoutes(router) {
       `UPDATE groups SET suspended_at = NULL, suspended_reason = NULL, suspended_by = NULL WHERE id = ?`
     ).bind(params.id).run();
     return json({ ok: true }, 200, cors);
+  });
+
+  // The member picker behind "a specific person" — one group's active
+  // roster, name + role + phone (phone only so the compose screen can
+  // offer a per-person WhatsApp share link; never a PIN, payment ledger,
+  // or anything else). Scoped to :id like every other owner route that
+  // reaches into one group, not a client-trusted slug.
+  router.get("/api/owner/groups/:id/members", async ({ request, env, params, cors }) => {
+    await requireOwner(request, env);
+    const group = await env.DB.prepare(`SELECT id FROM groups WHERE id = ?`).bind(params.id).first();
+    if (!group) throw new HttpError(404, "Group not found.");
+
+    const result = await env.DB.prepare(
+      `SELECT id, display_name as displayName, role, phone
+       FROM users WHERE group_id = ? AND active = 1 ORDER BY display_name COLLATE NOCASE`
+    ).bind(params.id).all();
+    return json({ members: result.results || [] }, 200, cors);
+  });
+
+  // Sends a one-way platform message — to one person, every admin of a
+  // group, or every member of a group (admins included: "member" here
+  // means "belongs to this group", the same broad sense notices.js
+  // already broadcasts to). This is the ONLY route in the whole app that
+  // ever inserts into owner_messages/owner_message_recipients (migration
+  // 010) — gated by requireOwner, never requireAdmin or requireSession —
+  // so a group admin has no path to create or spoof one. Recipients are
+  // resolved server-side from group_id + target_type, never from a
+  // client-supplied recipient list, the same "never trust the client for
+  // scoping" rule every other route in this file already follows.
+  router.post("/api/owner/messages", async ({ request, env, cors }) => {
+    const owner = await requireOwner(request, env);
+    const body = await request.json();
+
+    if (!isValidTargetType(body.targetType)) throw new HttpError(400, "Unknown target type.");
+    if (!body.groupId) throw new HttpError(400, "groupId is required.");
+    const message = validateMessageBody(body.message);
+
+    const group = await env.DB.prepare(`SELECT id, group_name as groupName FROM groups WHERE id = ?`)
+      .bind(body.groupId).first();
+    if (!group) throw new HttpError(404, "Group not found.");
+
+    let recipients;
+    if (body.targetType === "user") {
+      if (!body.userId) throw new HttpError(400, "userId is required for an individual message.");
+      const target = await env.DB.prepare(
+        `SELECT id, display_name as displayName, phone FROM users WHERE id = ? AND group_id = ? AND active = 1`
+      ).bind(body.userId, body.groupId).first();
+      if (!target) throw new HttpError(404, "That person wasn't found in that group.");
+      recipients = [target];
+    } else {
+      const roleFilter = body.targetType === "group_admins" ? ` AND role = 'admin'` : "";
+      const result = await env.DB.prepare(
+        `SELECT id, display_name as displayName, phone FROM users WHERE group_id = ? AND active = 1${roleFilter}`
+      ).bind(body.groupId).all();
+      recipients = result.results || [];
+    }
+    if (recipients.length === 0) throw new HttpError(400, "No active recipients matched — nothing was sent.");
+
+    const targetLabel = buildTargetLabel({
+      targetType: body.targetType,
+      groupName: group.groupName,
+      userDisplayName: recipients[0]?.displayName,
+    });
+
+    const messageId = uid();
+    const whatsappRequested = body.alsoWhatsApp ? 1 : 0;
+    const stmts = [
+      env.DB.prepare(
+        `INSERT INTO owner_messages (id, target_type, group_id, user_id, target_label, message, whatsapp_requested, sent_by)
+         VALUES (?,?,?,?,?,?,?,?)`
+      ).bind(
+        messageId, body.targetType, body.groupId,
+        body.targetType === "user" ? body.userId : null,
+        targetLabel, message, whatsappRequested, owner.email
+      ),
+      ...recipients.map((r) =>
+        env.DB.prepare(`INSERT INTO owner_message_recipients (id, message_id, user_id) VALUES (?,?,?)`)
+          .bind(uid(), messageId, r.id)
+      ),
+    ];
+    await env.DB.batch(stmts);
+
+    return json({
+      id: messageId,
+      recipientCount: recipients.length,
+      // Only what the compose screen needs to build per-person WhatsApp
+      // share links (src/lib/inviteCard.js's buildWhatsAppShareUrl) —
+      // nothing here is persisted beyond the log row above.
+      recipients: recipients.map((r) => ({ id: r.id, name: r.displayName, phone: r.phone })),
+    }, 201, cors);
+  });
+
+  // The owner's own record of what's been sent — recipient, content,
+  // timestamp, same three things point 4 of the feature asked for, plus
+  // enough else (target type, WhatsApp toggle) to make the log legible
+  // without re-deriving it. Ordered newest-first, capped at 200 so this
+  // stays a quick reference rather than an ever-growing unpaginated dump.
+  router.get("/api/owner/messages", async ({ request, env, cors }) => {
+    await requireOwner(request, env);
+    const result = await env.DB.prepare(
+      `SELECT om.id, om.target_type as targetType, om.target_label as targetLabel,
+              om.message, om.whatsapp_requested as whatsappRequested,
+              om.sent_by as sentBy, om.sent_at as sentAt,
+              (SELECT COUNT(*) FROM owner_message_recipients omr WHERE omr.message_id = om.id) as recipientCount
+       FROM owner_messages om ORDER BY om.sent_at DESC LIMIT 200`
+    ).all();
+    return json({ messages: result.results || [] }, 200, cors);
   });
 }

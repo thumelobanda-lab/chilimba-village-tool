@@ -433,6 +433,50 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   font-size: 0.9rem;
 }
 
+/* Platform-owner direct message banner (PlatformMessageBanner.jsx) — a
+   deep-green/gold treatment echoing the app header on purpose, so it
+   reads as coming from "above" a group rather than from the group's own
+   admin (compare .notice-board above, which is deliberately the local,
+   warm-neutral treatment). One-shot: dismissing marks it read
+   server-side and it's gone for good, unlike the notice board's
+   persistent history. */
+.platform-message-stack { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+.platform-message-banner {
+  background: linear-gradient(135deg, var(--accent), #0A3729);
+  border: 1px solid var(--accent-2);
+  border-radius: 8px;
+  padding: 14px 16px;
+  color: white;
+}
+.platform-message-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--accent-2-light);
+  margin-bottom: 6px;
+}
+.platform-message-body { font-size: 0.95rem; line-height: 1.4; white-space: pre-wrap; }
+.platform-message-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 10px;
+}
+.platform-message-dismiss {
+  background: var(--accent-2);
+  color: var(--ink);
+  border: none;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 0.8rem;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.platform-message-dismiss:disabled { opacity: 0.6; cursor: not-allowed; }
+
 /* Payment destination cards — "Where to Pay" */
 .payment-methods-list { display: flex; flex-wrap: wrap; gap: 10px; }
 .payment-method-card {

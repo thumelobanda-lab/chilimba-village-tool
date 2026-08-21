@@ -263,6 +263,38 @@ CREATE TABLE IF NOT EXISTS notices (
 );
 CREATE INDEX IF NOT EXISTS idx_notices_group ON notices(group_id);
 
+-- Platform-owner direct messaging (migration 010) — deliberately separate
+-- from notices above: this is the OWNER's one-way channel (to a specific
+-- person, a group's admins, or a group's members), not a group admin's
+-- own announcement. The only route that ever inserts here is
+-- POST /api/owner/messages, gated by requireOwner — never requireAdmin
+-- or requireSession — so a group admin has no way to create or spoof one.
+CREATE TABLE IF NOT EXISTS owner_messages (
+  id TEXT PRIMARY KEY,
+  target_type TEXT NOT NULL,        -- 'user' | 'group_admins' | 'group_members'
+  group_id TEXT NOT NULL REFERENCES groups(id),
+  user_id TEXT REFERENCES users(id),  -- set only when target_type = 'user'
+  target_label TEXT NOT NULL,       -- snapshot for the owner's log, e.g.
+                                     -- "Harriet Banda (Hillcrest Chilimba)"
+  message TEXT NOT NULL,
+  whatsapp_requested INTEGER NOT NULL DEFAULT 0,
+  sent_by TEXT NOT NULL,            -- owner email
+  sent_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_owner_messages_sent ON owner_messages(sent_at);
+
+-- Fan-out: one row per actually-resolved recipient. A member's own
+-- GET /api/messages / POST /api/messages/:id/read (requireSession) are
+-- always scoped by `user_id = <caller's own id>` — the only way to read
+-- or dismiss a row here is to be the person it was addressed to.
+CREATE TABLE IF NOT EXISTS owner_message_recipients (
+  id TEXT PRIMARY KEY,
+  message_id TEXT NOT NULL REFERENCES owner_messages(id),
+  user_id TEXT NOT NULL REFERENCES users(id),
+  read_at TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_owner_message_recipients_user ON owner_message_recipients(user_id, read_at);
+
 -- Web push subscriptions — a member can have more than one (phone + laptop).
 CREATE TABLE IF NOT EXISTS push_subscriptions (
   id TEXT PRIMARY KEY,

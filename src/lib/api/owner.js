@@ -92,3 +92,28 @@ export function suspendGroup(id, reason) {
 export function unsuspendGroup(id) {
   return ownerFetch(`/api/owner/groups/${id}/unsuspend`, { method: "POST" });
 }
+
+// The member picker behind "a specific person" — one group's active
+// roster (name, role, phone) for OwnerMessaging.jsx's target dropdown.
+export function getOwnerGroupMembers(groupId) {
+  return ownerFetch(`/api/owner/groups/${groupId}/members`);
+}
+
+// Sends a one-way platform message — targetType is 'user' | 'group_admins'
+// | 'group_members'; userId only applies (and is required) for 'user'.
+// Returns { id, recipientCount, recipients: [{id, name, phone}] } — the
+// recipients array is what OwnerMessaging.jsx uses to offer a per-person
+// WhatsApp share link (buildWhatsAppShareUrl, lib/inviteCard.js) when
+// alsoWhatsApp is set; sending itself never contacts WhatsApp server-side.
+export function sendOwnerMessage({ groupId, targetType, userId, message, alsoWhatsApp }) {
+  return ownerFetch("/api/owner/messages", {
+    method: "POST",
+    body: JSON.stringify({ groupId, targetType, userId, message, alsoWhatsApp }),
+  });
+}
+
+// The owner's own log of everything sent — recipient (targetLabel),
+// content, timestamp — newest first.
+export function getOwnerMessages() {
+  return ownerFetch("/api/owner/messages");
+}

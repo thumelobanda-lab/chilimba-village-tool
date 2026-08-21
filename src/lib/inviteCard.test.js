@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   buildInviteMessage,
   buildWhatsAppShareUrl,
+  buildWhatsAppDirectUrl,
   buildInviteCardFilename,
   buildCardContent,
   buildJoinUrl,
@@ -58,6 +59,29 @@ describe("buildWhatsAppShareUrl", () => {
     // decoding the URL should round-trip back to the original message
     const decoded = decodeURIComponent(url.replace("https://wa.me/?text=", ""));
     expect(decoded).toBe(message);
+  });
+});
+
+describe("buildWhatsAppDirectUrl", () => {
+  it("targets a specific number, stripped to digits only", () => {
+    const url = buildWhatsAppDirectUrl("+260 97 123 4567", "Hi there");
+    expect(url).toBe(`https://wa.me/260971234567?text=${encodeURIComponent("Hi there")}`);
+  });
+
+  it("strips punctuation and whitespace from the phone number", () => {
+    const url = buildWhatsAppDirectUrl("+260 97-123-4567", "Hi");
+    expect(url.startsWith("https://wa.me/260971234567?text=")).toBe(true);
+  });
+
+  it("falls back to the generic share link when the phone has no digits", () => {
+    expect(buildWhatsAppDirectUrl("", "Hi")).toBe(buildWhatsAppShareUrl("Hi"));
+    expect(buildWhatsAppDirectUrl(null, "Hi")).toBe(buildWhatsAppShareUrl("Hi"));
+    expect(buildWhatsAppDirectUrl("n/a", "Hi")).toBe(buildWhatsAppShareUrl("Hi"));
+  });
+
+  it("URL-encodes the message the same way as the generic link", () => {
+    const url = buildWhatsAppDirectUrl("0971234567", "Line one\nLine two 🤝");
+    expect(url).toContain(encodeURIComponent("Line one\nLine two 🤝"));
   });
 });
 

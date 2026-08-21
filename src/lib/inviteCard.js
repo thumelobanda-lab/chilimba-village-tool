@@ -34,6 +34,23 @@ export function buildWhatsAppShareUrl(message) {
   return `https://wa.me/?text=${encodeURIComponent(message)}`;
 }
 
+/**
+ * Same wa.me mechanism as buildWhatsAppShareUrl above, but pre-selects a
+ * specific recipient's chat instead of opening WhatsApp's generic "share
+ * to" contact picker — used by the owner-messaging feature
+ * (OwnerMessaging.jsx), which knows exactly who a message is being sent
+ * to. wa.me needs the number as digits only (no "+", spaces, or
+ * punctuation); falls back to the generic share link if nothing usable
+ * is left after stripping, rather than opening WhatsApp to a broken
+ * number. This still only ever opens WhatsApp with the text pre-filled —
+ * there is no server-side send anywhere in this codebase, here or
+ * anywhere else "WhatsApp-ready" is mentioned.
+ */
+export function buildWhatsAppDirectUrl(phone, message) {
+  const digits = (phone || "").replace(/[^0-9]/g, "");
+  return digits ? `https://wa.me/${digits}?text=${encodeURIComponent(message)}` : buildWhatsAppShareUrl(message);
+}
+
 export function buildInviteCardFilename(groupSlug) {
   const safe = (groupSlug || "group").replace(/[^a-z0-9-]/gi, "-").toLowerCase();
   return `chilimba-invite-${safe}.png`;
