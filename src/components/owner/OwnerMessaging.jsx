@@ -1,7 +1,11 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { getOwnerGroupMembers, sendOwnerMessage, getOwnerMessages } from "../../lib/api/owner.js";
+import {
+  getOwnerGroupMembers, sendOwnerMessage, getOwnerMessages, getOwnerSettings, updateOwnerSettings,
+} from "../../lib/api/owner.js";
 import { buildWhatsAppDirectUrl } from "../../lib/inviteCard.js";
-import { MESSAGE_CATEGORIES, getMessageCategory, applyTemplatePlaceholders } from "../../lib/messageTemplates.js";
+import {
+  MESSAGE_CATEGORIES, getMessageCategory, applyTemplatePlaceholders, buildContactLabel,
+} from "../../lib/messageTemplates.js";
 
 const TARGET_LABELS = {
   user: "A specific person",
@@ -56,6 +60,17 @@ export default function OwnerMessaging({ groups }) {
   const [lastSend, setLastSend] = useState(null); // { targetLabel, messageText, category, recipients } | null
   const [log, setLog] = useState(null);
 
+  // The platform-wide support contact behind every template's [Contact]
+  // placeholder — set once here (GET/PUT /api/owner/settings), reused
+  // by every send afterward. contactSaved is a brief "✓ Saved" beat on
+  // the save button itself, same pattern LedgerTable.jsx uses for
+  // "✓ Logged" after logging a payment.
+  const [supportEmail, setSupportEmail] = useState("");
+  const [supportWhatsapp, setSupportWhatsapp] = useState("");
+  const [contactBusy, setContactBusy] = useState(false);
+  const [contactSaved, setContactSaved] = useState(false);
+  const contactLabel = buildContactLabel({ supportEmail, supportWhatsapp });
+
   const loadLog = useCallback(async () => {
     try {
       const data = await getOwnerMessages();
@@ -67,7 +82,27 @@ export default function OwnerMessaging({ groups }) {
 
   useEffect(() => {
     loadLog();
+    getOwnerSettings()
+      .then((data) => {
+        setSupportEmail(data.supportEmail || "");
+        setSupportWhatsapp(data.supportWhatsapp || "");
+      })
+      .catch((e) => setError(e.message || "Could not load the support contact."));
   }, [loadLog]);
+
+  const handleSaveContact = async () => {
+    setError("");
+    setContactBusy(true);
+    try {
+      await updateOwnerSettings({ supportEmail: supportEmail.trim(), supportWhatsapp: supportWhatsapp.trim() });
+      setContactSaved(true);
+      setTimeout(() => setContactSaved(false), 1500);
+    } catch (e) {
+      setError(e.message || "Could not save the support contact.");
+    } finally {
+      setContactBusy(false);
+    }
+  };
 
   useEffect(() => {
     setUserId("");
@@ -91,14 +126,14 @@ export default function OwnerMessaging({ groups }) {
     setCategory(newCategoryId);
     if (!newCategoryId || message.trim()) return;
     const cat = getMessageCategory(newCategoryId);
-    if (cat) setMessage(applyTemplatePlaceholders(cat.template, { groupName, dateLabel: todayLabel() }));
+    if (cat) setMessage(applyTemplatePlaceholders(cat.template, { groupName, dateLabel: todayLabel(), contactLabel }));
   };
 
   const insertTemplate = () => {
     const cat = getMessageCategory(category);
     if (!cat) return;
     if (message.trim() && !window.confirm("Replace the current message text with this template's wording?")) return;
-    setMessage(applyTemplatePlaceholders(cat.template, { groupName, dateLabel: todayLabel() }));
+    setMessage(applyTemplatePlaceholders(cat.template, { groupName, dateLabel: todayLabel(), contactLabel }));
   };
 
   const handleSend = async () => {
@@ -139,6 +174,37 @@ export default function OwnerMessaging({ groups }) {
         not a chat, there's no reply channel. It shows up in-app for whoever it's addressed
         to the next time they open Chilimba Circle.
       </p>
+
+      <div className="setup-section-body" style={{ border: "1px solid var(--line)", borderRadius: 8, padding: "12px 14px", marginBottom: 18 }}>
+        <div className="panel-subtitle" style={{ margin: "0 0 8px" }}>Support contact</div>
+        <p className="muted tiny" style={{ marginBottom: 10 }}>
+          Fills the [Contact] placeholder in every template below — set it once, every category's
+          resolve/appeal line uses it from then on.
+        </p>
+        <div className="field-row">
+          <label className="field" style={{ flex: 1, minWidth: 200 }}>
+            Support email
+            <input
+              type="email"
+              value={supportEmail}
+              onChange={(e) => setSupportEmail(e.target.value)}
+              placeholder="support@chilimbacircle.app"
+            />
+          </label>
+          <label className="field" style={{ flex: 1, minWidth: 200 }}>
+            Support WhatsApp number
+            <input
+              type="tel"
+              value={supportWhatsapp}
+              onChange={(e) => setSupportWhatsapp(e.target.value)}
+              placeholder="+260 97 123 4567"
+            />
+          </label>
+        </div>
+        <button className="btn-ghost-dark" disabled={contactBusy} onClick={handleSaveContact}>
+          {contactBusy ? "Saving…" : contactSaved ? "✓ Saved" : "Save support contact"}
+        </button>
+      </div>
 
       <label className="field">
         Group
@@ -196,7 +262,7 @@ export default function OwnerMessaging({ groups }) {
           <button type="button" className="btn-link" onClick={insertTemplate}>
             ↻ Load this template's wording into the message below
           </button>
-          {" — "}edit freely before sending; only [Group Name] and [Date] are filled in for you.
+          {" — "}edit freely before sending; only [Group Name], [Date], and [Contact] are filled in for you.
         </p>
       )}
 

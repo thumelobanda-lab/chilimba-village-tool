@@ -5,6 +5,9 @@ import { uid } from "../crypto.js";
 import { isSubscriptionActive, computeExpiryDate } from "../subscriptionUtils.js";
 import { detectSharedSignalFraud } from "../fraudSignals.js";
 import { isValidTargetType, buildTargetLabel, validateMessageBody, isValidCategory } from "../ownerMessages.js";
+import { validateSupportContact } from "../platformSettings.js";
+
+const PLATFORM_SETTINGS_ID = "default"; // singleton row — see migration 012
 
 /**
  * Platform-owner routes — entirely separate surface from every other
@@ -208,7 +211,17 @@ export default function registerOwnerRoutes(router) {
     // null here rather than treated as an unknown category string.
     const category = body.category || null;
     if (!isValidCategory(category)) throw new HttpError(400, "Unknown message category.");
-    const message = validateMessageBody(body.message);
+    // validateMessageBody throws a plain Error (see its own comment) —
+    // translated to an HttpError here so the client actually sees the
+    // real reason ("A message is required.", the length cap) as a 400,
+    // rather than index.js's catch-all masking every non-HttpError as a
+    // generic 500 "Server error".
+    let message;
+    try {
+      message = validateMessageBody(body.message);
+    } catch (e) {
+      throw new HttpError(400, e.message);
+    }
 
     const group = await env.DB.prepare(`SELECT id, group_name as groupName FROM groups WHERE id = ?`)
       .bind(body.groupId).first();
@@ -280,5 +293,41 @@ export default function registerOwnerRoutes(router) {
        FROM owner_messages om ORDER BY om.sent_at DESC LIMIT 200`
     ).all();
     return json({ messages: result.results || [] }, 200, cors);
+  });
+
+  // The platform-wide support contact behind the [Contact] placeholder
+  // in owner-messaging templates (src/lib/messageTemplates.js) — a
+  // singleton, not per-owner (see migration 012's comment for why), so
+  // every owner account reads and writes the same row.
+  router.get("/api/owner/settings", async ({ request, env, cors }) => {
+    await requireOwner(request, env);
+    const row = await env.DB.prepare(
+      `SELECT support_email as supportEmail, support_whatsapp as supportWhatsapp FROM platform_settings WHERE id = ?`
+    ).bind(PLATFORM_SETTINGS_ID).first();
+    return json(row || { supportEmail: null, supportWhatsapp: null }, 200, cors);
+  });
+
+  router.put("/api/owner/settings", async ({ request, env, cors }) => {
+    const owner = await requireOwner(request, env);
+    const body = await request.json();
+    // Same plain-Error-to-HttpError translation as validateMessageBody
+    // above — validateSupportContact's message ("Keep each contact
+    // field under...") needs to reach the client as a 400, not the
+    // catch-all's generic 500.
+    let supportEmail, supportWhatsapp;
+    try {
+      ({ supportEmail, supportWhatsapp } = validateSupportContact(body));
+    } catch (e) {
+      throw new HttpError(400, e.message);
+    }
+
+    await env.DB.prepare(
+      `INSERT INTO platform_settings (id, support_email, support_whatsapp, updated_by)
+       VALUES (?,?,?,?)
+       ON CONFLICT(id) DO UPDATE SET support_email = excluded.support_email,
+         support_whatsapp = excluded.support_whatsapp, updated_at = datetime('now'), updated_by = excluded.updated_by`
+    ).bind(PLATFORM_SETTINGS_ID, supportEmail, supportWhatsapp, owner.email).run();
+
+    return json({ ok: true, supportEmail, supportWhatsapp }, 200, cors);
   });
 }

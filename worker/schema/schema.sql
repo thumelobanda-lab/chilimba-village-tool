@@ -301,6 +301,19 @@ CREATE TABLE IF NOT EXISTS owner_message_recipients (
 );
 CREATE INDEX IF NOT EXISTS idx_owner_message_recipients_user ON owner_message_recipients(user_id, read_at);
 
+-- Platform-wide support contact (migration 012) — a singleton (id
+-- always 'default'), not per-owner: this is "how to reach Chilimba
+-- Circle", the same for every owner account, feeding the [Contact]
+-- placeholder in owner-messaging templates. requireOwner-gated
+-- read/write only (GET/PUT /api/owner/settings).
+CREATE TABLE IF NOT EXISTS platform_settings (
+  id TEXT PRIMARY KEY,
+  support_email TEXT,
+  support_whatsapp TEXT,
+  updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_by TEXT
+);
+
 -- Web push subscriptions — a member can have more than one (phone + laptop).
 CREATE TABLE IF NOT EXISTS push_subscriptions (
   id TEXT PRIMARY KEY,

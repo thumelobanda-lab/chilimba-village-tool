@@ -121,3 +121,17 @@ export function sendOwnerMessage({ groupId, targetType, userId, message, alsoWha
 export function getOwnerMessages() {
   return ownerFetch("/api/owner/messages");
 }
+
+// The platform-wide support contact behind templates' [Contact]
+// placeholder (see lib/messageTemplates.js) — a singleton, shared by
+// every owner account, set once here rather than per-message.
+export function getOwnerSettings() {
+  return ownerFetch("/api/owner/settings");
+}
+
+export function updateOwnerSettings({ supportEmail, supportWhatsapp }) {
+  return ownerFetch("/api/owner/settings", {
+    method: "PUT",
+    body: JSON.stringify({ supportEmail, supportWhatsapp }),
+  });
+}
