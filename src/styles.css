@@ -352,6 +352,26 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .tag-rate { background: #FBF0DC; color: #8A6A1C; }
 .due-edit { display: inline-flex; align-items: center; gap: 6px; }
 
+/* Owner-messaging template category tags (OwnerMessaging.jsx) — one
+   distinct color per category so the sent-messages log scans at a
+   glance. Same light-tint-background/dark-text pattern as .badge-admin/
+   .tag-rate above, not solid fills — legible sitting inside a table
+   cell without shouting. */
+.category-tag {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.category-tag-fraud { background: #F7E4E1; color: #8C3226; }        /* Fraud Warning */
+.category-tag-warning { background: #F7E6D3; color: #8C5620; }      /* Spam/Abuse Notice */
+.category-tag-billing { background: #FBF0DC; color: #8A6A1C; }      /* Subscription Reminder */
+.category-tag-suspended { background: #F0DAD5; color: #7A2E22; }    /* Account Suspended */
+.category-tag-general { background: #EDEAE3; color: #55504A; }      /* General Announcement */
+.category-tag-review { background: #DEE8EA; color: #35505C; }       /* Payment Dispute/Investigation */
+
 .link-amount {
   background: none;
   border: none;

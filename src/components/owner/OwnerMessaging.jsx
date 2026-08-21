@@ -1,12 +1,30 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { getOwnerGroupMembers, sendOwnerMessage, getOwnerMessages } from "../../lib/api/owner.js";
 import { buildWhatsAppDirectUrl } from "../../lib/inviteCard.js";
+import { MESSAGE_CATEGORIES, getMessageCategory, applyTemplatePlaceholders } from "../../lib/messageTemplates.js";
 
 const TARGET_LABELS = {
   user: "A specific person",
   group_admins: "All admins of this group",
   group_members: "All members of this group",
 };
+
+function todayLabel() {
+  return new Date().toLocaleDateString("en-ZM", { day: "numeric", month: "short", year: "numeric" });
+}
+
+// The colored pill a category shows as in the sent-messages log — see
+// .category-tag-* in styles.css for the actual colors, one per
+// tagColor (fraud/warning/billing/suspended/general/review).
+function CategoryTag({ categoryId }) {
+  const category = getMessageCategory(categoryId);
+  if (!category) return <span className="muted tiny">—</span>;
+  return (
+    <span className={`category-tag category-tag-${category.tagColor}`}>
+      {category.icon} {category.label}
+    </span>
+  );
+}
 
 /**
  * The owner's one-way messaging panel — compose (to one person, a
@@ -31,10 +49,11 @@ export default function OwnerMessaging({ groups }) {
   const [members, setMembers] = useState([]);
   const [userId, setUserId] = useState("");
   const [message, setMessage] = useState("");
+  const [category, setCategory] = useState("");
   const [alsoWhatsApp, setAlsoWhatsApp] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [lastSend, setLastSend] = useState(null); // { targetLabel, messageText, recipients } | null
+  const [lastSend, setLastSend] = useState(null); // { targetLabel, messageText, category, recipients } | null
   const [log, setLog] = useState(null);
 
   const loadLog = useCallback(async () => {
@@ -63,6 +82,25 @@ export default function OwnerMessaging({ groups }) {
   const canSend =
     groupId && message.trim() && (targetType !== "user" || userId) && !busy;
 
+  // Selecting a category always drives the log's color tag; it only
+  // touches the message text itself when there's nothing typed yet, so
+  // picking a category never silently destroys something the owner
+  // already wrote. insertTemplate (below) is the explicit, confirmed
+  // way to load/reload the template's wording after that.
+  const handleCategoryChange = (newCategoryId) => {
+    setCategory(newCategoryId);
+    if (!newCategoryId || message.trim()) return;
+    const cat = getMessageCategory(newCategoryId);
+    if (cat) setMessage(applyTemplatePlaceholders(cat.template, { groupName, dateLabel: todayLabel() }));
+  };
+
+  const insertTemplate = () => {
+    const cat = getMessageCategory(category);
+    if (!cat) return;
+    if (message.trim() && !window.confirm("Replace the current message text with this template's wording?")) return;
+    setMessage(applyTemplatePlaceholders(cat.template, { groupName, dateLabel: todayLabel() }));
+  };
+
   const handleSend = async () => {
     setError("");
     setLastSend(null);
@@ -72,7 +110,7 @@ export default function OwnerMessaging({ groups }) {
     try {
       const result = await sendOwnerMessage({
         groupId, targetType, userId: targetType === "user" ? userId : undefined,
-        message: sentText, alsoWhatsApp,
+        message: sentText, alsoWhatsApp, category: category || undefined,
       });
       setLastSend({
         targetLabel:
@@ -80,9 +118,11 @@ export default function OwnerMessaging({ groups }) {
             ? `${members.find((m) => m.id === userId)?.displayName || "that person"} (${groupName})`
             : `${TARGET_LABELS[targetType]} — ${groupName}`,
         messageText: sentText,
+        category,
         recipients: alsoWhatsApp ? result.recipients : [],
       });
       setMessage("");
+      setCategory("");
       await loadLog();
     } catch (e) {
       setError(e.message || "Could not send that message.");
@@ -142,6 +182,25 @@ export default function OwnerMessaging({ groups }) {
       )}
 
       <label className="field">
+        Template category
+        <select value={category} onChange={(e) => handleCategoryChange(e.target.value)}>
+          <option value="">No template — write freely</option>
+          {MESSAGE_CATEGORIES.map((c) => (
+            <option key={c.id} value={c.id}>{c.icon} {c.label}</option>
+          ))}
+        </select>
+      </label>
+
+      {category && (
+        <p className="muted tiny" style={{ marginTop: -8, marginBottom: 14 }}>
+          <button type="button" className="btn-link" onClick={insertTemplate}>
+            ↻ Load this template's wording into the message below
+          </button>
+          {" — "}edit freely before sending; only [Group Name] and [Date] are filled in for you.
+        </p>
+      )}
+
+      <label className="field">
         Message
         <textarea
           value={message}
@@ -167,6 +226,9 @@ export default function OwnerMessaging({ groups }) {
       {lastSend && (
         <div className="card card-highlight" style={{ marginTop: 14 }}>
           <div className="card-label">Sent to {lastSend.targetLabel}</div>
+          {lastSend.category && (
+            <div style={{ marginTop: 6 }}><CategoryTag categoryId={lastSend.category} /></div>
+          )}
           {lastSend.recipients.length > 0 && (
             <div style={{ marginTop: 8 }}>
               <div className="muted tiny" style={{ marginBottom: 6 }}>
@@ -199,6 +261,7 @@ export default function OwnerMessaging({ groups }) {
           <table className="grid-table">
             <thead>
               <tr>
+                <th className="al">Category</th>
                 <th className="al">Recipient</th>
                 <th className="al">Message</th>
                 <th className="ar">Reached</th>
@@ -208,14 +271,15 @@ export default function OwnerMessaging({ groups }) {
             <tbody>
               {log.map((m) => (
                 <tr key={m.id}>
+                  <td className="al"><CategoryTag categoryId={m.category} /></td>
                   <td className="al">{m.targetLabel}</td>
-                  <td className="al">{m.message}</td>
+                  <td className="al" style={{ whiteSpace: "pre-wrap" }}>{m.message}</td>
                   <td className="ar">{m.recipientCount}</td>
                   <td className="al muted tiny">{new Date(m.sentAt).toLocaleString()}</td>
                 </tr>
               ))}
               {log.length === 0 && (
-                <tr><td colSpan={4} className="muted small">No messages sent yet.</td></tr>
+                <tr><td colSpan={5} className="muted small">No messages sent yet.</td></tr>
               )}
             </tbody>
           </table>

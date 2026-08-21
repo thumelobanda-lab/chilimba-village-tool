@@ -4,7 +4,7 @@ import { json } from "../responses.js";
 import { uid } from "../crypto.js";
 import { isSubscriptionActive, computeExpiryDate } from "../subscriptionUtils.js";
 import { detectSharedSignalFraud } from "../fraudSignals.js";
-import { isValidTargetType, buildTargetLabel, validateMessageBody } from "../ownerMessages.js";
+import { isValidTargetType, buildTargetLabel, validateMessageBody, isValidCategory } from "../ownerMessages.js";
 
 /**
  * Platform-owner routes — entirely separate surface from every other
@@ -204,6 +204,10 @@ export default function registerOwnerRoutes(router) {
 
     if (!isValidTargetType(body.targetType)) throw new HttpError(400, "Unknown target type.");
     if (!body.groupId) throw new HttpError(400, "groupId is required.");
+    // "" (the compose screen's "no template" option) is normalized to
+    // null here rather than treated as an unknown category string.
+    const category = body.category || null;
+    if (!isValidCategory(category)) throw new HttpError(400, "Unknown message category.");
     const message = validateMessageBody(body.message);
 
     const group = await env.DB.prepare(`SELECT id, group_name as groupName FROM groups WHERE id = ?`)
@@ -237,12 +241,12 @@ export default function registerOwnerRoutes(router) {
     const whatsappRequested = body.alsoWhatsApp ? 1 : 0;
     const stmts = [
       env.DB.prepare(
-        `INSERT INTO owner_messages (id, target_type, group_id, user_id, target_label, message, whatsapp_requested, sent_by)
-         VALUES (?,?,?,?,?,?,?,?)`
+        `INSERT INTO owner_messages (id, target_type, group_id, user_id, target_label, message, whatsapp_requested, category, sent_by)
+         VALUES (?,?,?,?,?,?,?,?,?)`
       ).bind(
         messageId, body.targetType, body.groupId,
         body.targetType === "user" ? body.userId : null,
-        targetLabel, message, whatsappRequested, owner.email
+        targetLabel, message, whatsappRequested, category, owner.email
       ),
       ...recipients.map((r) =>
         env.DB.prepare(`INSERT INTO owner_message_recipients (id, message_id, user_id) VALUES (?,?,?)`)
@@ -270,7 +274,7 @@ export default function registerOwnerRoutes(router) {
     await requireOwner(request, env);
     const result = await env.DB.prepare(
       `SELECT om.id, om.target_type as targetType, om.target_label as targetLabel,
-              om.message, om.whatsapp_requested as whatsappRequested,
+              om.message, om.whatsapp_requested as whatsappRequested, om.category,
               om.sent_by as sentBy, om.sent_at as sentAt,
               (SELECT COUNT(*) FROM owner_message_recipients omr WHERE omr.message_id = om.id) as recipientCount
        FROM owner_messages om ORDER BY om.sent_at DESC LIMIT 200`

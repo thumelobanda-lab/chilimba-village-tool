@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { isValidTargetType, buildTargetLabel, validateMessageBody, MAX_MESSAGE_LENGTH } from "./ownerMessages.js";
+import {
+  isValidTargetType, buildTargetLabel, validateMessageBody, MAX_MESSAGE_LENGTH,
+  isValidCategory, MESSAGE_CATEGORIES,
+} from "./ownerMessages.js";
 
 describe("isValidTargetType", () => {
   it("accepts the three known target types", () => {
@@ -54,5 +57,21 @@ describe("validateMessageBody", () => {
   it("accepts a message exactly at the max length", () => {
     const exact = "a".repeat(MAX_MESSAGE_LENGTH);
     expect(validateMessageBody(exact)).toBe(exact);
+  });
+});
+
+describe("isValidCategory", () => {
+  it("accepts every known category id", () => {
+    for (const id of MESSAGE_CATEGORIES) expect(isValidCategory(id)).toBe(true);
+  });
+
+  it("accepts null/undefined as a valid 'no template' state", () => {
+    expect(isValidCategory(null)).toBe(true);
+    expect(isValidCategory(undefined)).toBe(true);
+  });
+
+  it("rejects an unknown category string", () => {
+    expect(isValidCategory("something_else")).toBe(false);
+    expect(isValidCategory("")).toBe(false);
   });
 });

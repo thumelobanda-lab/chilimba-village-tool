@@ -13,6 +13,27 @@ export function isValidTargetType(targetType) {
   return TARGET_TYPES.includes(targetType);
 }
 
+// Mirrors the id list in src/lib/messageTemplates.js — kept as a second,
+// independent list rather than a shared import (same reason
+// effectiveContribution() is duplicated between this runtime and the
+// frontend's: worker/ and src/ don't share a module boundary). This is
+// the ONLY thing the server validates about a category — the actual
+// template wording lives entirely client-side and is never trusted or
+// reconstructed here; category is just a label on the log.
+export const MESSAGE_CATEGORIES = [
+  "fraud_warning",
+  "spam_abuse",
+  "subscription_reminder",
+  "account_suspended",
+  "general_announcement",
+  "payment_dispute",
+];
+
+// A category is optional — null/undefined means "freeform, no template".
+export function isValidCategory(category) {
+  return category === null || category === undefined || MESSAGE_CATEGORIES.includes(category);
+}
+
 /**
  * A stable, human-readable snapshot of who a message was sent to, stored
  * on the owner_messages row itself (not recomputed via a join) so the

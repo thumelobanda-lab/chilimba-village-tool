@@ -278,6 +278,12 @@ CREATE TABLE IF NOT EXISTS owner_messages (
                                      -- "Harriet Banda (Hillcrest Chilimba)"
   message TEXT NOT NULL,
   whatsapp_requested INTEGER NOT NULL DEFAULT 0,
+  category TEXT,                    -- optional template category (migration 011) —
+                                     -- fraud_warning | spam_abuse | subscription_reminder |
+                                     -- account_suspended | general_announcement |
+                                     -- payment_dispute, or NULL for freeform; a label for
+                                     -- the owner's own log only (src/lib/messageTemplates.js),
+                                     -- never affects delivery or targeting
   sent_by TEXT NOT NULL,            -- owner email
   sent_at TEXT NOT NULL DEFAULT (datetime('now'))
 );

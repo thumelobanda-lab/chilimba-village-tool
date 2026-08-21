@@ -105,10 +105,14 @@ export function getOwnerGroupMembers(groupId) {
 // recipients array is what OwnerMessaging.jsx uses to offer a per-person
 // WhatsApp share link (buildWhatsAppShareUrl, lib/inviteCard.js) when
 // alsoWhatsApp is set; sending itself never contacts WhatsApp server-side.
-export function sendOwnerMessage({ groupId, targetType, userId, message, alsoWhatsApp }) {
+export function sendOwnerMessage({ groupId, targetType, userId, message, alsoWhatsApp, category }) {
   return ownerFetch("/api/owner/messages", {
     method: "POST",
-    body: JSON.stringify({ groupId, targetType, userId, message, alsoWhatsApp }),
+    // category is a label for the owner's own log only (see
+    // messageTemplates.js) — omitted (not an empty string) when no
+    // template was used, so the Worker's isValidCategory sees "no
+    // category" rather than an unrecognized value.
+    body: JSON.stringify({ groupId, targetType, userId, message, alsoWhatsApp, category: category || undefined }),
   });
 }
 

@@ -1,0 +1,21 @@
+-- Migration 011: category tags on platform-owner direct messages.
+--
+-- Adds an optional classification to owner_messages (migration 010) —
+-- fraud_warning | spam_abuse | subscription_reminder | account_suspended |
+-- general_announcement | payment_dispute, or NULL for a freeform message
+-- with no template behind it. This is purely a label for the owner's own
+-- log (a distinct color/tag per category so it scans at a glance — see
+-- OwnerMessaging.jsx and .category-tag-* in styles.css); it has no effect
+-- on delivery, targeting, or anything a recipient sees. The actual
+-- template TEXT lives entirely client-side (src/lib/messageTemplates.js)
+-- — the server only ever stores whatever the owner sent after editing,
+-- same as any other message, plus this one label.
+--
+-- Valid category values are enforced in worker/src/ownerMessages.js
+-- (isValidCategory) rather than a SQL CHECK constraint, matching how
+-- target_type (migration 010) is validated in application code too.
+--
+-- Apply with:
+--   npx wrangler d1 execute chilimba-db --remote --file=./schema/migrations/011_owner_message_categories.sql
+
+ALTER TABLE owner_messages ADD COLUMN category TEXT;
