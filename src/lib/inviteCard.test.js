@@ -1,14 +1,41 @@
 import { describe, it, expect } from "vitest";
-import { buildInviteMessage, buildWhatsAppShareUrl, buildInviteCardFilename, buildCardContent } from "./inviteCard.js";
+import {
+  buildInviteMessage,
+  buildWhatsAppShareUrl,
+  buildInviteCardFilename,
+  buildCardContent,
+  buildJoinUrl,
+} from "./inviteCard.js";
 
-const groupInfo = { groupName: "Hillcrest Chilimba", groupSlug: "hillcrest", appUrl: "https://chilimba-village-tool.pages.dev" };
+const groupInfo = { groupName: "Hillcrest Chilimba", groupSlug: "hillcrest", appUrl: "https://chilimba-circle.pages.dev" };
+
+describe("buildJoinUrl", () => {
+  it("appends ?join=<slug> to the app URL", () => {
+    expect(buildJoinUrl("https://chilimba-circle.pages.dev", "hillcrest")).toBe(
+      "https://chilimba-circle.pages.dev/?join=hillcrest"
+    );
+  });
+
+  it("URL-encodes a slug with special characters", () => {
+    expect(buildJoinUrl("https://x.com", "a b/c")).toBe("https://x.com/?join=a%20b%2Fc");
+  });
+
+  it("falls back to the bare app URL when the slug is missing", () => {
+    expect(buildJoinUrl("https://x.com", "")).toBe("https://x.com");
+    expect(buildJoinUrl("https://x.com", null)).toBe("https://x.com");
+  });
+
+  it("returns an empty string when appUrl is missing too", () => {
+    expect(buildJoinUrl("", "hillcrest")).toBe("");
+  });
+});
 
 describe("buildInviteMessage", () => {
-  it("includes the group name, code, and app URL", () => {
+  it("includes the group name, code, and a join link carrying the code", () => {
     const msg = buildInviteMessage(groupInfo);
     expect(msg).toContain("Hillcrest Chilimba");
-    expect(msg).toContain("hillcrest");
-    expect(msg).toContain("https://chilimba-village-tool.pages.dev");
+    expect(msg).toContain("Group code: hillcrest");
+    expect(msg).toContain("https://chilimba-circle.pages.dev/?join=hillcrest");
   });
 
   it("throws if any required field is missing", () => {
@@ -55,7 +82,7 @@ describe("buildCardContent", () => {
     expect(content.groupName).toBe("Hillcrest Chilimba");
     expect(content.code).toBe("hillcrest");
     expect(content.cycleLabel).toBe("Cycle 3");
-    expect(content.url).toBe("https://chilimba-village-tool.pages.dev");
+    expect(content.url).toBe("https://chilimba-circle.pages.dev/?join=hillcrest");
     expect(content.tagline).toBeTruthy();
     expect(content.brand).toBeTruthy();
   });

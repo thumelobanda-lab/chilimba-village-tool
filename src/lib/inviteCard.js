@@ -6,6 +6,18 @@
  * testing: the wording and structure, not the pixel rendering.
  */
 
+/**
+ * A join link that carries the group code in the URL itself
+ * (?join=<slug>) — Login.jsx reads this on load to drop whoever taps it
+ * straight into "Sign up" mode with the group code already filled in,
+ * instead of a generic form that doesn't say what they're supposed to
+ * do with it.
+ */
+export function buildJoinUrl(appUrl, groupSlug) {
+  if (!appUrl || !groupSlug) return appUrl || "";
+  return `${appUrl}/?join=${encodeURIComponent(groupSlug)}`;
+}
+
 export function buildInviteMessage({ groupName, groupSlug, appUrl }) {
   if (!groupName || !groupSlug || !appUrl) {
     throw new Error("groupName, groupSlug, and appUrl are all required.");
@@ -14,7 +26,7 @@ export function buildInviteMessage({ groupName, groupSlug, appUrl }) {
     `Join our savings circle, ${groupName}! 🤝\n\n` +
     `See everyone's contributions, get reminders, no more paper books.\n\n` +
     `Group code: ${groupSlug}\n` +
-    `Sign in here: ${appUrl}`
+    `Join here: ${buildJoinUrl(appUrl, groupSlug)}`
   );
 }
 
@@ -40,6 +52,6 @@ export function buildCardContent({ groupName, groupSlug, cycleName, appUrl }) {
     codeLabel: "GROUP CODE",
     code: groupSlug || "",
     tagline: "Everyone sees the same book. No more paper, no more guessing.",
-    url: appUrl || "",
+    url: buildJoinUrl(appUrl, groupSlug),
   };
 }

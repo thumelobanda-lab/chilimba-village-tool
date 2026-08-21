@@ -145,6 +145,7 @@ export default function App() {
           <Login onLogin={handleLogin} />
         ) : onboarding.needsOnboarding ? (
           <Onboarding
+            groupName={session.groupName}
             groupDefaultRate={config.schedule.find((r) => !isRecipientRow(r))?.due}
             onComplete={handleFinishOnboarding}
             onSkip={onboarding.skip}

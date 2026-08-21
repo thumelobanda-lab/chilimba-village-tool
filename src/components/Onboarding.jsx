@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-export default function Onboarding({ groupDefaultRate, onComplete, onSkip }) {
+export default function Onboarding({ groupName, groupDefaultRate, onComplete, onSkip }) {
   const [rate, setRate] = useState(groupDefaultRate || "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -23,6 +23,7 @@ export default function Onboarding({ groupDefaultRate, onComplete, onSkip }) {
 
   return (
     <div className="panel login-panel">
+      {groupName && <div className="badge badge-ok">✓ You've joined {groupName}</div>}
       <h2 className="panel-title">Welcome — one quick step</h2>
 
       <label className="field">

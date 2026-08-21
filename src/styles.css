@@ -639,3 +639,30 @@ body { margin: 0; background: var(--bg); color: var(--ink); }
   padding: 0;
 }
 
+/* Sign up / Sign in mode toggle atop the login form — one shared form
+   underneath (see Login.jsx), this only swaps which framing is shown. */
+.auth-mode-toggle {
+  display: flex;
+  gap: 4px;
+  background: #EDF0F2;
+  border-radius: 8px;
+  padding: 4px;
+  margin-bottom: 16px;
+}
+.auth-mode-tab {
+  flex: 1;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--ink-faint);
+  cursor: pointer;
+}
+.auth-mode-tab-active {
+  background: var(--panel);
+  color: var(--accent);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+}
+
