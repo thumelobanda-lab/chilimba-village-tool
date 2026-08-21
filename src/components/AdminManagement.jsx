@@ -4,6 +4,17 @@ import { useApiData } from "../lib/useApiData.js";
 
 const money = (n) => "K" + (Number(n) || 0).toLocaleString("en-ZM", { maximumFractionDigits: 0 });
 
+// There's no push/badge/notification anywhere else when someone joins —
+// this tag, plus the roster now sorting newest-first (see the ORDER BY
+// in worker/src/routes/admin.js and the mock-mode sort above it), is the
+// whole mechanism for an admin to notice a new member without having to
+// remember exactly who was on the roster last time they looked.
+const NEW_MEMBER_WINDOW_MS = 48 * 60 * 60 * 1000; // 48 hours
+function isNewMember(joinedAt) {
+  if (!joinedAt) return false;
+  return Date.now() - new Date(joinedAt).getTime() < NEW_MEMBER_WINDOW_MS;
+}
+
 export default function AdminManagement() {
   const { data, error: loadError, loading, refresh } = useApiData(getGroupMembers, []);
   const [promoteName, setPromoteName] = useState("");
@@ -75,8 +86,9 @@ export default function AdminManagement() {
     <div style={{ marginTop: 20 }}>
       <h3 className="panel-subtitle">Roster & Admins</h3>
       <p className="muted tiny" style={{ marginBottom: 10 }}>
-        Every active member, when they joined, and the next date they still owe something
-        on. Any admin can promote another member, demote another admin (the group is never
+        Every active member, newest-joined first, tagged "new" for their first 48 hours so
+        a fresh sign-up doesn't get missed — this is the only place that shows one. Any
+        admin can promote another member, demote another admin (the group is never
         left without at least one), remove a member entirely (keeps their payment history,
         just revokes access), or reset a member's PIN if they've forgotten it — PINs are
         one-way hashed, so this is the only recovery path. To remove an admin, demote them
@@ -102,7 +114,10 @@ export default function AdminManagement() {
               <tbody>
                 {data.members.map((m) => (
                   <tr key={m.name}>
-                    <td className="al">{m.name}</td>
+                    <td className="al">
+                      {m.name}
+                      {isNewMember(m.joinedAt) && <span className="tag">new</span>}
+                    </td>
                     <td className="al">
                       {m.role === "admin" ? <span className="tag tag-rate">admin</span> : <span className="muted tiny">member</span>}
                     </td>

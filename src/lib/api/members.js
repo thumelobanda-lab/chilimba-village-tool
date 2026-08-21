@@ -40,7 +40,10 @@ export async function getGroupMembers() {
         nextDueAmount: next?.balance || 0,
       });
     }
-    members.sort((a, b) => a.name.localeCompare(b.name));
+    // Newest-joined first, matching the real backend (see admin.js's
+    // ORDER BY created_at DESC) — a member missing joinedAt (shouldn't
+    // happen, but defensively) sorts last rather than crashing the compare.
+    members.sort((a, b) => new Date(b.joinedAt || 0) - new Date(a.joinedAt || 0));
     return { members };
   }
 

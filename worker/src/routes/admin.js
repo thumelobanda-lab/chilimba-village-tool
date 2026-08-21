@@ -9,6 +9,11 @@ export default function registerAdminRoutes(router) {
   // The admin roster: every active member, their role, when they joined,
   // and the next date they still owe something on — powers the
   // promote/demote UI and answers "who's paid, who's next" at a glance.
+  // Newest-joined first (rather than alphabetical) so a member who just
+  // signed up is immediately visible at the top instead of buried
+  // wherever their name happens to sort — the roster was otherwise the
+  // only place a new member ever showed up at all, with no notification
+  // of any kind when someone joins.
   // Deliberately a fixed, small number of queries (config + members +
   // all due_overrides + all payments, once each) rather than looping a
   // per-member query per schedule date — same batching discipline as the
@@ -24,7 +29,7 @@ export default function registerAdminRoutes(router) {
 
     const membersResult = await env.DB.prepare(
       `SELECT display_name as name, role, created_at as joinedAt
-       FROM users WHERE group_id = ? AND active = 1 ORDER BY display_name COLLATE NOCASE`
+       FROM users WHERE group_id = ? AND active = 1 ORDER BY created_at DESC`
     ).bind(admin.groupId).all();
     const members = membersResult.results || [];
 
