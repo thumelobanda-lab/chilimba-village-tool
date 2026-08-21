@@ -4,6 +4,7 @@ import { getPayees, generateScheduleDates, SCHEDULE_FREQUENCIES } from "../lib/s
 import AdminManagement from "./AdminManagement.jsx";
 import CollapsibleSection from "./CollapsibleSection.jsx";
 import InviteCard from "./InviteCard.jsx";
+import PaymentMethodsEditor from "./PaymentMethodsEditor.jsx";
 
 export default function GroupSetup({ config, onSaved, session }) {
   const [draft, setDraft] = useState(() => {
@@ -89,29 +90,6 @@ export default function GroupSetup({ config, onSaved, session }) {
 
   const removeFund = (id) => {
     setDraft({ ...draft, funds: (draft.funds || []).filter((f) => f.id !== id) });
-  };
-
-  const editPaymentMethod = (id, field, value) => {
-    setDraft({
-      ...draft,
-      paymentMethods: (draft.paymentMethods || []).map((m) =>
-        m.id === id ? { ...m, [field]: value } : m
-      ),
-    });
-  };
-
-  const addPaymentMethod = () => {
-    setDraft({
-      ...draft,
-      paymentMethods: [
-        ...(draft.paymentMethods || []),
-        { id: "pay" + Date.now(), type: "mobile", label: "", accountName: "", accountNumber: "" },
-      ],
-    });
-  };
-
-  const removePaymentMethod = (id) => {
-    setDraft({ ...draft, paymentMethods: (draft.paymentMethods || []).filter((m) => m.id !== id) });
   };
 
   const save = async () => {
@@ -317,67 +295,14 @@ export default function GroupSetup({ config, onSaved, session }) {
         summary={paymentCount === 0 ? "Not set up" : `${paymentCount} method${paymentCount === 1 ? "" : "s"}`}
       >
         <p className="muted tiny" style={{ marginBottom: 10 }}>
-          Where members should actually send their contribution. Shown to every member on
-          their ledger — see the "Where to Pay" section.
+          Where members should actually send their contribution. Shown to every member —
+          also editable from its own dedicated "Payment Options" screen, not just here;
+          both edit the same data.
         </p>
-        <div className="grid-wrap">
-          <table className="grid-table">
-            <thead>
-              <tr>
-                <th className="al">Type</th>
-                <th className="al">Label</th>
-                <th className="al">Account name</th>
-                <th className="al">Number</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {(draft.paymentMethods || []).map((m) => (
-                <tr key={m.id}>
-                  <td data-label="Type">
-                    <select
-                      className="cell-input-text"
-                      value={m.type}
-                      onChange={(e) => editPaymentMethod(m.id, "type", e.target.value)}
-                    >
-                      <option value="mobile">Mobile Money</option>
-                      <option value="bank">Bank</option>
-                    </select>
-                  </td>
-                  <td data-label="Label">
-                    <input
-                      className="cell-input-text"
-                      value={m.label}
-                      onChange={(e) => editPaymentMethod(m.id, "label", e.target.value)}
-                      placeholder={m.type === "bank" ? "e.g. Zanaco" : "e.g. MTN Money"}
-                    />
-                  </td>
-                  <td data-label="Account name">
-                    <input
-                      className="cell-input-text"
-                      value={m.accountName}
-                      onChange={(e) => editPaymentMethod(m.id, "accountName", e.target.value)}
-                      placeholder="e.g. Hillcrest Chilimba"
-                    />
-                  </td>
-                  <td data-label="Number">
-                    <input
-                      className="cell-input-text wide"
-                      value={m.accountNumber}
-                      onChange={(e) => editPaymentMethod(m.id, "accountNumber", e.target.value)}
-                      placeholder={m.type === "bank" ? "Account number" : "Phone number"}
-                    />
-                  </td>
-                  <td className="cell-action"><button className="btn-icon" onClick={() => removePaymentMethod(m.id)} title="Remove" aria-label={`Remove ${m.label || "this"} payment method`}>✕</button></td>
-                </tr>
-              ))}
-              {(!draft.paymentMethods || draft.paymentMethods.length === 0) && (
-                <tr><td colSpan={5} className="muted small">No payment details set up yet.</td></tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-        <button className="btn-ghost-dark" style={{ marginTop: 10 }} onClick={addPaymentMethod}>+ Add payment method</button>
+        <PaymentMethodsEditor
+          methods={draft.paymentMethods}
+          onChange={(next) => setDraft({ ...draft, paymentMethods: next })}
+        />
       </CollapsibleSection>
 
       <CollapsibleSection icon="📣" title="Invite Members" summary="WhatsApp-ready invite card">

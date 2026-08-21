@@ -15,6 +15,7 @@ import NavMenu from "./components/NavMenu.jsx";
 import Dashboard from "./components/Dashboard.jsx";
 import PaymentInfo from "./components/PaymentInfo.jsx";
 import NoticeBoard from "./components/NoticeBoard.jsx";
+import PaymentOptions from "./components/PaymentOptions.jsx";
 import QuickCalculator from "./components/QuickCalculator.jsx";
 import Walkthrough, { hasSeenWalkthrough } from "./components/Walkthrough.jsx";
 import { useSession } from "./hooks/useSession.js";
@@ -24,6 +25,7 @@ import { useOnboarding } from "./hooks/useOnboarding.js";
 
 const TABS = [
   { id: "ledger", label: "My Ledger" },
+  { id: "payment-options", label: "Payment Options" },
   { id: "summary", label: "Payment Summary" },
   { id: "reminders", label: "Reminders" },
   { id: "community", label: "Community" },
@@ -273,6 +275,12 @@ export default function App() {
                 <div className="privacy-row">
                   <button className="btn-link" onClick={handleDeleteData}>Delete my data</button>
                 </div>
+              </div>
+            )}
+
+            {tab === "payment-options" && (
+              <div role="tabpanel" id="panel-payment-options" aria-labelledby="tab-payment-options">
+                <PaymentOptions session={session} config={config} onSaved={setConfig} />
               </div>
             )}
 
