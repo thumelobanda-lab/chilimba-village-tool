@@ -3,6 +3,7 @@ import { HttpError } from "../httpError.js";
 import { uid } from "../crypto.js";
 import { json } from "../responses.js";
 import { maybeRecordFundContributions } from "../fundCrediting.js";
+import { EFFECTIVE_CONTRIBUTION_SQL } from "../communityFundSplit.js";
 
 export default function registerContributionsRoutes(router) {
   router.get("/api/contributions/me", async ({ request, env, cors }) => {
@@ -10,7 +11,8 @@ export default function registerContributionsRoutes(router) {
     const payments = await env.DB.prepare(
       `SELECT id, schedule_row_id as scheduleRowId, amount, note, recorded_by as recordedBy,
               recorded_at as recordedAt, voided_at as voidedAt, void_reason as voidReason,
-              confirmed_at as confirmedAt, confirmed_by as confirmedBy
+              confirmed_at as confirmedAt, confirmed_by as confirmedBy,
+              community_fund_amount as communityFundAmount
        FROM payments WHERE user_id = ? ORDER BY recorded_at ASC`
     ).bind(user.id).all();
     const payout = await env.DB.prepare(
@@ -37,8 +39,13 @@ export default function registerContributionsRoutes(router) {
     // Sum this member's non-voided payments for this date BEFORE this
     // insert, so we can tell if this payment is what pushes them over
     // their due amount (fund contributions fire once, on that crossing).
+    // Uses the same effective-contribution rule as everywhere else a
+    // "paid" total is shown (a confirmed prior payment counts only its
+    // post-community-fund-split remainder) — the new payment being
+    // inserted here is always unconfirmed at this point, so it's added
+    // below at its full raw amount, unaffected by that rule yet.
     const before = await env.DB.prepare(
-      `SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE user_id = ? AND schedule_row_id = ? AND voided_at IS NULL`
+      `SELECT COALESCE(SUM(${EFFECTIVE_CONTRIBUTION_SQL}), 0) as total FROM payments WHERE user_id = ? AND schedule_row_id = ? AND voided_at IS NULL`
     ).bind(user.id, body.scheduleRowId).first();
     const paidBefore = before.total;
 

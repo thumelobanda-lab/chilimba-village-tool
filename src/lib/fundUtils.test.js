@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { crossedDueThreshold, fundsStillToCredit } from "./fundUtils.js";
+import { crossedDueThreshold, fundsStillToCredit, computeCommunityFundSplit } from "./fundUtils.js";
 
 describe("crossedDueThreshold", () => {
   it("returns true the moment a payment pushes cumulative paid to exactly the due amount", () => {
@@ -58,5 +58,23 @@ describe("fundsStillToCredit", () => {
   it("is unaffected by IDs in the credited list that don't match any fund", () => {
     const result = fundsStillToCredit(funds, ["future", "some-old-removed-fund"]);
     expect(result).toEqual([{ id: "hospital", name: "Hospital Emergency Fund", amount: 20 }]);
+  });
+});
+
+describe("computeCommunityFundSplit", () => {
+  it("splits a payment larger than the deduction rate", () => {
+    expect(computeCommunityFundSplit(50, 10)).toEqual({ fundAmount: 10, remainder: 40 });
+  });
+
+  it("caps the fund amount at the payment's own amount", () => {
+    expect(computeCommunityFundSplit(5, 10)).toEqual({ fundAmount: 5, remainder: 0 });
+  });
+
+  it("returns the full amount as remainder when there's no deduction configured", () => {
+    expect(computeCommunityFundSplit(50, 0)).toEqual({ fundAmount: 0, remainder: 50 });
+  });
+
+  it("treats a missing/non-numeric rate as 0 instead of NaN", () => {
+    expect(computeCommunityFundSplit(50, undefined)).toEqual({ fundAmount: 0, remainder: 50 });
   });
 });

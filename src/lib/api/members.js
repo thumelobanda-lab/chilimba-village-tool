@@ -1,6 +1,7 @@
 import { MOCK_MODE, lsGet, lsSet, realFetch, currentSession, groupScopedKey } from "./core.js";
 import { wouldLeaveZeroAdmins } from "../adminUtils.js";
 import { findNextDue } from "../scheduleUtils.js";
+import { effectiveContribution } from "../ledgerMath.js";
 
 // Every ACTIVE member of the signed-in admin's OWN group, with role,
 // when they joined, and the next date they still owe something on —
@@ -28,7 +29,7 @@ export async function getGroupMembers() {
       const ledger = lsGet(groupScopedKey(session, "ledger", name), { payments: [], dueOverrides: {} });
       const paidByRowId = {};
       (ledger.payments || []).filter((p) => !p.voidedAt).forEach((p) => {
-        paidByRowId[p.scheduleRowId] = (paidByRowId[p.scheduleRowId] || 0) + p.amount;
+        paidByRowId[p.scheduleRowId] = (paidByRowId[p.scheduleRowId] || 0) + effectiveContribution(p);
       });
       const next = findNextDue(schedule, name, recipientExempt, ledger.dueOverrides || {}, paidByRowId);
 

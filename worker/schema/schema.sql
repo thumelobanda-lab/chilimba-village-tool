@@ -37,6 +37,10 @@ CREATE TABLE IF NOT EXISTS groups (
   payment_info_json TEXT NOT NULL DEFAULT '[]', -- JSON array of where members send
                                              -- biweekly payments: mobile money / bank
                                              -- details, admin-edited, member-visible
+  community_fund_deduction REAL NOT NULL DEFAULT 0, -- fixed K amount split off
+                                             -- every payment into the community
+                                             -- fund once an admin confirms it
+                                             -- (see migration 007) — 0 means off
   subscription_expires_at TEXT,             -- NULL until the group's admin pays;
                                              -- see group_subscriptions for the K100/
                                              -- 6-month history — this column is just
@@ -89,6 +93,13 @@ CREATE TABLE IF NOT EXISTS sessions (
 -- Readable by all members of the SAME group — not admins-only, and never
 -- across groups. Only ever holds {name, fund, amount, date} — never a
 -- member's balance, rate, or full payment history.
+-- payment_id links a row to the specific confirmed payment it was split
+-- from (see migration 007) — NULL for the older threshold-crediting rows
+-- below, which aren't tied to one payment. UNIQUE folds payment_id in so
+-- a member with more than one payment against the same date can have
+-- each independently-confirmed payment credit its own row; SQLite never
+-- treats two NULLs as equal under UNIQUE, so the old system's original
+-- one-credit-per-member-per-date-per-fund guarantee is unaffected.
 CREATE TABLE IF NOT EXISTS fund_contributions (
   id TEXT PRIMARY KEY,
   group_id TEXT NOT NULL REFERENCES groups(id),
@@ -98,7 +109,8 @@ CREATE TABLE IF NOT EXISTS fund_contributions (
   fund_id TEXT NOT NULL,
   amount REAL NOT NULL,
   recorded_at TEXT NOT NULL DEFAULT (datetime('now')),
-  UNIQUE(user_id, schedule_row_id, fund_id)
+  payment_id TEXT REFERENCES payments(id),
+  UNIQUE(user_id, schedule_row_id, fund_id, payment_id)
 );
 CREATE INDEX IF NOT EXISTS idx_fund_contrib_group ON fund_contributions(group_id, recorded_at);
 
@@ -119,7 +131,11 @@ CREATE TABLE IF NOT EXISTS payments (
                                       -- the money arrive (statement, deposit
                                       -- slip, etc.) — a trust flag, not a
                                       -- gate; unconfirmed still counts fully
-  confirmed_by TEXT
+  confirmed_by TEXT,
+  community_fund_amount REAL NOT NULL DEFAULT 0 -- portion diverted to the
+                                      -- community fund, set ONLY at confirm
+                                      -- time (see migration 007) — 0 until
+                                      -- then, reset to 0 again if unconfirmed
 );
 CREATE INDEX IF NOT EXISTS idx_payments_user ON payments(user_id);
 CREATE INDEX IF NOT EXISTS idx_payments_group ON payments(group_id);

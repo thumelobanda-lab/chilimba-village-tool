@@ -128,6 +128,9 @@ export default function GroupSetup({ config, onSaved, session }) {
       if ((toSave.paymentMethods || []).some((m) => !m.label.trim() || !m.accountNumber.trim())) {
         throw new Error("Every payment method needs a label and an account/phone number.");
       }
+      if (Number(toSave.communityFundDeduction) < 0) {
+        throw new Error("Community fund deduction can't be negative.");
+      }
       await saveSchedule(toSave);
       onSaved(toSave);
       setStatus("Saved");
@@ -251,6 +254,24 @@ export default function GroupSetup({ config, onSaved, session }) {
         title="Community Funds"
         summary={fundCount === 0 ? "None set up" : `${fundCount} fund${fundCount === 1 ? "" : "s"}`}
       >
+        <h3 className="panel-subtitle">Automatic Payment Split</h3>
+        <p className="muted tiny" style={{ marginBottom: 10 }}>
+          A fixed amount taken off every payment once an admin confirms it — the rest still
+          counts toward the member's due. Split into one always-on "Community Fund" balance
+          (shown in the Community tab and on the dashboard), separate from the named funds
+          below. Set to K0 to turn it off.
+        </p>
+        <label className="field" style={{ maxWidth: 220, marginBottom: 16 }}>
+          Deduction per confirmed payment (K)
+          <input
+            type="number"
+            min={0}
+            value={draft.communityFundDeduction || 0}
+            onChange={(e) => setDraft({ ...draft, communityFundDeduction: Number(e.target.value) || 0 })}
+          />
+        </label>
+
+        <h3 className="panel-subtitle">Named Funds</h3>
         <p className="muted tiny" style={{ marginBottom: 10 }}>
           A fixed amount is set aside from each member's contribution once they've paid their
           due amount for a date. Visible to every member — see the "Community" tab.

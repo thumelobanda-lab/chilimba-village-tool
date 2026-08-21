@@ -1,5 +1,6 @@
 import { isRecipient as isRecipientHelper, resolveDue } from "../scheduleUtils.js";
 import { crossedDueThreshold, fundsStillToCredit } from "../fundUtils.js";
+import { effectiveContribution } from "../ledgerMath.js";
 import { MOCK_MODE, lsGet, lsSet, uid, realFetch, currentSession, groupScopedKey } from "./core.js";
 
 const emptyLedger = () => ({ payments: [], payoutInfo: { amount: 0, date: "" }, dueOverrides: {} });
@@ -112,14 +113,21 @@ export async function addPayment({ scheduleRowId, amount, note = "" }) {
     recordedAt: new Date().toISOString(),
     recordedBy: session.name,
     voidedAt: null,
+    confirmedAt: null,
+    confirmedBy: null,
+    communityFundAmount: 0,
   };
 
   if (MOCK_MODE) {
     const key = ledgerKeyFor(session);
     const ledger = lsGet(key, emptyLedger());
+    // Same effective-contribution rule as everywhere else a "paid" total
+    // is shown — a confirmed prior payment counts only its post-split
+    // remainder. This new entry is always unconfirmed at insert time, so
+    // it's added below (paidBefore + amt) at its full raw amount.
     const paidBefore = ledger.payments
       .filter((p) => p.scheduleRowId === scheduleRowId && !p.voidedAt)
-      .reduce((s, p) => s + p.amount, 0);
+      .reduce((s, p) => s + effectiveContribution(p), 0);
     ledger.payments = [...ledger.payments, entry];
     lsSet(key, ledger);
     creditFundsIfNeededMock(session, scheduleRowId, paidBefore, paidBefore + amt);

@@ -190,54 +190,62 @@ function RowWithHistory({ row, isRecipient, onAddPayment, onVoidPayment, onEditP
               {[...activeEntries, ...voidedEntries]
                 .sort((a, b) => new Date(b.recordedAt) - new Date(a.recordedAt))
                 .map((e) => (
-                  <div key={e.id} className={"history-entry" + (e.voidedAt ? " voided" : "")}>
-                    {!e.voidedAt && (
-                      <span
-                        className={"confirm-bulb " + (e.confirmedAt ? "confirm-bulb-on" : "confirm-bulb-off")}
-                        title={e.confirmedAt ? `Confirmed by an admin (${e.confirmedBy})` : "Not yet confirmed by an admin"}
-                      >●</span>
-                    )}
-                    {!e.voidedAt && editingEntryId === e.id ? (
-                      <span className="due-edit">
-                        <input
-                          type="number"
-                          className="cell-input"
-                          value={entryDraft}
-                          onChange={(ev) => setEntryDraft(ev.target.value)}
-                          autoFocus
-                        />
-                        <button className="btn-link" disabled={entryBusy} onClick={() => saveEntryEdit(e)}>
-                          {entryBusy ? "saving…" : "save"}
+                  <div key={e.id} className="history-entry-wrap">
+                    <div className={"history-entry" + (e.voidedAt ? " voided" : "")}>
+                      {!e.voidedAt && (
+                        <span
+                          className={"confirm-bulb " + (e.confirmedAt ? "confirm-bulb-on" : "confirm-bulb-off")}
+                          title={e.confirmedAt ? `Confirmed by an admin (${e.confirmedBy})` : "Not yet confirmed by an admin"}
+                        >●</span>
+                      )}
+                      {!e.voidedAt && editingEntryId === e.id ? (
+                        <span className="due-edit">
+                          <input
+                            type="number"
+                            className="cell-input"
+                            value={entryDraft}
+                            onChange={(ev) => setEntryDraft(ev.target.value)}
+                            autoFocus
+                          />
+                          <button className="btn-link" disabled={entryBusy} onClick={() => saveEntryEdit(e)}>
+                            {entryBusy ? "saving…" : "save"}
+                          </button>
+                          <button className="btn-link" disabled={entryBusy} onClick={() => setEditingEntryId(null)}>
+                            cancel
+                          </button>
+                        </span>
+                      ) : e.voidedAt ? (
+                        <span>{money(e.amount)}</span>
+                      ) : (
+                        <button
+                          className="link-amount"
+                          onClick={() => startEditEntry(e)}
+                          title="Edit this entry's amount"
+                        >
+                          {money(e.amount)}
                         </button>
-                        <button className="btn-link" disabled={entryBusy} onClick={() => setEditingEntryId(null)}>
-                          cancel
-                        </button>
+                      )}
+                      <span className="muted tiny">
+                        {new Date(e.recordedAt).toLocaleDateString()} · {e.recordedBy}
                       </span>
-                    ) : e.voidedAt ? (
-                      <span>{money(e.amount)}</span>
-                    ) : (
-                      <button
-                        className="link-amount"
-                        onClick={() => startEditEntry(e)}
-                        title="Edit this entry's amount"
-                      >
-                        {money(e.amount)}
-                      </button>
-                    )}
-                    <span className="muted tiny">
-                      {new Date(e.recordedAt).toLocaleDateString()} · {e.recordedBy}
-                    </span>
-                    {e.voidedAt ? (
-                      <span className="muted tiny">voided</span>
-                    ) : (
-                      editingEntryId !== e.id && (
-                        <>
-                          {e.confirmedAt && (
-                            <button className="receipt-link" onClick={() => onViewReceipt(e)}>🧾 Receipt</button>
-                          )}
-                          <button className="btn-link" onClick={() => onVoidPayment(e.id)}>void</button>
-                        </>
-                      )
+                      {e.voidedAt ? (
+                        <span className="muted tiny">voided</span>
+                      ) : (
+                        editingEntryId !== e.id && (
+                          <>
+                            {e.confirmedAt && (
+                              <button className="receipt-link" onClick={() => onViewReceipt(e)}>🧾 Receipt</button>
+                            )}
+                            <button className="btn-link" onClick={() => onVoidPayment(e.id)}>void</button>
+                          </>
+                        )
+                      )}
+                    </div>
+                    {!e.voidedAt && e.confirmedAt && e.communityFundAmount > 0 && (
+                      <div className="muted tiny split-breakdown">
+                        {money(e.amount)} paid → {money(e.communityFundAmount)} to Community Fund,{" "}
+                        {money(e.amount - e.communityFundAmount)} to contribution
+                      </div>
                     )}
                   </div>
                 ))}

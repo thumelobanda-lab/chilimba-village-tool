@@ -50,9 +50,14 @@ export function buildReceiptData({ payment, memberName, groupName, cycleName, sc
   if (!payment) throw new Error("payment is required.");
   if (!payment.confirmedAt) throw new Error("Only a confirmed payment has a receipt.");
 
+  const amount = Number(payment.amount) || 0;
+  const communityFundAmount = Number(payment.communityFundAmount) || 0;
+
   return {
     memberName: memberName || "",
-    amount: Number(payment.amount) || 0,
+    amount,
+    communityFundAmount,
+    contributionAmount: amount - communityFundAmount,
     datePaid: payment.recordedAt || "",
     dueDate: scheduleRow?.date || "",
     dueGroup: scheduleRow?.group || "",
@@ -74,6 +79,9 @@ export function buildReceiptMessage(data) {
     (data.cycleName ? `Cycle: ${data.cycleName}\n` : "") +
     `Member: ${data.memberName}\n` +
     `Amount paid: K${data.amount.toLocaleString()}\n` +
+    (data.communityFundAmount > 0
+      ? `K${data.communityFundAmount.toLocaleString()} to Community Fund, K${data.contributionAmount.toLocaleString()} to contribution\n`
+      : "") +
     `For payout date: ${payoutLine}\n` +
     `Date paid: ${datePaid}\n` +
     `Confirmed by: ${data.confirmedBy || "—"}\n` +

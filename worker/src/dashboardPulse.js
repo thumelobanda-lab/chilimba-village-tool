@@ -24,6 +24,14 @@ export function computeGroupPulse(payments, scheduleRowIds, activeMemberCount, n
   const rowIds = scheduleRowIds instanceof Set ? scheduleRowIds : new Set(scheduleRowIds);
   const inCycle = (payments || []).filter((p) => rowIds.has(p.scheduleRowId));
 
+  // Deliberately the raw amount, not effectiveContribution()'s
+  // post-community-fund-split remainder (see communityFundSplit.js /
+  // ledgerMath.js) — this is a "how much has moved through the group's
+  // contribution system" activity figure, not a due-progress figure.
+  // The community fund is still money the group collectively raised;
+  // netting it out here would make Group Pulse under-report real
+  // activity for no benefit, since this endpoint never breaks the total
+  // down per member anyway (see the file comment above).
   const totalContributed = inCycle.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
 
   const weekAgoMs = nowMs - 7 * 24 * 60 * 60 * 1000;

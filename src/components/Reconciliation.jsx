@@ -159,28 +159,36 @@ export default function Reconciliation({ config }) {
                         <td colSpan={5}>
                           <div className="history-panel">
                             {m.entries.map((e) => (
-                              <div key={e.id} className="history-entry">
-                                <span
-                                  className={"confirm-bulb " + (e.confirmedAt ? "confirm-bulb-on" : "confirm-bulb-off")}
-                                  title={e.confirmedAt ? `Confirmed by ${e.confirmedBy}` : "Not yet confirmed"}
-                                >●</span>
-                                <span>{money(e.amount)}</span>
-                                <span className="muted tiny">{new Date(e.recordedAt).toLocaleDateString()}</span>
-                                {e.confirmedAt && (
+                              <div key={e.id} className="history-entry-wrap">
+                                <div className="history-entry">
+                                  <span
+                                    className={"confirm-bulb " + (e.confirmedAt ? "confirm-bulb-on" : "confirm-bulb-off")}
+                                    title={e.confirmedAt ? `Confirmed by ${e.confirmedBy}` : "Not yet confirmed"}
+                                  >●</span>
+                                  <span>{money(e.amount)}</span>
+                                  <span className="muted tiny">{new Date(e.recordedAt).toLocaleDateString()}</span>
+                                  {e.confirmedAt && (
+                                    <button
+                                      className="receipt-link"
+                                      onClick={() => setReceiptFor({ payment: e, memberName: e.memberName })}
+                                    >
+                                      🧾 Receipt
+                                    </button>
+                                  )}
                                   <button
-                                    className="receipt-link"
-                                    onClick={() => setReceiptFor({ payment: e, memberName: e.memberName })}
+                                    className="btn-link"
+                                    disabled={busyEntryId === e.id}
+                                    onClick={() => toggleConfirm(e)}
                                   >
-                                    🧾 Receipt
+                                    {e.confirmedAt ? "unconfirm" : "confirm"}
                                   </button>
+                                </div>
+                                {e.confirmedAt && e.communityFundAmount > 0 && (
+                                  <div className="muted tiny split-breakdown">
+                                    {money(e.amount)} paid → {money(e.communityFundAmount)} to Community Fund,{" "}
+                                    {money(e.amount - e.communityFundAmount)} to contribution
+                                  </div>
                                 )}
-                                <button
-                                  className="btn-link"
-                                  disabled={busyEntryId === e.id}
-                                  onClick={() => toggleConfirm(e)}
-                                >
-                                  {e.confirmedAt ? "unconfirm" : "confirm"}
-                                </button>
                               </div>
                             ))}
                           </div>

@@ -364,6 +364,7 @@ body { margin: 0; background: var(--bg); color: var(--ink); }
 }
 .history-entry.voided { text-decoration: line-through; opacity: 0.55; }
 .history-add { display: flex; gap: 8px; margin-top: 8px; align-items: center; }
+.split-breakdown { padding: 0 0 4px 30px; margin-top: -4px; }
 
 .privacy-row { margin-top: 16px; text-align: right; }
 .btn-link {

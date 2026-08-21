@@ -2,6 +2,7 @@ import React from "react";
 import { getGroupFunds } from "../lib/api.js";
 import { useApiData } from "../lib/useApiData.js";
 import { sumFundBalances } from "../lib/dashboardMath.js";
+import { COMMUNITY_FUND_ID } from "../lib/fundUtils.js";
 import GrowthProjection from "./GrowthProjection.jsx";
 
 const money = (n) => "K" + (Number(n) || 0).toLocaleString("en-ZM", { maximumFractionDigits: 0 });
@@ -41,6 +42,8 @@ export default function Community() {
                 <div className="muted tiny">
                   {f.loanable
                     ? `${money(f.balance)} collected · ${money(f.outstandingLoans)} out on loan`
+                    : f.id === COMMUNITY_FUND_ID
+                    ? `K${f.amount} split off every confirmed payment`
                     : `K${f.amount} per member per date`}
                 </div>
               </div>

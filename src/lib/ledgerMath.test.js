@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { computeLedgerTotals } from "./ledgerMath.js";
+import { computeLedgerTotals, effectiveContribution } from "./ledgerMath.js";
 
 const baseSchedule = [
   { id: "d1", date: "20 Jun 2026", group: "GROUP 1", payees: ["Doreen"], due: 1200 },
@@ -187,5 +187,66 @@ describe("computeLedgerTotals", () => {
     });
     const settledRow = totals.rowsComputed.find((r) => r.id === "d1");
     expect(settledRow.suggested).toBe(1200); // actual paid, not the break-even rate
+  });
+
+  it("counts an unconfirmed payment fully toward paid, even with a community fund deduction configured", () => {
+    const totals = computeLedgerTotals({
+      schedule: baseSchedule,
+      ledger: ledger({
+        payments: [{ scheduleRowId: "d1", amount: 1200, voidedAt: null, confirmedAt: null, communityFundAmount: 0 }],
+      }),
+      sessionName: "Someone Else",
+      recipientExempt: true,
+    });
+    expect(totals.rowsComputed.find((r) => r.id === "d1").paid).toBe(1200);
+  });
+
+  it("counts only the remainder toward paid once a split payment is confirmed", () => {
+    const totals = computeLedgerTotals({
+      schedule: baseSchedule,
+      ledger: ledger({
+        payments: [
+          {
+            scheduleRowId: "d1",
+            amount: 1200,
+            voidedAt: null,
+            confirmedAt: "2026-08-20T00:00:00Z",
+            communityFundAmount: 200,
+          },
+        ],
+      }),
+      sessionName: "Someone Else",
+      recipientExempt: true,
+    });
+    const row = totals.rowsComputed.find((r) => r.id === "d1");
+    expect(row.paid).toBe(1000);
+    expect(row.balance).toBe(200); // due 1200 - effective paid 1000
+  });
+});
+
+describe("effectiveContribution", () => {
+  it("counts the full amount for an unconfirmed payment", () => {
+    expect(effectiveContribution({ amount: 50, confirmedAt: null, communityFundAmount: 0 })).toBe(50);
+  });
+
+  it("counts only the remainder for a confirmed, split payment", () => {
+    expect(
+      effectiveContribution({ amount: 50, confirmedAt: "2026-08-20T00:00:00Z", communityFundAmount: 10 })
+    ).toBe(40);
+  });
+
+  it("counts 0 for a voided payment even if confirmed and split", () => {
+    expect(
+      effectiveContribution({
+        amount: 50,
+        confirmedAt: "2026-08-20T00:00:00Z",
+        communityFundAmount: 10,
+        voidedAt: "2026-08-21T00:00:00Z",
+      })
+    ).toBe(0);
+  });
+
+  it("treats a missing communityFundAmount as 0", () => {
+    expect(effectiveContribution({ amount: 50, confirmedAt: "2026-08-20T00:00:00Z" })).toBe(50);
   });
 });

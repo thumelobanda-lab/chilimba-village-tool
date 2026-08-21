@@ -3,7 +3,7 @@ import { buildReceiptData, buildReceiptMessage, buildReceiptFilename } from "../
 import { buildWhatsAppShareUrl } from "../lib/inviteCard.js";
 
 const CARD_WIDTH = 900;
-const CARD_HEIGHT = 1200;
+const CARD_HEIGHT = 1200; // default/initial height before the first draw computes the real one
 
 const money = (n) => "K" + (Number(n) || 0).toLocaleString("en-ZM", { maximumFractionDigits: 0 });
 
@@ -11,10 +11,33 @@ const money = (n) => "K" + (Number(n) || 0).toLocaleString("en-ZM", { maximumFra
  * Draws the receipt onto a canvas — same "plain draw, not React state"
  * approach as InviteCard.jsx's drawCard, and the same reason: this only
  * needs to render once per open, not stay interactive.
+ *
+ * Card height is computed from how many rows are actually shown (a
+ * split payment adds two extra rows for the Community Fund / contribution
+ * breakdown) rather than a fixed constant, so the reference-number
+ * footer never crowds or overlaps the last row — same 330px gap the
+ * original fixed 1200px height gave the max 6-row case.
  */
 function drawReceipt(canvas, data) {
+  const rows = [
+    ["Member", data.memberName],
+    ["Amount Paid", money(data.amount)],
+    ...(data.communityFundAmount > 0
+      ? [
+          ["→ Community Fund", money(data.communityFundAmount)],
+          ["→ Contribution", money(data.contributionAmount)],
+        ]
+      : []),
+    ["For Payout Date", data.dueGroup ? `${data.dueDate} (${data.dueGroup})` : data.dueDate || "—"],
+    ...(data.cycleName ? [["Cycle", data.cycleName]] : []),
+    ["Date Paid", data.datePaid ? new Date(data.datePaid).toLocaleDateString() : "—"],
+    ["Confirmed By", data.confirmedBy || "—"],
+  ];
+
+  const w = CARD_WIDTH, h = 600 + 100 * rows.length;
+  canvas.width = w;
+  canvas.height = h;
   const ctx = canvas.getContext("2d");
-  const w = CARD_WIDTH, h = CARD_HEIGHT;
 
   ctx.fillStyle = "#F6F8FA";
   ctx.fillRect(0, 0, w, h);
@@ -36,16 +59,8 @@ function drawReceipt(canvas, data) {
   ctx.fillStyle = "rgba(255,255,255,0.82)";
   ctx.fillText(data.groupName, w / 2, 140);
 
-  // Rows: label left, value right, divider beneath
-  const rows = [
-    ["Member", data.memberName],
-    ["Amount Paid", money(data.amount)],
-    ["For Payout Date", data.dueGroup ? `${data.dueDate} (${data.dueGroup})` : data.dueDate || "—"],
-    ...(data.cycleName ? [["Cycle", data.cycleName]] : []),
-    ["Date Paid", data.datePaid ? new Date(data.datePaid).toLocaleDateString() : "—"],
-    ["Confirmed By", data.confirmedBy || "—"],
-  ];
-
+  // Rows: label left, value right, divider beneath (rows computed above,
+  // before sizing the canvas)
   let y = 270;
   const left = 60, right = w - 60;
   rows.forEach(([label, value]) => {

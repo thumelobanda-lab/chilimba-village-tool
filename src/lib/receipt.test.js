@@ -53,6 +53,8 @@ describe("buildReceiptData", () => {
     expect(data).toEqual({
       memberName: "Fridah",
       amount: 500,
+      communityFundAmount: 0,
+      contributionAmount: 500,
       datePaid: "2026-07-04T10:00:00.000Z",
       dueDate: "2026-07-04",
       dueGroup: "Group A",
@@ -69,6 +71,17 @@ describe("buildReceiptData", () => {
     expect(data.dueDate).toBe("");
     expect(data.dueGroup).toBe("");
     expect(data.cycleName).toBe("");
+  });
+
+  it("splits amount into communityFundAmount and contributionAmount from the payment's frozen split", () => {
+    const data = buildReceiptData({
+      payment: { ...confirmedPayment, amount: 50, communityFundAmount: 10 },
+      memberName: "Fridah",
+      groupName: "Hillcrest",
+      scheduleRow,
+    });
+    expect(data.communityFundAmount).toBe(10);
+    expect(data.contributionAmount).toBe(40);
   });
 });
 
@@ -100,6 +113,17 @@ describe("buildReceiptMessage", () => {
   it("omits the cycle line entirely when there's no cycle name", () => {
     const msg = buildReceiptMessage({ ...data, cycleName: "" });
     expect(msg).not.toContain("Cycle:");
+  });
+
+  it("includes the split breakdown line when a community fund amount was deducted", () => {
+    const msg = buildReceiptMessage({ ...data, communityFundAmount: 10, contributionAmount: 490 });
+    expect(msg).toContain("K10 to Community Fund");
+    expect(msg).toContain("K490 to contribution");
+  });
+
+  it("omits the split breakdown line when nothing was deducted", () => {
+    const msg = buildReceiptMessage({ ...data, communityFundAmount: 0, contributionAmount: 500 });
+    expect(msg).not.toContain("Community Fund");
   });
 });
 

@@ -1,3 +1,4 @@
+import { COMMUNITY_FUND_ID, COMMUNITY_FUND_NAME } from "../fundUtils.js";
 import { MOCK_MODE, lsGet, lsSet, realFetch, currentSession, groupScopedKey } from "./core.js";
 
 function uidFund() {
@@ -17,7 +18,7 @@ export async function getGroupFunds() {
 
   if (MOCK_MODE) {
     const config = lsGet(groupScopedKey(session, "group"), null);
-    const funds = config?.funds || [];
+    const namedFunds = config?.funds || [];
     const scheduleById = Object.fromEntries((config?.schedule || []).map((r) => [r.id, r]));
     const contributions = lsGet(groupScopedKey(session, "fund-contributions"), []);
     const loans = lsGet(groupScopedKey(session, "fund-loans"), []);
@@ -26,6 +27,16 @@ export async function getGroupFunds() {
     contributions.forEach((c) => {
       balanceByFund[c.fundId] = (balanceByFund[c.fundId] || 0) + c.amount;
     });
+
+    // Mirrors the Worker's funds route: synthesize the implicit
+    // community fund whenever a deduction rate is configured, or —
+    // even if it's since been zeroed out — whenever there's already
+    // credited history, so past balance never silently disappears.
+    const communityFundDeduction = Number(config?.communityFundDeduction) || 0;
+    const hasCommunityFundHistory = balanceByFund[COMMUNITY_FUND_ID] !== undefined;
+    const funds = communityFundDeduction > 0 || hasCommunityFundHistory
+      ? [...namedFunds, { id: COMMUNITY_FUND_ID, name: COMMUNITY_FUND_NAME, amount: communityFundDeduction, loanable: false }]
+      : namedFunds;
     const outstandingByFund = {};
     loans.filter((l) => l.status === "outstanding").forEach((l) => {
       outstandingByFund[l.fundId] = (outstandingByFund[l.fundId] || 0) + l.amount;
