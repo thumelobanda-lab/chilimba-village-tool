@@ -38,45 +38,48 @@ export default function Dashboard({ session, config, ledger, totals }) {
   const cycle = computeCycleProgress(config.schedule);
 
   return (
-    <div className="dashboard-grid">
-      <div className="vital-card">
-        <div className="vital-card-label">Next Payment Due</div>
-        {nextDue ? (
-          <>
-            <div className="vital-card-value">{formatDate(nextDue.row.date)}</div>
-            <div className="muted small">
-              {money(nextDue.balance)} · {relativeDueLabel(daysUntil(nextDue.row.date))}
+    <>
+      <h2 className="panel-title">Home</h2>
+      <div className="dashboard-grid">
+        <div className="vital-card">
+          <div className="vital-card-label">Next Payment Due</div>
+          {nextDue ? (
+            <>
+              <div className="vital-card-value">{formatDate(nextDue.row.date)}</div>
+              <div className="muted small">
+                {money(nextDue.balance)} · {relativeDueLabel(daysUntil(nextDue.row.date))}
+              </div>
+            </>
+          ) : (
+            <div className="vital-card-value vital-card-value-ok">
+              {config.schedule.length === 0 ? "No schedule yet" : "All caught up 🎉"}
             </div>
-          </>
-        ) : (
-          <div className="vital-card-value vital-card-value-ok">
-            {config.schedule.length === 0 ? "No schedule yet" : "All caught up 🎉"}
+          )}
+        </div>
+
+        <div className="vital-card">
+          <div className="vital-card-label">Outstanding Balance</div>
+          <div className={"vital-card-value" + (totals.balance > 0 ? " vital-card-value-warn" : " vital-card-value-ok")}>
+            {money(balanceDisplay)}
           </div>
-        )}
-      </div>
+        </div>
 
-      <div className="vital-card">
-        <div className="vital-card-label">Outstanding Balance</div>
-        <div className={"vital-card-value" + (totals.balance > 0 ? " vital-card-value-warn" : " vital-card-value-ok")}>
-          {money(balanceDisplay)}
+        <div className="vital-card">
+          <div className="vital-card-label">Community Fund Total</div>
+          <div className="vital-card-value">
+            {fundsLoading ? <span className="muted small">Loading…</span> : money(fundTotalDisplay)}
+          </div>
+        </div>
+
+        <div className="vital-card vital-card-ring">
+          <div className="vital-card-label">Cycle Progress</div>
+          <ProgressRing
+            percent={cycle.percent}
+            sublabel={cycle.total > 0 ? `${cycle.passed} of ${cycle.total} dates` : "No dates yet"}
+          />
+          {config.cycleName && <div className="muted tiny" style={{ marginTop: 6 }}>{config.cycleName}</div>}
         </div>
       </div>
-
-      <div className="vital-card">
-        <div className="vital-card-label">Community Fund Total</div>
-        <div className="vital-card-value">
-          {fundsLoading ? <span className="muted small">Loading…</span> : money(fundTotalDisplay)}
-        </div>
-      </div>
-
-      <div className="vital-card vital-card-ring">
-        <div className="vital-card-label">Cycle Progress</div>
-        <ProgressRing
-          percent={cycle.percent}
-          sublabel={cycle.total > 0 ? `${cycle.passed} of ${cycle.total} dates` : "No dates yet"}
-        />
-        {config.cycleName && <div className="muted tiny" style={{ marginTop: 6 }}>{config.cycleName}</div>}
-      </div>
-    </div>
+    </>
   );
 }

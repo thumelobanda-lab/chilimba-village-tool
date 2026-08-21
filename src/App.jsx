@@ -24,7 +24,7 @@ import { useOnboarding } from "./hooks/useOnboarding.js";
 
 const TABS = [
   { id: "ledger", label: "My Ledger" },
-  { id: "calc", label: "Calculator" },
+  { id: "summary", label: "Payment Summary" },
   { id: "reminders", label: "Reminders" },
   { id: "community", label: "Community" },
   { id: "account", label: "My Account" },
@@ -208,6 +208,7 @@ export default function App() {
 
             {tab === "ledger" && (
               <div className="panel" role="tabpanel" id="panel-ledger" aria-labelledby="tab-ledger">
+                <h2 className="panel-title">My Ledger</h2>
                 <PaymentInfo paymentMethods={config.paymentMethods} />
 
                 {config.schedule.length === 0 ? (
@@ -275,17 +276,24 @@ export default function App() {
               </div>
             )}
 
-            {tab === "calc" && (
-              <div className="panel calc-grid" role="tabpanel" id="panel-calc" aria-labelledby="tab-calc">
-                <Card label="Required to Date" value={money(totals.due)} />
-                <Card label="Amount You've Put In" value={money(totals.paid)} />
-                <Card label="Outstanding Balance" value={money(totals.balance)} warn={totals.balance > 0} />
-                <Card label="Payout Received" value={money(ledger.payoutInfo?.amount)} highlight />
-                <Card label="Net Position" value={money(totals.net)} warn={totals.net > 0} />
-                <Card
-                  label="Suggested Rate / Remaining Date"
-                  value={totals.remainingCount > 0 ? money(totals.suggestedRate) : "—"}
-                />
+            {tab === "summary" && (
+              <div className="panel" role="tabpanel" id="panel-summary" aria-labelledby="tab-summary">
+                <h2 className="panel-title">Payment Summary</h2>
+                <p className="muted tiny" style={{ marginBottom: 14 }}>
+                  A read-only summary of your own contribution totals — not the calculator
+                  (that's the 🧮 icon in the header).
+                </p>
+                <div className="calc-grid">
+                  <Card label="Required to Date" value={money(totals.due)} />
+                  <Card label="Amount You've Put In" value={money(totals.paid)} />
+                  <Card label="Outstanding Balance" value={money(totals.balance)} warn={totals.balance > 0} />
+                  <Card label="Payout Received" value={money(ledger.payoutInfo?.amount)} highlight />
+                  <Card label="Net Position" value={money(totals.net)} warn={totals.net > 0} />
+                  <Card
+                    label="Suggested Rate / Remaining Date"
+                    value={totals.remainingCount > 0 ? money(totals.suggestedRate) : "—"}
+                  />
+                </div>
               </div>
             )}
 
