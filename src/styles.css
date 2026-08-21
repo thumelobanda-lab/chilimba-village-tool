@@ -363,7 +363,8 @@ body { margin: 0; background: var(--bg); color: var(--ink); }
   font-size: 0.85rem;
 }
 .history-entry.voided { text-decoration: line-through; opacity: 0.55; }
-.history-add { display: flex; gap: 8px; margin-top: 8px; align-items: center; }
+.history-add { display: flex; gap: 8px; margin-top: 8px; align-items: center; flex-wrap: wrap; }
+.history-add input[type="text"] { flex: 1; min-width: 140px; }
 .split-breakdown { padding: 0 0 4px 30px; margin-top: -4px; }
 
 .free-tier-banner { padding: 12px 16px; margin-bottom: 14px; }
@@ -533,6 +534,29 @@ body { margin: 0; background: var(--bg); color: var(--ink); }
 }
 .confirm-bulb-on { color: var(--green); }
 .confirm-bulb-off { color: var(--line); }
+.confirm-bulb-pending { color: #B8860B; }
+.confirm-bulb-rejected { color: var(--red); }
+.rejected-reason { color: var(--red); }
+
+/* Admin's "N pending confirmations" queue (Reconciliation.jsx) and the
+   matching callout on the dashboard (Dashboard.jsx). */
+.pending-queue-banner {
+  background: #FFF8E6;
+  border: 1px solid #B8860B;
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  cursor: pointer;
+}
+.pending-entry {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+.pending-entry:last-child { border-bottom: none; }
 
 /* Walkthrough — reuses .calc-modal-backdrop for the overlay, own styling
    for the card itself since it needs progress dots and multi-step nav. */
@@ -766,6 +790,19 @@ body { margin: 0; background: var(--bg); color: var(--ink); }
 
 @media (prefers-reduced-motion: reduce) {
   .progress-ring-arc { transition: none; }
+}
+
+.progress-ring-glow .progress-ring-arc {
+  filter: drop-shadow(0 0 6px rgba(201, 154, 61, 0.65));
+}
+@media (prefers-reduced-motion: no-preference) {
+  .progress-ring-glow .progress-ring-arc {
+    animation: progress-ring-pulse 2.4s ease-in-out infinite;
+  }
+}
+@keyframes progress-ring-pulse {
+  0%, 100% { filter: drop-shadow(0 0 4px rgba(201, 154, 61, 0.5)); }
+  50% { filter: drop-shadow(0 0 10px rgba(201, 154, 61, 0.9)); }
 }
 
 /* Payment receipt — modal reuses .calc-modal-backdrop/.calc-modal (see

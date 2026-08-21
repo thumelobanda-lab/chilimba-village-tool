@@ -6,6 +6,8 @@ import { isRecipient as isRecipientHelper, resolveDue, findNextDue } from "../sc
 import { wouldLeaveZeroAdmins } from "../adminUtils.js";
 import { computeCommunityFundSplit, EFFECTIVE_CONTRIBUTION_SQL, COMMUNITY_FUND_ID } from "../communityFundSplit.js";
 import { isSubscriptionActive } from "../subscriptionUtils.js";
+import { maybeRecordFundContributions } from "../fundCrediting.js";
+import { sendPush } from "../push.js";
 
 export default function registerAdminRoutes(router) {
   // The admin roster: every active member, their role, when they joined,
@@ -201,9 +203,10 @@ export default function registerAdminRoutes(router) {
     // an admin confirm ONE payment without needing to know its id in
     // advance. One extra query, still scoped to this date + group.
     const entriesResult = await env.DB.prepare(
-      `SELECT p.id, u.display_name as memberName, p.amount, p.recorded_at as recordedAt,
+      `SELECT p.id, u.display_name as memberName, p.amount, p.note, p.recorded_at as recordedAt,
               p.confirmed_at as confirmedAt, p.confirmed_by as confirmedBy,
-              p.community_fund_amount as communityFundAmount
+              p.community_fund_amount as communityFundAmount, p.status,
+              p.rejected_at as rejectedAt, p.rejected_by as rejectedBy, p.rejection_reason as rejectionReason
        FROM payments p JOIN users u ON u.id = p.user_id
        WHERE p.schedule_row_id = ? AND p.group_id = ? AND p.voided_at IS NULL
        ORDER BY p.recorded_at ASC`
@@ -225,24 +228,53 @@ export default function registerAdminRoutes(router) {
     return json({ row, members: results }, 200, cors);
   });
 
-  // Marks one payment entry as confirmed — this is a trust flag, not a
-  // gate; the payment already counts fully toward due/paid/balance
-  // whether confirmed or not. Scoped by joining through users so an
-  // admin can only ever confirm a payment that belongs to their own
-  // group's member, never one they happen to guess the id of.
+  // Every payment still awaiting admin review — the "N pending
+  // confirmations" queue on the roster/dashboard. Only payments created
+  // through the pending flow (migration 009) ever show up here; a
+  // pre-migration unconfirmed payment (status NULL) already counts fully
+  // and was never meant to gate on anything, so it doesn't belong in a
+  // review queue. Scoped to the admin's own group via the join.
+  router.get("/api/admin/payments/pending", async ({ request, env, cors }) => {
+    const admin = await requireAdmin(request, env);
+    const rows = await env.DB.prepare(
+      `SELECT p.id, u.display_name as memberName, p.schedule_row_id as scheduleRowId,
+              p.amount, p.note, p.recorded_at as recordedAt
+       FROM payments p JOIN users u ON u.id = p.user_id
+       WHERE u.group_id = ? AND p.status = 'pending' AND p.confirmed_at IS NULL
+             AND p.rejected_at IS NULL AND p.voided_at IS NULL
+       ORDER BY p.recorded_at ASC`
+    ).bind(admin.groupId).all();
+    return json({ pending: rows.results || [] }, 200, cors);
+  });
+
+  // Marks one payment entry as confirmed. For a payment logged before
+  // migration 009 (status NULL) this is still just a trust flag — it
+  // already counted fully toward due/paid/balance either way. For a
+  // 'pending' payment (migration 009) it's the actual gate finally
+  // opening: the payment goes from counting zero to counting fully (see
+  // effectiveContribution in communityFundSplit.js). Scoped by joining
+  // through users so an admin can only ever confirm a payment that
+  // belongs to their own group's member, never one they happen to guess
+  // the id of.
   //
   // Confirmation is also the moment the group's community-fund split
   // (if any deduction is configured) actually applies: the deduction
   // rate in effect right now is frozen onto the payment as
   // community_fund_amount, and — if it's greater than 0 — a matching
   // fund_contributions row is credited to the reserved "Community Fund"
-  // (see communityFundSplit.js). Idempotent: if this payment is already
+  // (see communityFundSplit.js). For a 'pending' payment specifically,
+  // confirming is also the first moment it can cross into the group's
+  // named funds (config.funds, threshold-crediting — see
+  // fundCrediting.js): before migration 009 that crediting happened at
+  // insert time since every payment counted immediately, but a pending
+  // payment contributes nothing until now, so the crossing check has to
+  // happen here instead. Idempotent: if this payment is already
   // confirmed, this is a no-op rather than re-crediting a second time.
   router.post("/api/admin/payments/:id/confirm", async ({ request, env, params, cors }) => {
     const admin = await requireAdmin(request, env);
     const owned = await env.DB.prepare(
       `SELECT p.id, p.amount, p.confirmed_at as confirmedAt, p.schedule_row_id as scheduleRowId,
-              p.user_id as userId, u.display_name as displayName
+              p.user_id as userId, u.display_name as displayName, p.status
        FROM payments p JOIN users u ON u.id = p.user_id WHERE p.id = ? AND u.group_id = ?`
     ).bind(params.id, admin.groupId).first();
     if (!owned) throw new HttpError(404, "Payment not found in your group.");
@@ -272,14 +304,37 @@ export default function registerAdminRoutes(router) {
       );
     }
     await env.DB.batch(stmts);
+
+    if (owned.status === "pending") {
+      const before = await env.DB.prepare(
+        `SELECT COALESCE(SUM(${EFFECTIVE_CONTRIBUTION_SQL}), 0) as total
+         FROM payments WHERE user_id = ? AND schedule_row_id = ? AND voided_at IS NULL AND id != ?`
+      ).bind(owned.userId, owned.scheduleRowId, params.id).first();
+      const paidBefore = before.total;
+      const paidAfter = paidBefore + (owned.amount - fundAmount);
+      await maybeRecordFundContributions(
+        env,
+        { id: owned.userId, name: owned.displayName, groupId: admin.groupId },
+        owned.scheduleRowId,
+        paidBefore,
+        paidAfter,
+        params.id
+      );
+    }
+
     return json({ ok: true }, 200, cors);
   });
 
   // Reverses confirm's split so "confirmed" and "credited to the fund"
   // stay a matching pair: resets community_fund_amount to 0 and removes
-  // the fund_contributions row this specific payment created (matched by
-  // payment_id, not by date — a member can have more than one payment
-  // against the same date, and only this one's credit should go).
+  // every fund_contributions row this specific payment created (matched
+  // by payment_id, not by date — a member can have more than one payment
+  // against the same date, and only this one's credits should go). That
+  // now includes a pending payment's named-fund threshold credit too,
+  // since confirm's fundCrediting.js call (above) tags it with the same
+  // payment_id. If the payment was 'pending', clearing confirmed_at also
+  // drops it straight back to counting zero (effectiveContribution), same
+  // as it did before it was ever confirmed.
   router.post("/api/admin/payments/:id/unconfirm", async ({ request, env, params, cors }) => {
     const admin = await requireAdmin(request, env);
     const owned = await env.DB.prepare(
@@ -293,6 +348,52 @@ export default function registerAdminRoutes(router) {
       ).bind(params.id),
       env.DB.prepare(`DELETE FROM fund_contributions WHERE payment_id = ?`).bind(params.id),
     ]);
+    return json({ ok: true }, 200, cors);
+  });
+
+  // Rejects a pending payment — permanently keeps it at zero (like a void,
+  // it stays visible in the member's history rather than disappearing) and
+  // records who rejected it and why. Only makes sense for a payment that
+  // hasn't been confirmed yet; an already-confirmed payment has already
+  // been trusted and credited, so it must be unconfirmed first if it turns
+  // out to be wrong. Best-effort push notification to the member — a
+  // failed/missing subscription never fails the rejection itself.
+  router.post("/api/admin/payments/:id/reject", async ({ request, env, params, cors }) => {
+    const admin = await requireAdmin(request, env);
+    const body = await request.json().catch(() => ({}));
+    const owned = await env.DB.prepare(
+      `SELECT p.id, p.confirmed_at as confirmedAt, p.user_id as userId, p.amount,
+              p.schedule_row_id as scheduleRowId
+       FROM payments p JOIN users u ON u.id = p.user_id WHERE p.id = ? AND u.group_id = ?`
+    ).bind(params.id, admin.groupId).first();
+    if (!owned) throw new HttpError(404, "Payment not found in your group.");
+    if (owned.confirmedAt) throw new HttpError(400, "This payment is already confirmed — unconfirm it first if it needs to be rejected.");
+
+    const reason = (body.reason || "").slice(0, 500);
+    await env.DB.prepare(
+      `UPDATE payments SET rejected_at = datetime('now'), rejected_by = ?, rejection_reason = ? WHERE id = ?`
+    ).bind(admin.name, reason, params.id).run();
+
+    const subs = await env.DB.prepare(
+      `SELECT id, endpoint, p256dh, auth FROM push_subscriptions WHERE user_id = ?`
+    ).bind(owned.userId).all();
+    const expiredSubIds = [];
+    for (const sub of subs.results || []) {
+      try {
+        const result = await sendPush(env, sub, {
+          title: "Payment not confirmed",
+          body: `Your K${Number(owned.amount).toLocaleString()} payment wasn't confirmed${reason ? `: ${reason}` : "."}`,
+          url: "/",
+        });
+        if (result.expired) expiredSubIds.push(sub.id);
+      } catch (e) {
+        console.error("push send failed", e);
+      }
+    }
+    if (expiredSubIds.length) {
+      await env.DB.batch(expiredSubIds.map((id) => env.DB.prepare(`DELETE FROM push_subscriptions WHERE id = ?`).bind(id)));
+    }
+
     return json({ ok: true }, 200, cors);
   });
 

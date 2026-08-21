@@ -147,10 +147,20 @@ CREATE TABLE IF NOT EXISTS payments (
                                       -- slip, etc.) — a trust flag, not a
                                       -- gate; unconfirmed still counts fully
   confirmed_by TEXT,
-  community_fund_amount REAL NOT NULL DEFAULT 0 -- portion diverted to the
+  community_fund_amount REAL NOT NULL DEFAULT 0, -- portion diverted to the
                                       -- community fund, set ONLY at confirm
                                       -- time (see migration 007) — 0 until
                                       -- then, reset to 0 again if unconfirmed
+  status TEXT,                       -- NULL for every payment logged before
+                                      -- migration 009 (still counts fully,
+                                      -- unconfirmed, per migration 004) —
+                                      -- 'pending' for a member-submitted
+                                      -- entry awaiting admin review, which
+                                      -- counts ZERO until confirmed or
+                                      -- rejected (see migration 009)
+  rejected_at TEXT,
+  rejected_by TEXT,
+  rejection_reason TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_payments_user ON payments(user_id);
 CREATE INDEX IF NOT EXISTS idx_payments_group ON payments(group_id);

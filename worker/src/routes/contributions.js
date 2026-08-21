@@ -2,8 +2,6 @@ import { requireSession } from "../auth.js";
 import { HttpError } from "../httpError.js";
 import { uid } from "../crypto.js";
 import { json } from "../responses.js";
-import { maybeRecordFundContributions } from "../fundCrediting.js";
-import { EFFECTIVE_CONTRIBUTION_SQL } from "../communityFundSplit.js";
 
 export default function registerContributionsRoutes(router) {
   router.get("/api/contributions/me", async ({ request, env, cors }) => {
@@ -12,7 +10,8 @@ export default function registerContributionsRoutes(router) {
       `SELECT id, schedule_row_id as scheduleRowId, amount, note, recorded_by as recordedBy,
               recorded_at as recordedAt, voided_at as voidedAt, void_reason as voidReason,
               confirmed_at as confirmedAt, confirmed_by as confirmedBy,
-              community_fund_amount as communityFundAmount
+              community_fund_amount as communityFundAmount, status,
+              rejected_at as rejectedAt, rejected_by as rejectedBy, rejection_reason as rejectionReason
        FROM payments WHERE user_id = ? ORDER BY recorded_at ASC`
     ).bind(user.id).all();
     const payout = await env.DB.prepare(
@@ -30,30 +29,26 @@ export default function registerContributionsRoutes(router) {
     }, 200, cors);
   });
 
+  // The only way a payment is ever created — always the signed-in
+  // member self-reporting their own payment, whether they're a regular
+  // member or an admin logging their own contribution. Inserted as
+  // 'pending' (migration 009): it counts ZERO toward due/paid/balance and
+  // never enters a fund split until an admin confirms it (unchanged
+  // /api/admin/payments/:id/confirm route, which is also where fund
+  // crediting for this payment now happens — see fundCrediting.js) or
+  // rejects it (/api/admin/payments/:id/reject). Nothing here needs to
+  // check "before/after" thresholds the way the old insert-time crediting
+  // did, since a pending entry can never cross one by definition.
   router.post("/api/contributions/payments", async ({ request, env, cors }) => {
     const user = await requireSession(request, env);
     const body = await request.json();
     if (!body.amount || Number(body.amount) <= 0) throw new HttpError(400, "Amount must be greater than zero.");
     const id = uid();
 
-    // Sum this member's non-voided payments for this date BEFORE this
-    // insert, so we can tell if this payment is what pushes them over
-    // their due amount (fund contributions fire once, on that crossing).
-    // Uses the same effective-contribution rule as everywhere else a
-    // "paid" total is shown (a confirmed prior payment counts only its
-    // post-community-fund-split remainder) — the new payment being
-    // inserted here is always unconfirmed at this point, so it's added
-    // below at its full raw amount, unaffected by that rule yet.
-    const before = await env.DB.prepare(
-      `SELECT COALESCE(SUM(${EFFECTIVE_CONTRIBUTION_SQL}), 0) as total FROM payments WHERE user_id = ? AND schedule_row_id = ? AND voided_at IS NULL`
-    ).bind(user.id, body.scheduleRowId).first();
-    const paidBefore = before.total;
-
     await env.DB.prepare(
-      `INSERT INTO payments (id, group_id, user_id, schedule_row_id, amount, note, recorded_by) VALUES (?,?,?,?,?,?,?)`
+      `INSERT INTO payments (id, group_id, user_id, schedule_row_id, amount, note, recorded_by, status)
+       VALUES (?,?,?,?,?,?,?,'pending')`
     ).bind(id, user.groupId, user.id, body.scheduleRowId, Number(body.amount), body.note || "", user.name).run();
-
-    await maybeRecordFundContributions(env, user, body.scheduleRowId, paidBefore, paidBefore + Number(body.amount));
 
     return json({ id, ok: true }, 201, cors);
   });

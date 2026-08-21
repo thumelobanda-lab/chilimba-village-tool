@@ -7,6 +7,8 @@
  * Dashboard.jsx.
  */
 
+import { getPayees } from "./scheduleUtils.js";
+
 /**
  * How far through the current schedule the group is — a payout date
  * counts as "passed" once its date has arrived, regardless of whether
@@ -139,6 +141,43 @@ export function findRecentPayout(schedule, todayISO = new Date().toISOString().s
 
   candidates.sort((a, b) => new Date(b.date) - new Date(a.date));
   return candidates[0];
+}
+
+/**
+ * Is the given member's payout turn within the next `lookahead` upcoming
+ * dates? Used to decide whether the progress ring's "your turn is close"
+ * glow should light up — checks position among the *upcoming* dates
+ * rather than raw days-until, so a member due on the very next date
+ * always qualifies regardless of how far apart this group's schedule
+ * spaces dates.
+ *
+ * @param {Array<object>} timelineRows - output of buildCycleTimeline
+ * @param {string} name - the viewing member's display name
+ * @param {number} [lookahead]
+ * @returns {boolean}
+ */
+export function isMemberTurnSoon(timelineRows, name, lookahead = 2) {
+  if (!name) return false;
+  const target = name.trim().toLowerCase();
+  return (timelineRows || [])
+    .filter((row) => row.status !== "past")
+    .slice(0, lookahead)
+    .some((row) => getPayees(row).some((p) => p.toLowerCase() === target));
+}
+
+/**
+ * Is the cycle in its final stretch — few enough dates remaining that
+ * it's worth calling out on the progress ring? Measured in dates
+ * remaining rather than percent, so it means the same thing regardless
+ * of how many total dates a given group's schedule has.
+ *
+ * @param {{ total: number, passed: number }} cycle - output of computeCycleProgress
+ * @param {number} [remainingThreshold]
+ * @returns {boolean}
+ */
+export function isCycleNearingCompletion(cycle, remainingThreshold = 1) {
+  if (!cycle || cycle.total === 0) return false;
+  return cycle.total - cycle.passed <= remainingThreshold;
 }
 
 /**

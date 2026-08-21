@@ -82,6 +82,7 @@ function RowWithHistory({ row, isRecipient, onAddPayment, onVoidPayment, onEditP
   const [editingDue, setEditingDue] = useState(false);
   const [dueDraft, setDueDraft] = useState(row.due);
   const [amount, setAmount] = useState("");
+  const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   // A brief "✓ Logged" confirmation on the button itself, right where
   // the member's attention already is (rather than chasing the new
@@ -102,8 +103,9 @@ function RowWithHistory({ row, isRecipient, onAddPayment, onVoidPayment, onEditP
     if (!amount || Number(amount) <= 0) return;
     setBusy(true);
     try {
-      await onAddPayment(row.id, amount);
+      await onAddPayment(row.id, amount, note);
       setAmount("");
+      setNote("");
       setJustLogged(true);
       clearTimeout(justLoggedTimeoutRef.current);
       justLoggedTimeoutRef.current = setTimeout(() => setJustLogged(false), 1400);
@@ -194,12 +196,7 @@ function RowWithHistory({ row, isRecipient, onAddPayment, onVoidPayment, onEditP
                 .map((e) => (
                   <div key={e.id} className="history-entry-wrap">
                     <div className={"history-entry" + (e.voidedAt ? " voided" : "")}>
-                      {!e.voidedAt && (
-                        <span
-                          className={"confirm-bulb " + (e.confirmedAt ? "confirm-bulb-on" : "confirm-bulb-off")}
-                          title={e.confirmedAt ? `Confirmed by an admin (${e.confirmedBy})` : "Not yet confirmed by an admin"}
-                        >●</span>
-                      )}
+                      {!e.voidedAt && <span className={"confirm-bulb " + bulbClass(e)} title={bulbTitle(e)}>●</span>}
                       {!e.voidedAt && editingEntryId === e.id ? (
                         <span className="due-edit">
                           <input
@@ -250,6 +247,14 @@ function RowWithHistory({ row, isRecipient, onAddPayment, onVoidPayment, onEditP
                         {money(e.amount - e.communityFundAmount)} to contribution
                       </div>
                     )}
+                    {!e.voidedAt && e.note && (
+                      <div className="muted tiny">Note: {e.note}</div>
+                    )}
+                    {!e.voidedAt && e.rejectedAt && (
+                      <div className="muted tiny rejected-reason">
+                        Not confirmed by {e.rejectedBy}{e.rejectionReason ? `: ${e.rejectionReason}` : "."}
+                      </div>
+                    )}
                   </div>
                 ))}
 
@@ -261,6 +266,13 @@ function RowWithHistory({ row, isRecipient, onAddPayment, onVoidPayment, onEditP
                   onChange={(e) => setAmount(e.target.value)}
                   className="cell-input"
                 />
+                <input
+                  type="text"
+                  placeholder="Note or reference (optional)"
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  className="cell-input"
+                />
                 <button
                   className={"btn-ghost-dark" + (justLogged ? " btn-confirmed" : "")}
                   disabled={busy}
@@ -269,12 +281,36 @@ function RowWithHistory({ row, isRecipient, onAddPayment, onVoidPayment, onEditP
                   {busy ? "Saving…" : justLogged ? "✓ Logged" : "+ Log payment"}
                 </button>
               </div>
+              <p className="muted tiny" style={{ marginTop: 4 }}>
+                A logged payment is pending until an admin confirms it — you'll see the dot
+                turn green once it's checked.
+              </p>
             </div>
           </td>
         </tr>
       )}
     </>
   );
+}
+
+// Three visible states for a non-voided entry's bulb: green once an admin
+// has confirmed it, amber while it's still a pending, member-submitted
+// entry awaiting review (see addPayment in contributions.js), red if it
+// was rejected. Anything else (status null — logged before the pending
+// flow existed) reads as the original grey "not yet confirmed" — still
+// counts fully, just unverified.
+function bulbClass(entry) {
+  if (entry.confirmedAt) return "confirm-bulb-on";
+  if (entry.rejectedAt) return "confirm-bulb-rejected";
+  if (entry.status === "pending") return "confirm-bulb-pending";
+  return "confirm-bulb-off";
+}
+
+function bulbTitle(entry) {
+  if (entry.confirmedAt) return `Confirmed by an admin (${entry.confirmedBy})`;
+  if (entry.rejectedAt) return `Not confirmed by ${entry.rejectedBy}${entry.rejectionReason ? `: ${entry.rejectionReason}` : ""}`;
+  if (entry.status === "pending") return "Pending — awaiting admin review";
+  return "Not yet confirmed by an admin";
 }
 
 export { money };

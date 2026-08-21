@@ -9,8 +9,14 @@ import React, { useEffect, useState } from "react";
  * styles.css). That transition is itself disabled under
  * prefers-reduced-motion, so there's no separate JS motion check needed
  * here.
+ *
+ * `glow` adds a golden luminous highlight around the arc — reserved for
+ * moments actually worth the viewer's attention (their payout turn is
+ * close, the cycle's nearly done, or someone was just paid out; see
+ * Dashboard.jsx), so it stays off otherwise and means something when it
+ * lights up.
  */
-export default function ProgressRing({ percent, size = 96, strokeWidth = 8, sublabel }) {
+export default function ProgressRing({ percent, size = 96, strokeWidth = 8, sublabel, glow = false }) {
   const clamped = Math.max(0, Math.min(100, percent));
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -26,7 +32,7 @@ export default function ProgressRing({ percent, size = 96, strokeWidth = 8, subl
   }, [targetOffset]);
 
   return (
-    <div className="progress-ring-wrap">
+    <div className={"progress-ring-wrap" + (glow ? " progress-ring-glow" : "")}>
       <svg
         width={size}
         height={size}

@@ -7,7 +7,14 @@ import { crossedDueThreshold } from "./fundUtils.js";
 // entirely if it's their own payout date (due = 0) or they've already
 // been recorded for this date (the UNIQUE constraint on fund_contributions
 // also guards against this at the DB level, so a race is harmless).
-export async function maybeRecordFundContributions(env, user, scheduleRowId, paidBefore, paidAfter) {
+//
+// paymentId is optional and only passed by the admin confirm route (see
+// admin.js) when crediting is triggered by confirming a pending payment
+// (migration 009) rather than by the old at-insert-time trigger — tagging
+// the credit row with it is what lets the unconfirm route find and remove
+// it again later, the same way it already does for the community-fund
+// split's own credit row.
+export async function maybeRecordFundContributions(env, user, scheduleRowId, paidBefore, paidAfter, paymentId = null) {
   const config = await env.DB.prepare(`SELECT * FROM groups WHERE id = ?`).bind(user.groupId).first();
   if (!config) return;
   const schedule = JSON.parse(config.schedule_json || "[]");
@@ -26,9 +33,9 @@ export async function maybeRecordFundContributions(env, user, scheduleRowId, pai
 
   const stmts = funds.map((f) =>
     env.DB.prepare(
-      `INSERT OR IGNORE INTO fund_contributions (id, group_id, user_id, display_name, schedule_row_id, fund_id, amount)
-       VALUES (?,?,?,?,?,?,?)`
-    ).bind(uid(), user.groupId, user.id, user.name, scheduleRowId, f.id, f.amount)
+      `INSERT OR IGNORE INTO fund_contributions (id, group_id, user_id, display_name, schedule_row_id, fund_id, amount, payment_id)
+       VALUES (?,?,?,?,?,?,?,?)`
+    ).bind(uid(), user.groupId, user.id, user.name, scheduleRowId, f.id, f.amount, paymentId)
   );
   if (stmts.length) await env.DB.batch(stmts);
 }

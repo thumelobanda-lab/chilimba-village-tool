@@ -207,7 +207,13 @@ export default function App() {
                   isAdmin={session.role === "admin"}
                   onUpgrade={() => setTab("subscription")}
                 />
-                <Dashboard session={session} config={config} ledger={ledger} totals={totals} />
+                <Dashboard
+                  session={session}
+                  config={config}
+                  ledger={ledger}
+                  totals={totals}
+                  onOpenReconciliation={session.role === "admin" ? () => setTab("reconciliation") : undefined}
+                />
               </>
             )}
 

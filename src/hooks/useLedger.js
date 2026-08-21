@@ -51,8 +51,8 @@ export function useLedger(session, config) {
     [config, ledger, session]
   );
 
-  const addPaymentAndReload = async (scheduleRowId, amount) => {
-    await addPayment({ scheduleRowId, amount });
+  const addPaymentAndReload = async (scheduleRowId, amount, note) => {
+    await addPayment({ scheduleRowId, amount, note });
     await reload();
   };
 

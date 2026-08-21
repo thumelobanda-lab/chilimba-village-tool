@@ -2,27 +2,35 @@ import { resolveDue } from "./scheduleUtils.js";
 
 /**
  * How much of a single payment entry counts toward a member's due
- * progress. An unconfirmed entry counts its full amount — matching the
- * existing "an unconfirmed payment still counts fully" rule (migration
- * 004) — since a payment being unverified isn't the same as it being
- * discounted. Only once an admin confirms a payment does the community
- * fund split actually apply: the amount minus whatever was diverted to
- * the fund at that moment (communityFundAmount, frozen at confirmation
- * time — see worker/src/routes/admin.js) is what counts from then on.
- * A voided entry never counts anything, confirmed or not.
+ * progress.
+ *
+ * A confirmed entry always counts the amount minus whatever was diverted
+ * to the community fund at confirmation time (communityFundAmount, frozen
+ * then — see worker/src/routes/admin.js). Short of that:
+ *
+ * - status "pending" (a member-submitted entry awaiting admin review,
+ *   migration 009) or "rejected" counts ZERO — it's a real gate, not a
+ *   trust flag, since nobody's verified the money arrived yet.
+ * - any other unconfirmed entry (status null — every payment logged
+ *   before migration 009) still counts its full amount, matching the
+ *   original "an unconfirmed payment still counts fully" rule (migration
+ *   004) that those entries were created under. Not retroactive.
+ *
+ * A voided entry never counts anything, regardless of any of the above.
  *
  * Mirrors worker/src/communityFundSplit.js's version of the same rule
  * for the server-side SUM() queries — the two must stay identical or
  * a member's own ledger and the admin's reconciliation view would
  * disagree about what "paid" means.
  *
- * @param {{amount: number, confirmedAt?: string|null, communityFundAmount?: number, voidedAt?: string|null}} payment
+ * @param {{amount: number, confirmedAt?: string|null, communityFundAmount?: number, voidedAt?: string|null, status?: string|null}} payment
  * @returns {number}
  */
 export function effectiveContribution(payment) {
   if (payment.voidedAt) return 0;
-  if (!payment.confirmedAt) return payment.amount;
-  return payment.amount - (payment.communityFundAmount || 0);
+  if (payment.confirmedAt) return payment.amount - (payment.communityFundAmount || 0);
+  if (payment.status === "pending" || payment.status === "rejected") return 0;
+  return payment.amount;
 }
 
 /**

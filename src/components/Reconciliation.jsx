@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { getReconciliation, confirmPayment, unconfirmPayment } from "../lib/api.js";
+import { getReconciliation, confirmPayment, unconfirmPayment, getPendingPayments, rejectPayment } from "../lib/api.js";
 import { payeesLabel } from "../lib/scheduleUtils.js";
 import { useApiData } from "../lib/useApiData.js";
 import Receipt from "./Receipt.jsx";
@@ -11,6 +11,31 @@ export default function Reconciliation({ config, premiumActive }) {
   const [expanded, setExpanded] = useState(null); // one member's name at a time
   const [busyEntryId, setBusyEntryId] = useState(null);
   const [receiptFor, setReceiptFor] = useState(null); // { payment, memberName } | null
+
+  const { data: pendingData, refresh: refreshPending } = useApiData(getPendingPayments, []);
+  const scheduleById = Object.fromEntries(config.schedule.map((r) => [r.id, r]));
+
+  const handleConfirmPending = async (entry) => {
+    setBusyEntryId(entry.id);
+    try {
+      await confirmPayment({ paymentId: entry.id, memberName: entry.memberName, scheduleRowId: entry.scheduleRowId });
+      await Promise.all([refreshPending(), refresh()]);
+    } finally {
+      setBusyEntryId(null);
+    }
+  };
+
+  const handleRejectPending = async (entry) => {
+    const reason = window.prompt(`Reason for not confirming ${entry.memberName}'s ${money(entry.amount)} payment (optional):`, "");
+    if (reason === null) return; // cancelled
+    setBusyEntryId(entry.id);
+    try {
+      await rejectPayment({ paymentId: entry.id, memberName: entry.memberName, reason });
+      await Promise.all([refreshPending(), refresh()]);
+    } finally {
+      setBusyEntryId(null);
+    }
+  };
 
   // config loads asynchronously — if this component mounted before it
   // arrived, the useState initializer above locked onto an empty
@@ -83,6 +108,44 @@ export default function Reconciliation({ config, premiumActive }) {
         <h2 className="panel-title">Reconciliation</h2>
         <span className="badge badge-admin">Admin only</span>
       </div>
+
+      {pendingData && pendingData.pending.length > 0 && (
+        <div className="panel" style={{ marginBottom: 18 }}>
+          <h3 className="panel-subtitle">
+            {pendingData.pending.length} pending confirmation{pendingData.pending.length === 1 ? "" : "s"}
+          </h3>
+          <p className="muted tiny" style={{ marginBottom: 10 }}>
+            Logged by members, not yet checked — none of these count toward anyone's balance
+            until you confirm or reject them.
+          </p>
+          {pendingData.pending.map((entry) => (
+            <div key={entry.id} className="pending-entry">
+              <strong>{entry.memberName}</strong>
+              <span>{money(entry.amount)}</span>
+              <span className="muted tiny">{scheduleById[entry.scheduleRowId]?.date || "unknown date"}</span>
+              <span className="muted tiny">logged {new Date(entry.recordedAt).toLocaleDateString()}</span>
+              {entry.note && <span className="muted tiny">"{entry.note}"</span>}
+              <span style={{ marginLeft: "auto" }}>
+                <button
+                  className="btn-link"
+                  disabled={busyEntryId === entry.id}
+                  onClick={() => handleConfirmPending(entry)}
+                >
+                  confirm
+                </button>
+                <button
+                  className="btn-link"
+                  style={{ marginLeft: 10 }}
+                  disabled={busyEntryId === entry.id}
+                  onClick={() => handleRejectPending(entry)}
+                >
+                  reject
+                </button>
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
 
       <label className="field" style={{ maxWidth: 320 }}>
         Payout date
@@ -161,12 +224,10 @@ export default function Reconciliation({ config, premiumActive }) {
                             {m.entries.map((e) => (
                               <div key={e.id} className="history-entry-wrap">
                                 <div className="history-entry">
-                                  <span
-                                    className={"confirm-bulb " + (e.confirmedAt ? "confirm-bulb-on" : "confirm-bulb-off")}
-                                    title={e.confirmedAt ? `Confirmed by ${e.confirmedBy}` : "Not yet confirmed"}
-                                  >●</span>
+                                  <span className={"confirm-bulb " + reconBulbClass(e)} title={reconBulbTitle(e)}>●</span>
                                   <span>{money(e.amount)}</span>
                                   <span className="muted tiny">{new Date(e.recordedAt).toLocaleDateString()}</span>
+                                  {e.note && <span className="muted tiny">"{e.note}"</span>}
                                   {/* Receipts are a premium feature — see FreeTierBanner.jsx */}
                                   {e.confirmedAt && premiumActive && (
                                     <button
@@ -183,11 +244,25 @@ export default function Reconciliation({ config, premiumActive }) {
                                   >
                                     {e.confirmedAt ? "unconfirm" : "confirm"}
                                   </button>
+                                  {!e.confirmedAt && !e.rejectedAt && e.status === "pending" && (
+                                    <button
+                                      className="btn-link"
+                                      disabled={busyEntryId === e.id}
+                                      onClick={() => handleRejectPending({ id: e.id, memberName: e.memberName, amount: e.amount })}
+                                    >
+                                      reject
+                                    </button>
+                                  )}
                                 </div>
                                 {e.confirmedAt && e.communityFundAmount > 0 && (
                                   <div className="muted tiny split-breakdown">
                                     {money(e.amount)} paid → {money(e.communityFundAmount)} to Community Fund,{" "}
                                     {money(e.amount - e.communityFundAmount)} to contribution
+                                  </div>
+                                )}
+                                {e.rejectedAt && (
+                                  <div className="muted tiny rejected-reason">
+                                    Not confirmed by {e.rejectedBy}{e.rejectionReason ? `: ${e.rejectionReason}` : "."}
                                   </div>
                                 )}
                               </div>
@@ -242,4 +317,23 @@ function pickDefaultRow(schedule) {
 function csvEscape(value) {
   const s = String(value);
   return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
+// Same three-state bulb as LedgerTable.jsx's bulbClass/bulbTitle — kept
+// as its own small copy here rather than a shared import since the two
+// components render slightly different entry shapes (this one has
+// memberName, no voidedAt to check since getReconciliation already
+// filters those out).
+function reconBulbClass(entry) {
+  if (entry.confirmedAt) return "confirm-bulb-on";
+  if (entry.rejectedAt) return "confirm-bulb-rejected";
+  if (entry.status === "pending") return "confirm-bulb-pending";
+  return "confirm-bulb-off";
+}
+
+function reconBulbTitle(entry) {
+  if (entry.confirmedAt) return `Confirmed by ${entry.confirmedBy}`;
+  if (entry.rejectedAt) return `Not confirmed by ${entry.rejectedBy}${entry.rejectionReason ? `: ${entry.rejectionReason}` : ""}`;
+  if (entry.status === "pending") return "Pending — awaiting admin review";
+  return "Not yet confirmed";
 }

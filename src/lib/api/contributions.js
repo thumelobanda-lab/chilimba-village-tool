@@ -1,49 +1,6 @@
-import { isRecipient as isRecipientHelper, resolveDue } from "../scheduleUtils.js";
-import { crossedDueThreshold, fundsStillToCredit } from "../fundUtils.js";
-import { effectiveContribution } from "../ledgerMath.js";
 import { MOCK_MODE, lsGet, lsSet, uid, realFetch, currentSession, groupScopedKey } from "./core.js";
 
 const emptyLedger = () => ({ payments: [], payoutInfo: { amount: 0, date: "" }, dueOverrides: {} });
-
-function uidFund() {
-  return crypto.randomUUID ? crypto.randomUUID() : `f_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-}
-
-// Mirrors the Worker's maybeRecordFundContributions (worker/src/fundCrediting.js)
-// — fires once per member per date, the moment their payments for that
-// date cross from below their due amount to at or above it (see
-// fundUtils.js for the shared, tested rule). Mock-mode only; the real
-// crediting happens server-side, scoped to the member's group there too.
-function creditFundsIfNeededMock(session, scheduleRowId, paidBefore, paidAfter) {
-  const config = lsGet(groupScopedKey(session, "group"), null);
-  if (!config || !config.funds?.length) return;
-  const row = config.schedule.find((r) => r.id === scheduleRowId);
-  if (!row) return;
-
-  const isRecipient = isRecipientHelper(row, session.name, config.recipientExempt);
-  if (isRecipient) return; // skip the ledger lookup entirely for a recipient row
-
-  const ledgerKey = groupScopedKey(session, "ledger", session.name.toLowerCase());
-  const ledger = lsGet(ledgerKey, { dueOverrides: {} });
-  const due = resolveDue(row, session.name, config.recipientExempt, ledger.dueOverrides?.[scheduleRowId]);
-  if (!crossedDueThreshold(paidBefore, paidAfter, due)) return;
-
-  const feedKey = groupScopedKey(session, "fund-contributions");
-  const feed = lsGet(feedKey, []);
-  const already = feed
-    .filter((f) => f.userKey === session.name.toLowerCase() && f.scheduleRowId === scheduleRowId)
-    .map((f) => f.fundId);
-  const newEntries = fundsStillToCredit(config.funds, already).map((f) => ({
-    id: uidFund(),
-    userKey: session.name.toLowerCase(),
-    displayName: session.name,
-    scheduleRowId,
-    fundId: f.id,
-    amount: f.amount,
-    recordedAt: new Date().toISOString(),
-  }));
-  if (newEntries.length) lsSet(feedKey, [...feed, ...newEntries]);
-}
 
 function ledgerKeyFor(session) {
   return groupScopedKey(session, "ledger", session.name.toLowerCase());
@@ -98,7 +55,13 @@ export async function setDueOverride(scheduleRowId, amount) {
   });
 }
 
-// Adds a new payment entry. Never modifies an existing one.
+// Adds a new payment entry. Never modifies an existing one. Always
+// created "pending" — the only way a payment is ever logged is the
+// signed-in member self-reporting their own, so every new entry counts
+// ZERO (see effectiveContribution in ledgerMath.js) and never enters a
+// fund split until an admin confirms it (src/lib/api/reconciliation.js's
+// confirmPayment) or rejects it (rejectPayment). Mirrors the Worker's
+// POST /api/contributions/payments (migration 009).
 export async function addPayment({ scheduleRowId, amount, note = "" }) {
   const session = currentSession();
   if (!session) throw new Error("Not signed in.");
@@ -116,21 +79,17 @@ export async function addPayment({ scheduleRowId, amount, note = "" }) {
     confirmedAt: null,
     confirmedBy: null,
     communityFundAmount: 0,
+    status: "pending",
+    rejectedAt: null,
+    rejectedBy: null,
+    rejectionReason: null,
   };
 
   if (MOCK_MODE) {
     const key = ledgerKeyFor(session);
     const ledger = lsGet(key, emptyLedger());
-    // Same effective-contribution rule as everywhere else a "paid" total
-    // is shown — a confirmed prior payment counts only its post-split
-    // remainder. This new entry is always unconfirmed at insert time, so
-    // it's added below (paidBefore + amt) at its full raw amount.
-    const paidBefore = ledger.payments
-      .filter((p) => p.scheduleRowId === scheduleRowId && !p.voidedAt)
-      .reduce((s, p) => s + effectiveContribution(p), 0);
     ledger.payments = [...ledger.payments, entry];
     lsSet(key, ledger);
-    creditFundsIfNeededMock(session, scheduleRowId, paidBefore, paidBefore + amt);
     return entry;
   }
   return realFetch("/api/contributions/payments", { method: "POST", body: JSON.stringify(entry) });

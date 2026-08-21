@@ -7,6 +7,8 @@ import {
   buildCycleTimeline,
   findRecentPayout,
   upcomingDates,
+  isMemberTurnSoon,
+  isCycleNearingCompletion,
 } from "./dashboardMath.js";
 
 describe("computeCycleProgress", () => {
@@ -218,5 +220,93 @@ describe("upcomingDates", () => {
       "2026-08-20"
     );
     expect(upcomingDates(timeline, 1).map((r) => r.id)).toEqual(["a"]);
+  });
+});
+
+describe("isMemberTurnSoon", () => {
+  it("is false with no name", () => {
+    const timeline = buildCycleTimeline([{ id: "a", date: "2026-08-22", payees: ["Doreen"] }], "2026-08-20");
+    expect(isMemberTurnSoon(timeline, "")).toBe(false);
+    expect(isMemberTurnSoon(timeline, undefined)).toBe(false);
+  });
+
+  it("is true when the member is a payee on the very next date", () => {
+    const timeline = buildCycleTimeline(
+      [{ id: "a", date: "2026-08-01", payees: ["Doreen"] }, { id: "b", date: "2026-08-29", payees: ["Sarah"] }],
+      "2026-08-20"
+    );
+    expect(isMemberTurnSoon(timeline, "Sarah")).toBe(true);
+  });
+
+  it("matches case-insensitively", () => {
+    const timeline = buildCycleTimeline([{ id: "a", date: "2026-08-29", payees: ["Sarah"] }], "2026-08-20");
+    expect(isMemberTurnSoon(timeline, "sarah")).toBe(true);
+  });
+
+  it("is true when within the lookahead window but not the very next date", () => {
+    const timeline = buildCycleTimeline(
+      [
+        { id: "a", date: "2026-08-22", payees: ["Doreen"] },
+        { id: "b", date: "2026-09-05", payees: ["Sarah"] },
+        { id: "c", date: "2026-09-19", payees: ["Grace"] },
+      ],
+      "2026-08-20"
+    );
+    expect(isMemberTurnSoon(timeline, "Sarah")).toBe(true); // default lookahead 2
+  });
+
+  it("is false when the member's turn is beyond the lookahead window", () => {
+    const timeline = buildCycleTimeline(
+      [
+        { id: "a", date: "2026-08-22", payees: ["Doreen"] },
+        { id: "b", date: "2026-09-05", payees: ["Grace"] },
+        { id: "c", date: "2026-09-19", payees: ["Sarah"] },
+      ],
+      "2026-08-20"
+    );
+    expect(isMemberTurnSoon(timeline, "Sarah")).toBe(false);
+  });
+
+  it("is false when the member's only date has already passed", () => {
+    const timeline = buildCycleTimeline(
+      [{ id: "a", date: "2026-08-01", payees: ["Sarah"] }, { id: "b", date: "2026-09-01", payees: ["Doreen"] }],
+      "2026-08-20"
+    );
+    expect(isMemberTurnSoon(timeline, "Sarah")).toBe(false);
+  });
+
+  it("respects a custom lookahead", () => {
+    const timeline = buildCycleTimeline(
+      [
+        { id: "a", date: "2026-08-22", payees: ["Doreen"] },
+        { id: "b", date: "2026-09-05", payees: ["Grace"] },
+        { id: "c", date: "2026-09-19", payees: ["Sarah"] },
+      ],
+      "2026-08-20"
+    );
+    expect(isMemberTurnSoon(timeline, "Sarah", 3)).toBe(true);
+  });
+});
+
+describe("isCycleNearingCompletion", () => {
+  it("is false for an empty schedule", () => {
+    expect(isCycleNearingCompletion({ total: 0, passed: 0 })).toBe(false);
+  });
+
+  it("is false when several dates remain", () => {
+    expect(isCycleNearingCompletion({ total: 6, passed: 2 })).toBe(false);
+  });
+
+  it("is true when only one date remains", () => {
+    expect(isCycleNearingCompletion({ total: 6, passed: 5 })).toBe(true);
+  });
+
+  it("is true once the cycle is fully complete", () => {
+    expect(isCycleNearingCompletion({ total: 6, passed: 6 })).toBe(true);
+  });
+
+  it("respects a custom remainingThreshold", () => {
+    expect(isCycleNearingCompletion({ total: 6, passed: 3 }, 3)).toBe(true);
+    expect(isCycleNearingCompletion({ total: 6, passed: 2 }, 3)).toBe(false);
   });
 });

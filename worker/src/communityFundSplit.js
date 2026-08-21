@@ -27,22 +27,27 @@ export function computeCommunityFundSplit(paymentAmount, deductionRate) {
 }
 
 /**
- * How much of a single payment counts toward a member's due progress.
- * An unconfirmed (or voided) entry counts its full amount; only once
- * confirmed does the community-fund split apply. Mirrors
- * src/lib/ledgerMath.js's effectiveContribution() — kept as two
- * separate small functions (worker vs. frontend) rather than a shared
- * import, since the two runtimes don't share a module boundary here,
- * but the rule itself must stay identical or the member's own ledger
- * and the admin's reconciliation view would disagree.
+ * How much of a single payment counts toward a member's due progress. A
+ * voided entry always counts zero. A confirmed entry counts its amount
+ * minus whatever the community-fund split took. Otherwise: status
+ * 'pending' or 'rejected' (migration 009 — a member-submitted entry
+ * awaiting, or refused, admin review) counts zero; any other unconfirmed
+ * entry (status NULL, logged before migration 009) still counts its full
+ * amount, per the original migration-004 rule those entries were created
+ * under. Mirrors src/lib/ledgerMath.js's effectiveContribution() — kept
+ * as two separate small functions (worker vs. frontend) rather than a
+ * shared import, since the two runtimes don't share a module boundary
+ * here, but the rule itself must stay identical or the member's own
+ * ledger and the admin's reconciliation view would disagree.
  *
- * @param {{amount: number, confirmedAt: string|null, communityFundAmount: number, voidedAt: string|null}} payment
+ * @param {{amount: number, confirmedAt: string|null, communityFundAmount: number, voidedAt: string|null, status?: string|null}} payment
  * @returns {number}
  */
 export function effectiveContribution(payment) {
   if (payment.voidedAt) return 0;
-  if (!payment.confirmedAt) return Number(payment.amount) || 0;
-  return (Number(payment.amount) || 0) - (Number(payment.communityFundAmount) || 0);
+  if (payment.confirmedAt) return (Number(payment.amount) || 0) - (Number(payment.communityFundAmount) || 0);
+  if (payment.status === "pending" || payment.status === "rejected") return 0;
+  return Number(payment.amount) || 0;
 }
 
 // The reserved, always-implicit fund id for the community-fund split —
@@ -61,4 +66,8 @@ export const COMMUNITY_FUND_NAME = "Community Fund";
  * so safe to splice directly into a query.
  */
 export const EFFECTIVE_CONTRIBUTION_SQL =
-  "CASE WHEN confirmed_at IS NOT NULL THEN amount - community_fund_amount ELSE amount END";
+  "CASE" +
+  " WHEN confirmed_at IS NOT NULL THEN amount - community_fund_amount" +
+  " WHEN status IN ('pending', 'rejected') THEN 0" +
+  " ELSE amount" +
+  " END";

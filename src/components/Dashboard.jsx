@@ -1,6 +1,6 @@
 import React from "react";
 import { money } from "./LedgerTable.jsx";
-import { getGroupFunds, getGroupPulse } from "../lib/api.js";
+import { getGroupFunds, getGroupPulse, getPendingPayments } from "../lib/api.js";
 import { useApiData } from "../lib/useApiData.js";
 import { findNextDue, payeesLabel } from "../lib/scheduleUtils.js";
 import {
@@ -11,6 +11,8 @@ import {
   buildCycleTimeline,
   findRecentPayout,
   upcomingDates,
+  isMemberTurnSoon,
+  isCycleNearingCompletion,
 } from "../lib/dashboardMath.js";
 import { useCountUp } from "../hooks/useCountUp.js";
 import ProgressRing from "./ProgressRing.jsx";
@@ -33,9 +35,16 @@ function formatDate(dateISO) {
  * behind NavMenu now, reachable but no longer competing for space on the
  * screen you land on.
  */
-export default function Dashboard({ session, config, ledger, totals }) {
+export default function Dashboard({ session, config, ledger, totals, onOpenReconciliation }) {
   const { data: fundsData, loading: fundsLoading } = useApiData(getGroupFunds, []);
   const { data: pulseData, loading: pulseLoading } = useApiData(getGroupPulse, []);
+  // Admin-only — a regular member has no access to this endpoint (see
+  // getPendingPayments in reconciliation.js), so this only ever fetches
+  // for an admin session, same gating as the "Reconciliation" tab itself.
+  const { data: pendingData } = useApiData(
+    session?.role === "admin" ? getPendingPayments : () => Promise.resolve(null),
+    [session?.role]
+  );
   const fundTotal = fundsData ? sumFundBalances(fundsData.funds) : 0;
   const fundTotalDisplay = useCountUp(fundTotal);
   const balanceDisplay = useCountUp(totals.balance);
@@ -57,10 +66,29 @@ export default function Dashboard({ session, config, ledger, totals }) {
   const nextUpRow = timelineRows.find((r) => r.status === "next");
   const recentPayout = findRecentPayout(config.schedule);
   const upcomingRows = upcomingDates(timelineRows);
+  // Golden ring glow: only when something's actually worth highlighting —
+  // the viewer's own turn is close, the cycle's in its final stretch, or
+  // someone was just paid out — so it draws the eye when it lights up
+  // rather than being a constant, meaningless decoration.
+  const ringGlow =
+    isMemberTurnSoon(timelineRows, session?.name) || isCycleNearingCompletion(cycle) || Boolean(recentPayout);
 
   return (
     <>
       <h2 className="panel-title">Home</h2>
+
+      {session?.role === "admin" && pendingData && pendingData.pending.length > 0 && (
+        <div
+          className="pending-queue-banner"
+          onClick={onOpenReconciliation}
+          role={onOpenReconciliation ? "button" : undefined}
+          tabIndex={onOpenReconciliation ? 0 : undefined}
+        >
+          <strong>{pendingData.pending.length}</strong> pending confirmation
+          {pendingData.pending.length === 1 ? "" : "s"} —{" "}
+          {onOpenReconciliation ? "tap to review" : "check Reconciliation"}
+        </div>
+      )}
 
       {recentPayout && <PayoutAcknowledgment groupSlug={session.groupSlug} row={recentPayout} />}
 
@@ -105,6 +133,7 @@ export default function Dashboard({ session, config, ledger, totals }) {
           <ProgressRing
             percent={cycle.percent}
             sublabel={cycle.total > 0 ? `${cycle.passed} of ${cycle.total} dates` : "No dates yet"}
+            glow={ringGlow}
           />
         </div>
 
