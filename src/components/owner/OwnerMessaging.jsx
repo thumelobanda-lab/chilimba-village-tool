@@ -67,6 +67,13 @@ export default function OwnerMessaging({ groups }) {
   // "✓ Logged" after logging a payment.
   const [supportEmail, setSupportEmail] = useState("");
   const [supportWhatsapp, setSupportWhatsapp] = useState("");
+  // PUT /api/owner/settings always writes both fields from whatever's in
+  // local state (there's no partial-update semantics) — so saving before
+  // the initial GET has resolved would silently overwrite whichever
+  // field hadn't loaded yet with "". settingsLoaded gates both the
+  // inputs and the Save button until the real current values are in
+  // state, closing that window entirely rather than just narrowing it.
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
   const [contactBusy, setContactBusy] = useState(false);
   const [contactSaved, setContactSaved] = useState(false);
   const contactLabel = buildContactLabel({ supportEmail, supportWhatsapp });
@@ -87,7 +94,8 @@ export default function OwnerMessaging({ groups }) {
         setSupportEmail(data.supportEmail || "");
         setSupportWhatsapp(data.supportWhatsapp || "");
       })
-      .catch((e) => setError(e.message || "Could not load the support contact."));
+      .catch((e) => setError(e.message || "Could not load the support contact."))
+      .finally(() => setSettingsLoaded(true));
   }, [loadLog]);
 
   const handleSaveContact = async () => {
@@ -188,7 +196,8 @@ export default function OwnerMessaging({ groups }) {
               type="email"
               value={supportEmail}
               onChange={(e) => setSupportEmail(e.target.value)}
-              placeholder="support@chilimbacircle.app"
+              placeholder={settingsLoaded ? "support@chilimbacircle.app" : "Loading…"}
+              disabled={!settingsLoaded}
             />
           </label>
           <label className="field" style={{ flex: 1, minWidth: 200 }}>
@@ -197,12 +206,13 @@ export default function OwnerMessaging({ groups }) {
               type="tel"
               value={supportWhatsapp}
               onChange={(e) => setSupportWhatsapp(e.target.value)}
-              placeholder="+260 97 123 4567"
+              placeholder={settingsLoaded ? "+260 97 123 4567" : "Loading…"}
+              disabled={!settingsLoaded}
             />
           </label>
         </div>
-        <button className="btn-ghost-dark" disabled={contactBusy} onClick={handleSaveContact}>
-          {contactBusy ? "Saving…" : contactSaved ? "✓ Saved" : "Save support contact"}
+        <button className="btn-ghost-dark" disabled={contactBusy || !settingsLoaded} onClick={handleSaveContact}>
+          {!settingsLoaded ? "Loading…" : contactBusy ? "Saving…" : contactSaved ? "✓ Saved" : "Save support contact"}
         </button>
       </div>
 
