@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { computeCycleProgress, daysUntil, relativeDueLabel, sumFundBalances } from "./dashboardMath.js";
+import { computeCycleProgress, daysUntil, relativeDueLabel, sumFundBalances, buildCycleTimeline } from "./dashboardMath.js";
 
 describe("computeCycleProgress", () => {
   it("returns all zeros for an empty schedule", () => {
@@ -71,5 +71,53 @@ describe("sumFundBalances", () => {
   it("returns 0 for an empty or missing list", () => {
     expect(sumFundBalances([])).toBe(0);
     expect(sumFundBalances(undefined)).toBe(0);
+  });
+});
+
+describe("buildCycleTimeline", () => {
+  it("returns an empty array for an empty schedule", () => {
+    expect(buildCycleTimeline([], "2026-08-20")).toEqual([]);
+  });
+
+  it("tags a date on today as past, not next", () => {
+    const schedule = [{ id: "a", date: "2026-08-20" }, { id: "b", date: "2026-09-03" }];
+    const result = buildCycleTimeline(schedule, "2026-08-20");
+    expect(result[0].status).toBe("past");
+    expect(result[1].status).toBe("next");
+  });
+
+  it("marks only the single earliest future date as next, the rest future", () => {
+    const schedule = [
+      { id: "a", date: "2026-08-01" }, // past
+      { id: "b", date: "2026-08-15" }, // past
+      { id: "c", date: "2026-08-29" }, // next
+      { id: "d", date: "2026-09-12" }, // future
+    ];
+    const result = buildCycleTimeline(schedule, "2026-08-20");
+    expect(result.map((r) => r.status)).toEqual(["past", "past", "next", "future"]);
+  });
+
+  it("marks every date past when the whole schedule is behind today", () => {
+    const schedule = [{ id: "a", date: "2026-01-01" }, { id: "b", date: "2026-02-01" }];
+    const result = buildCycleTimeline(schedule, "2026-08-20");
+    expect(result.map((r) => r.status)).toEqual(["past", "past"]);
+  });
+
+  it("marks the earliest date next when the whole schedule is still ahead", () => {
+    const schedule = [{ id: "a", date: "2026-09-01" }, { id: "b", date: "2026-09-15" }];
+    const result = buildCycleTimeline(schedule, "2026-08-20");
+    expect(result.map((r) => r.status)).toEqual(["next", "future"]);
+  });
+
+  it("preserves every other field on each row, only adding status", () => {
+    const schedule = [{ id: "a", date: "2026-09-01", group: "Group A", payees: ["Doreen"] }];
+    const result = buildCycleTimeline(schedule, "2026-08-20");
+    expect(result[0]).toEqual({ id: "a", date: "2026-09-01", group: "Group A", payees: ["Doreen"], status: "next" });
+  });
+
+  it("ignores rows with an unparsable date rather than throwing, treating them as not-past", () => {
+    const schedule = [{ id: "a", date: "2026-01-01" }, { id: "b", date: "not-a-date" }];
+    const result = buildCycleTimeline(schedule, "2026-08-20");
+    expect(result.map((r) => r.status)).toEqual(["past", "next"]);
   });
 });

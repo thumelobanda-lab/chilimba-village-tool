@@ -55,6 +55,41 @@ export function relativeDueLabel(days) {
 }
 
 /**
+ * Per-date payout status across the whole schedule, for the cycle
+ * timeline — each row tagged "past" (that date's payout has happened),
+ * "next" (the soonest date still ahead — exactly one row, the first
+ * future date), or "future" (everyone else still waiting).
+ *
+ * Deliberately built only from the schedule's own dates, not from
+ * anyone's actual payment/payout records — the app has no cross-member
+ * "payout confirmed received" data to check (only a member's own ledger
+ * has that), and querying every member's ledger just to render a
+ * dashboard timeline would be exactly the kind of extra round-trip that
+ * breaks the "instant, no lag" requirement this exists to meet. "Past"
+ * here means "that date has arrived", same assumption computeCycleProgress
+ * above already makes — an honest proxy, not a verified receipt.
+ *
+ * @param {Array<{id: string, date: string}>} schedule
+ * @param {string} [todayISO] - "YYYY-MM-DD", defaults to today
+ * @returns {Array<object>} schedule rows, each with an added `status` field
+ */
+export function buildCycleTimeline(schedule, todayISO = new Date().toISOString().slice(0, 10)) {
+  const today = new Date(todayISO + "T00:00:00");
+  let markedNext = false;
+
+  return schedule.map((row) => {
+    const d = new Date(row.date + "T00:00:00");
+    const isPast = !isNaN(d.getTime()) && d <= today;
+    if (isPast) return { ...row, status: "past" };
+    if (!markedNext) {
+      markedNext = true;
+      return { ...row, status: "next" };
+    }
+    return { ...row, status: "future" };
+  });
+}
+
+/**
  * The community fund headline total — gross balance across every fund
  * (not "available", which nets out loans against loanable funds; the
  * dashboard's figure is meant to read as "what the group has raised

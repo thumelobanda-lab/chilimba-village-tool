@@ -598,7 +598,69 @@ body { margin: 0; background: var(--bg); color: var(--ink); }
 .vital-card-value-warn { color: var(--red); }
 .vital-card-value-ok { color: var(--green); }
 
-.vital-card-ring { display: flex; flex-direction: column; align-items: flex-start; }
+/* Cycle Progress — its own full-width panel below the vital-card grid
+   (ring + "who's next" line + the per-date timeline), rather than a
+   cramped fourth vital-card, now that it shows more than one number. */
+.cycle-progress-panel { margin-top: 14px; }
+.cycle-progress-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.cycle-next-up { margin: 12px 0 4px; }
+
+.cycle-timeline-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-top: 10px;
+}
+.cycle-timeline {
+  display: flex;
+  gap: 4px;
+  padding: 4px 2px 6px;
+  min-width: max-content;
+}
+.cycle-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 76px;
+  flex-shrink: 0;
+}
+.cycle-node-dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: white;
+  background: var(--line);
+}
+.cycle-node-past .cycle-node-dot { background: var(--accent); }
+.cycle-node-next .cycle-node-dot {
+  background: var(--accent-2);
+  box-shadow: 0 0 0 3px rgba(201, 154, 61, 0.22);
+}
+.cycle-node-future .cycle-node-dot { background: var(--panel); border: 2px solid var(--line); }
+.cycle-node-date { font-size: 0.68rem; color: var(--ink-faint); margin-top: 4px; }
+.cycle-node-payee {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin-top: 1px;
+  text-align: center;
+  max-width: 74px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cycle-node-next .cycle-node-payee { color: #8A5A12; }
+
 .progress-ring-wrap { position: relative; display: inline-flex; align-items: center; justify-content: center; margin-top: 4px; }
 .progress-ring-arc { transition: stroke-dashoffset 0.9s ease; }
 .progress-ring-center {
