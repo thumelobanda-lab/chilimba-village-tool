@@ -1,6 +1,6 @@
 import React from "react";
 import { money } from "./LedgerTable.jsx";
-import { getGroupFunds } from "../lib/api.js";
+import { getGroupFunds, getGroupPulse } from "../lib/api.js";
 import { useApiData } from "../lib/useApiData.js";
 import { findNextDue, payeesLabel } from "../lib/scheduleUtils.js";
 import {
@@ -9,10 +9,13 @@ import {
   relativeDueLabel,
   sumFundBalances,
   buildCycleTimeline,
+  findRecentPayout,
 } from "../lib/dashboardMath.js";
 import { useCountUp } from "../hooks/useCountUp.js";
 import ProgressRing from "./ProgressRing.jsx";
 import CycleTimeline from "./CycleTimeline.jsx";
+import GroupPulse from "./GroupPulse.jsx";
+import PayoutAcknowledgment from "./PayoutAcknowledgment.jsx";
 
 function formatDate(dateISO) {
   const d = new Date(dateISO + "T00:00:00");
@@ -30,6 +33,7 @@ function formatDate(dateISO) {
  */
 export default function Dashboard({ session, config, ledger, totals }) {
   const { data: fundsData, loading: fundsLoading } = useApiData(getGroupFunds, []);
+  const { data: pulseData, loading: pulseLoading } = useApiData(getGroupPulse, []);
   const fundTotal = fundsData ? sumFundBalances(fundsData.funds) : 0;
   const fundTotalDisplay = useCountUp(fundTotal);
   const balanceDisplay = useCountUp(totals.balance);
@@ -49,10 +53,14 @@ export default function Dashboard({ session, config, ledger, totals }) {
   // the same instant as everything else here.
   const timelineRows = buildCycleTimeline(config.schedule);
   const nextUpRow = timelineRows.find((r) => r.status === "next");
+  const recentPayout = findRecentPayout(config.schedule);
 
   return (
     <>
       <h2 className="panel-title">Home</h2>
+
+      {recentPayout && <PayoutAcknowledgment groupSlug={session.groupSlug} row={recentPayout} />}
+
       <div className="dashboard-grid">
         <div className="vital-card">
           <div className="vital-card-label">Next Payment Due</div>
@@ -105,6 +113,8 @@ export default function Dashboard({ session, config, ledger, totals }) {
 
         <CycleTimeline rows={timelineRows} />
       </div>
+
+      <GroupPulse data={pulseData} loading={pulseLoading} />
     </>
   );
 }

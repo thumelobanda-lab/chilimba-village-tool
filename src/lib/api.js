@@ -3,7 +3,7 @@
  *
  * The implementation lives in src/lib/api/ split by domain (auth,
  * profile, schedule, contributions, funds, reconciliation, reminders,
- * subscription) — this file just re-exports everything from one place,
+ * subscription, dashboard) — this file just re-exports everything from one place,
  * so every component's `import { x } from "../lib/api.js"` keeps working
  * unchanged. See src/lib/api/core.js for MOCK_MODE and the shared
  * plumbing every domain module depends on.
@@ -19,3 +19,4 @@ export * from "./api/reconciliation.js";
 export * from "./api/reminders.js";
 export * from "./api/subscription.js";
 export * from "./api/notices.js";
+export * from "./api/dashboard.js";

@@ -90,6 +90,35 @@ export function buildCycleTimeline(schedule, todayISO = new Date().toISOString()
 }
 
 /**
+ * The most recent payout date that just happened — within the last
+ * `windowDays` days, inclusive of today — for a brief, one-time "group
+ * pulse" acknowledgment. Naturally self-limits without needing separate
+ * expiry tracking: once a date falls outside the window it simply stops
+ * matching, though the caller still needs its own dismiss/seen tracking
+ * (see PayoutAcknowledgment.jsx) for a member who checks the app more
+ * than once within that window. Picks the single most recent match if
+ * more than one date falls in the window, rather than array order.
+ *
+ * @param {Array<{id: string, date: string}>} schedule
+ * @param {string} [todayISO] - "YYYY-MM-DD", defaults to today
+ * @param {number} [windowDays] - how many days back still counts as "just happened"
+ * @returns {object|null} the schedule row, or null if none is recent enough
+ */
+export function findRecentPayout(schedule, todayISO = new Date().toISOString().slice(0, 10), windowDays = 2) {
+  const today = new Date(todayISO + "T00:00:00");
+  const windowStart = new Date(today.getTime() - windowDays * 86400000);
+
+  const candidates = (schedule || []).filter((row) => {
+    const d = new Date(row.date + "T00:00:00");
+    return !isNaN(d.getTime()) && d <= today && d >= windowStart;
+  });
+  if (candidates.length === 0) return null;
+
+  candidates.sort((a, b) => new Date(b.date) - new Date(a.date));
+  return candidates[0];
+}
+
+/**
  * The community fund headline total — gross balance across every fund
  * (not "available", which nets out loans against loanable funds; the
  * dashboard's figure is meant to read as "what the group has raised

@@ -661,6 +661,43 @@ body { margin: 0; background: var(--bg); color: var(--ink); }
 }
 .cycle-node-next .cycle-node-payee { color: #8A5A12; }
 
+/* Group Pulse — the communal layer: an aggregate total and a plain
+   activity count, deliberately never who specifically has paid. */
+.group-pulse-panel { margin-top: 14px; }
+.group-pulse-total {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  margin-top: 4px;
+}
+.group-pulse-activity { font-size: 0.9rem; color: var(--ink); margin: 0; }
+
+/* Payout acknowledgment — a brief, dismissible banner, not a persistent
+   fixture. Sits above the vital-card grid, below the Home heading. */
+.payout-ack {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: #FFF8E8;
+  border: 1px solid var(--accent-2);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  font-size: 0.88rem;
+  color: var(--ink);
+}
+.payout-ack-dismiss {
+  background: none;
+  border: none;
+  color: var(--ink-faint);
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 4px 8px;
+  flex-shrink: 0;
+}
+
 .progress-ring-wrap { position: relative; display: inline-flex; align-items: center; justify-content: center; margin-top: 4px; }
 .progress-ring-arc { transition: stroke-dashoffset 0.9s ease; }
 .progress-ring-center {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { computeCycleProgress, daysUntil, relativeDueLabel, sumFundBalances, buildCycleTimeline } from "./dashboardMath.js";
+import { computeCycleProgress, daysUntil, relativeDueLabel, sumFundBalances, buildCycleTimeline, findRecentPayout } from "./dashboardMath.js";
 
 describe("computeCycleProgress", () => {
   it("returns all zeros for an empty schedule", () => {
@@ -119,5 +119,42 @@ describe("buildCycleTimeline", () => {
     const schedule = [{ id: "a", date: "2026-01-01" }, { id: "b", date: "not-a-date" }];
     const result = buildCycleTimeline(schedule, "2026-08-20");
     expect(result.map((r) => r.status)).toEqual(["past", "next"]);
+  });
+});
+
+describe("findRecentPayout", () => {
+  it("returns null when nothing recent has happened", () => {
+    expect(findRecentPayout([], "2026-08-20")).toBeNull();
+    expect(findRecentPayout([{ id: "a", date: "2026-09-01" }], "2026-08-20")).toBeNull(); // still ahead
+    expect(findRecentPayout([{ id: "a", date: "2026-08-01" }], "2026-08-20")).toBeNull(); // too long ago
+  });
+
+  it("returns a date that is exactly today", () => {
+    const schedule = [{ id: "a", date: "2026-08-20" }];
+    expect(findRecentPayout(schedule, "2026-08-20")?.id).toBe("a");
+  });
+
+  it("returns a date within the default 2-day window", () => {
+    const schedule = [{ id: "a", date: "2026-08-19" }]; // yesterday
+    expect(findRecentPayout(schedule, "2026-08-20")?.id).toBe("a");
+  });
+
+  it("excludes a date just outside the default 2-day window", () => {
+    const schedule = [{ id: "a", date: "2026-08-17" }]; // 3 days ago
+    expect(findRecentPayout(schedule, "2026-08-20")).toBeNull();
+  });
+
+  it("respects a custom windowDays", () => {
+    const schedule = [{ id: "a", date: "2026-08-15" }]; // 5 days ago
+    expect(findRecentPayout(schedule, "2026-08-20", 2)).toBeNull();
+    expect(findRecentPayout(schedule, "2026-08-20", 7)?.id).toBe("a");
+  });
+
+  it("picks the most recent match when more than one date falls in the window", () => {
+    const schedule = [
+      { id: "older", date: "2026-08-19" },
+      { id: "newer", date: "2026-08-20" },
+    ];
+    expect(findRecentPayout(schedule, "2026-08-20")?.id).toBe("newer");
   });
 });
