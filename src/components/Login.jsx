@@ -13,13 +13,19 @@ function getInviteSlugFromUrl() {
   return new URLSearchParams(window.location.search).get("join") || "";
 }
 
-export default function Login({ onLogin, sessionEndedNotice }) {
+export default function Login({ onLogin, onJoin, sessionEndedNotice }) {
   const [inviteSlug] = useState(getInviteSlugFromUrl);
   const [mode, setMode] = useState(inviteSlug ? "join" : "signin"); // "join" | "signin"
   const [groupSlug, setGroupSlug] = useState(
     () => inviteSlug || localStorage.getItem(LAST_GROUP_KEY) || ""
   );
-  const [name, setName] = useState("");
+  // Separate state per mode rather than one shared "name" field — sign
+  // up and sign in ask genuinely different questions (full name vs.
+  // name-or-phone), so switching modes shouldn't leave one mode's input
+  // sitting in the other's field.
+  const [joinName, setJoinName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [signinIdentifier, setSigninIdentifier] = useState("");
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -36,22 +42,30 @@ export default function Login({ onLogin, sessionEndedNotice }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const isJoin = mode === "join";
+  const canSubmit = isJoin
+    ? !!(groupSlug.trim() && joinName.trim() && phone.trim())
+    : !!(groupSlug.trim() && signinIdentifier.trim());
+
   const submit = async () => {
     setError("");
-    if (!groupSlug.trim() || !name.trim() || busy) return;
+    if (!canSubmit || busy) return;
     setBusy(true);
     try {
-      await onLogin(groupSlug.trim(), name.trim(), pin);
+      if (isJoin) {
+        await onJoin(groupSlug.trim(), joinName.trim(), phone.trim(), pin);
+      } else {
+        await onLogin(groupSlug.trim(), signinIdentifier.trim(), pin);
+      }
       localStorage.setItem(LAST_GROUP_KEY, groupSlug.trim().toLowerCase());
     } catch (e) {
-      setError(e.message || "Could not sign in.");
+      setError(e.message || (isJoin ? "Could not join." : "Could not sign in."));
     } finally {
       setBusy(false);
     }
   };
 
   const onEnter = (e) => e.key === "Enter" && submit();
-  const isJoin = mode === "join";
 
   return (
     <div className="panel login-panel">
@@ -87,15 +101,15 @@ export default function Login({ onLogin, sessionEndedNotice }) {
         <>
           <h2 className="panel-title">New here? Join your group</h2>
           <p className="muted small" style={{ marginBottom: 14 }}>
-            First time? Enter the group code your admin shared with you, choose your name,
-            and set a PIN.
+            First time? Enter the group code your admin shared with you, your name and
+            phone number, and set a PIN.
           </p>
         </>
       ) : (
         <>
           <h2 className="panel-title">Welcome back — Sign in</h2>
           <p className="muted small" style={{ marginBottom: 14 }}>
-            Already joined? Enter your name and PIN to access your group.
+            Already joined? Enter your name or phone number and PIN to access your group.
           </p>
         </>
       )}
@@ -112,17 +126,48 @@ export default function Login({ onLogin, sessionEndedNotice }) {
           disabled={busy}
         />
       </label>
-      <label className="field">
-        Your name
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          onKeyDown={onEnter}
-          placeholder="e.g. Harriet"
-          autoComplete="username"
-          disabled={busy}
-        />
-      </label>
+
+      {isJoin ? (
+        <>
+          <label className="field">
+            Full name
+            <input
+              value={joinName}
+              onChange={(e) => setJoinName(e.target.value)}
+              onKeyDown={onEnter}
+              placeholder="e.g. Harriet Banda"
+              autoComplete="name"
+              disabled={busy}
+            />
+          </label>
+          <label className="field">
+            Phone number
+            <input
+              type="tel"
+              inputMode="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              onKeyDown={onEnter}
+              placeholder="e.g. 097 123 4567"
+              autoComplete="tel"
+              disabled={busy}
+            />
+          </label>
+        </>
+      ) : (
+        <label className="field">
+          Name or phone number
+          <input
+            value={signinIdentifier}
+            onChange={(e) => setSigninIdentifier(e.target.value)}
+            onKeyDown={onEnter}
+            placeholder="e.g. Harriet or 097 123 4567"
+            autoComplete="username"
+            disabled={busy}
+          />
+        </label>
+      )}
+
       <label className="field">
         PIN (4+ digits)
         <input
@@ -137,22 +182,23 @@ export default function Login({ onLogin, sessionEndedNotice }) {
         />
       </label>
       {error && <div className="error-text" role="alert" aria-live="assertive">{error}</div>}
-      <button className="btn-primary" disabled={!groupSlug.trim() || !name.trim() || busy} onClick={submit}>
+      <button className="btn-primary" disabled={!canSubmit || busy} onClick={submit}>
         {busy ? "Checking…" : isJoin ? "Join group" : "Continue"}
       </button>
 
       {isJoin ? (
         <p className="muted tiny">
-          Your PIN is never stored or sent in plain text — only a one-way hash of it is
-          checked.
+          Your phone number is kept private — it's never shown to other members — and
+          lets you sign in with it later, plus enables a PIN-reset option down the road,
+          since a PIN can't be recovered once forgotten. Your PIN itself is never stored
+          or sent in plain text, only a one-way hash of it is checked.
         </p>
       ) : (
         <p className="muted tiny">
-          First time signing in with a name sets its PIN, same as joining. Your PIN is
-          never stored or sent in plain text — only a one-way hash of it is checked. If
-          your group doesn't have a code yet, ask its admin — starting a brand-new
-          Chilimba group is an admin action from inside the app now, not something
-          reachable from here.
+          Your PIN is never stored or sent in plain text — only a one-way hash of it is
+          checked. If your group doesn't have a code yet, ask its admin — starting a
+          brand-new Chilimba group is an admin action from inside the app now, not
+          something reachable from here.
         </p>
       )}
     </div>

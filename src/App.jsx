@@ -44,7 +44,7 @@ function greeting() {
 }
 
 export default function App() {
-  const { session, login, createAdditionalGroup, logout, renameSession, refreshSession } = useSession();
+  const { session, login, join, createAdditionalGroup, logout, renameSession, refreshSession } = useSession();
   const { config, setConfig } = useGroupConfig(session);
   const {
     ledger,
@@ -112,8 +112,14 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.token]);
 
-  const handleLogin = async (groupSlug, name, pin) => {
-    const user = await login(groupSlug, name, pin);
+  const handleLogin = async (groupSlug, identifier, pin) => {
+    const user = await login(groupSlug, identifier, pin);
+    setSessionEndedNotice(false);
+    if (user.isNew) onboarding.trigger();
+  };
+
+  const handleJoin = async (groupSlug, name, phone, pin) => {
+    const user = await join(groupSlug, name, phone, pin);
     setSessionEndedNotice(false);
     if (user.isNew) onboarding.trigger();
   };
@@ -169,7 +175,7 @@ export default function App() {
 
       <main className="app-main">
         {!session ? (
-          <Login onLogin={handleLogin} sessionEndedNotice={sessionEndedNotice} />
+          <Login onLogin={handleLogin} onJoin={handleJoin} sessionEndedNotice={sessionEndedNotice} />
         ) : onboarding.needsOnboarding ? (
           <Onboarding
             groupName={session.groupName}

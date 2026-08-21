@@ -33,7 +33,7 @@ export function randomSalt() {
  *
  * Accounts created before this change have a hash with no `pbkdf2$`
  * prefix — verifyPin() detects that and falls back to the old
- * single-round SHA-256 check. loginOrCreate() transparently re-hashes
+ * single-round SHA-256 check. login() transparently re-hashes
  * with PBKDF2 the moment such an account logs in successfully, so every
  * account upgrades itself the first time its owner signs in again,
  * without anyone needing to reset a PIN.

@@ -2,6 +2,7 @@ import { useState } from "react";
 import {
   currentSession,
   login as apiLogin,
+  join as apiJoin,
   createGroup as apiCreateGroup,
   logout as apiLogout,
   getMe as apiGetMe,
@@ -17,8 +18,18 @@ import {
 export function useSession() {
   const [session, setSession] = useState(currentSession());
 
-  const login = async (groupSlug, name, pin) => {
-    const user = await apiLogin(groupSlug, name, pin);
+  const login = async (groupSlug, identifier, pin) => {
+    const user = await apiLogin(groupSlug, identifier, pin);
+    setSession(user);
+    return user;
+  };
+
+  // Sign-up — creates a brand-new member account (name + phone + PIN).
+  // Deliberately a separate call from login() above, not a fallback it
+  // reaches for on a not-found identifier: see auth.js for why the split
+  // matters (phone collection has to be unskippable).
+  const join = async (groupSlug, name, phone, pin) => {
+    const user = await apiJoin(groupSlug, name, phone, pin);
     setSession(user);
     return user;
   };
@@ -75,5 +86,5 @@ export function useSession() {
     setSession((prev) => (prev ? { ...prev, name } : prev));
   };
 
-  return { session, login, createGroup, createAdditionalGroup, logout, renameSession, refreshSession };
+  return { session, login, join, createGroup, createAdditionalGroup, logout, renameSession, refreshSession };
 }

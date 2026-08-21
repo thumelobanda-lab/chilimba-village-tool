@@ -51,6 +51,12 @@ CREATE TABLE IF NOT EXISTS users (
   group_id TEXT NOT NULL REFERENCES groups(id),
   name TEXT NOT NULL,               -- stored lowercase for lookup, unique WITHIN a group
   display_name TEXT NOT NULL,       -- original casing, for display
+  phone TEXT,                       -- normalized digits (+ leading "+" if given); nullable
+                                     -- since older accounts predate this — required for
+                                     -- every new signup though (see joinGroup() in auth.js).
+                                     -- An alternate login identifier (name OR phone), and the
+                                     -- groundwork for a future PIN-reset via SMS/WhatsApp.
+                                     -- Unique WITHIN a group, like name — see the index below.
   pin_salt TEXT NOT NULL,
   pin_hash TEXT NOT NULL,
   role TEXT NOT NULL DEFAULT 'member',   -- 'member' | 'admin' — see adminUtils.js: an
@@ -66,6 +72,7 @@ CREATE TABLE IF NOT EXISTS users (
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   UNIQUE(group_id, name)
 );
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_group_phone ON users(group_id, phone);
 CREATE INDEX IF NOT EXISTS idx_users_group ON users(group_id);
 
 CREATE TABLE IF NOT EXISTS sessions (

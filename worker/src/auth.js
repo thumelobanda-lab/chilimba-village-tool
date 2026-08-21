@@ -76,47 +76,49 @@ export async function resolveGroupBySlug(env, slug) {
   return group;
 }
 
-// Handles first-time signup (sets PIN) and subsequent logins (verifies PIN),
-// with a per-account lockout after repeated failures — mitigates PIN
-// guessing since a 4-digit PIN space is small. Name uniqueness is scoped
-// to the group (WHERE group_id = ? AND name = ?), not global — the same
-// name can exist in two different groups as two separate accounts.
-export async function loginOrCreate(env, groupSlug, name, pin) {
+// Strips everything but digits (and a leading "+", if given) so
+// equivalent formats ("097 123 4567", "097-123-4567", "+260971234567")
+// compare and store consistently.
+function normalizePhone(phone) {
+  const trimmed = (phone || "").trim();
+  const digits = trimmed.replace(/\D/g, "");
+  return trimmed.startsWith("+") ? `+${digits}` : digits;
+}
+
+// Sign in only — an EXISTING account's name or phone number + PIN, with
+// a per-account lockout after repeated failures. Never creates an
+// account (see joinGroup() below for that): the two are deliberately
+// split so phone-number collection can't be skipped by using the "wrong"
+// form — sign-in stays minimal and fast, sign-up is the only path onto
+// the roster. A not-found identifier is a clear 404 pointing at sign-up,
+// not a silent registration.
+export async function login(env, groupSlug, identifier, pin) {
+  if (!identifier || !identifier.trim()) throw new HttpError(400, "Name or phone number is required.");
   if (!pin || pin.length < 4) throw new HttpError(400, "PIN must be at least 4 digits.");
 
   const group = await resolveGroupBySlug(env, groupSlug);
-  const key = name.trim().toLowerCase();
-  let user = await env.DB.prepare(`SELECT * FROM users WHERE group_id = ? AND name = ?`)
-    .bind(group.id, key).first();
-  const isNew = !user;
+  const key = identifier.trim().toLowerCase();
+  const phoneKey = normalizePhone(identifier);
+
+  let user = await env.DB.prepare(
+    `SELECT * FROM users WHERE group_id = ? AND (name = ? OR (phone IS NOT NULL AND phone = ?))`
+  ).bind(group.id, key, phoneKey).first();
+  if (!user) throw new HttpError(404, "No account found with that name or phone number — sign up first.");
+  if (!user.active) throw new HttpError(403, "This account has been removed by an admin.");
+
   // An admin-reset account (see POST /api/admin/reset-pin) has its
   // pin_hash cleared to '' rather than the row being deleted — role,
-  // display name, and payment history all stay intact, only the PIN
-  // itself needs setting again. Treated the same as a brand-new signup
-  // for this one login: whatever PIN is submitted here becomes the
-  // account's new PIN, since there's no old hash left to verify against.
-  const needsPinSet = isNew || !user.pin_hash;
-
-  if (needsPinSet) {
-    if (user && !user.active) throw new HttpError(403, "This account has been removed by an admin.");
+  // name, and phone all stay intact, only the PIN needs setting again.
+  // Whatever's submitted here becomes the account's new PIN, since
+  // there's no old hash left to verify against.
+  if (!user.pin_hash) {
     const salt = randomSalt();
     const hash = await hashPin(pin, salt);
-    if (isNew) {
-      const id = uid();
-      await env.DB.prepare(
-        `INSERT INTO users (id, group_id, name, display_name, pin_salt, pin_hash) VALUES (?, ?, ?, ?, ?, ?)`
-      ).bind(id, group.id, key, name.trim(), salt, hash).run();
-      user = { id, group_id: group.id, name: key, display_name: name.trim(), role: "member" };
-    } else {
-      await env.DB.prepare(
-        `UPDATE users SET pin_salt = ?, pin_hash = ?, failed_attempts = 0, locked_until = NULL WHERE id = ?`
-      ).bind(salt, hash, user.id).run();
-      user = { ...user, pin_salt: salt, pin_hash: hash };
-    }
+    await env.DB.prepare(
+      `UPDATE users SET pin_salt = ?, pin_hash = ?, failed_attempts = 0, locked_until = NULL WHERE id = ?`
+    ).bind(salt, hash, user.id).run();
+    user = { ...user, pin_salt: salt, pin_hash: hash };
   } else {
-    if (!user.active) {
-      throw new HttpError(403, "This account has been removed by an admin.");
-    }
     if (user.locked_until && new Date(user.locked_until).getTime() > Date.now()) {
       throw new HttpError(429, "Too many attempts. Try again later.");
     }
@@ -129,7 +131,7 @@ export async function loginOrCreate(env, groupSlug, name, pin) {
           : null;
       await env.DB.prepare(`UPDATE users SET failed_attempts = ?, locked_until = ? WHERE id = ?`)
         .bind(attempts, lockedUntil, user.id).run();
-      throw new HttpError(401, "Incorrect PIN for this name.");
+      throw new HttpError(401, "Incorrect PIN.");
     }
     await env.DB.prepare(`UPDATE users SET failed_attempts = 0, locked_until = NULL WHERE id = ?`)
       .bind(user.id).run();
@@ -154,7 +156,57 @@ export async function loginOrCreate(env, groupSlug, name, pin) {
     name: user.display_name,
     role: user.role,
     token,
-    isNew,
+    isNew: false,
+    groupSlug: group.slug,
+    groupName: group.groupName,
+  };
+}
+
+// Creates a brand-new member account — the only place a phone number
+// gets collected, so it's reliably on file for every member going
+// forward (existing accounts predate this column and have none — see
+// migration 006). Both name and phone are unique WITHIN the group, not
+// globally, matching how name uniqueness already worked: the same
+// person can be a genuinely separate member of a different group. The
+// user insert and session insert land together via batch() or not at
+// all — same reasoning as createGroup() below (a failure between two
+// separate writes here previously risked an orphaned account with no
+// session, on a much smaller scale than that bug, but the same fix).
+export async function joinGroup(env, groupSlug, name, phone, pin) {
+  if (!name || !name.trim()) throw new HttpError(400, "Full name is required.");
+  const phoneKey = normalizePhone(phone);
+  if (phoneKey.replace(/^\+/, "").length < 7) throw new HttpError(400, "Enter a valid phone number.");
+  if (!pin || pin.length < 4) throw new HttpError(400, "Choose a PIN of at least 4 digits.");
+
+  const group = await resolveGroupBySlug(env, groupSlug);
+  const key = name.trim().toLowerCase();
+
+  const id = uid();
+  const salt = randomSalt();
+  const hash = await hashPin(pin, salt);
+  const token = newToken();
+  const expiresAt = new Date(Date.now() + SESSION_TTL_HOURS * 60 * 60 * 1000).toISOString();
+
+  try {
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO users (id, group_id, name, display_name, phone, pin_salt, pin_hash) VALUES (?, ?, ?, ?, ?, ?, ?)`
+      ).bind(id, group.id, key, name.trim(), phoneKey, salt, hash),
+      env.DB.prepare(`INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)`)
+        .bind(token, id, expiresAt),
+    ]);
+  } catch (e) {
+    if (String(e?.message || e).includes("UNIQUE constraint failed")) {
+      throw new HttpError(409, "That name or phone number is already registered in this group.");
+    }
+    throw e;
+  }
+
+  return {
+    name: name.trim(),
+    role: "member",
+    token,
+    isNew: true,
     groupSlug: group.slug,
     groupName: group.groupName,
   };

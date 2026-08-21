@@ -144,8 +144,8 @@ export default function registerAdminRoutes(router) {
   // PINs are one-way hashed (see crypto.js) — there is no way to recover
   // or look up a forgotten one, only reset it. Clears pin_hash/pin_salt
   // (rather than deleting the account) so role, display name, and
-  // payment history all survive untouched; loginOrCreate() in auth.js
-  // treats an existing account with an empty pin_hash the same as a
+  // payment history all survive untouched; login() in auth.js treats an
+  // existing account with an empty pin_hash the same as a
   // brand-new signup for PIN purposes — whatever PIN the member types on
   // their next login simply becomes their new one, no old PIN needed.
   // Also clears any lockout, and signs them out of every existing
