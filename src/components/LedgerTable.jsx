@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { payeesLabel } from "../lib/scheduleUtils.js";
 import Receipt from "./Receipt.jsx";
 
@@ -81,6 +81,14 @@ function RowWithHistory({ row, isRecipient, onAddPayment, onVoidPayment, onEditP
   const [dueDraft, setDueDraft] = useState(row.due);
   const [amount, setAmount] = useState("");
   const [busy, setBusy] = useState(false);
+  // A brief "✓ Logged" confirmation on the button itself, right where
+  // the member's attention already is (rather than chasing the new
+  // entry in the history list below, which might not even be in view).
+  // Purely a UI confirmation — the payment already exists in row.entries
+  // the moment this fires, this just makes success visible for a beat.
+  const [justLogged, setJustLogged] = useState(false);
+  const justLoggedTimeoutRef = useRef();
+  useEffect(() => () => clearTimeout(justLoggedTimeoutRef.current), []);
   const [editingEntryId, setEditingEntryId] = useState(null);
   const [entryDraft, setEntryDraft] = useState("");
   const [entryBusy, setEntryBusy] = useState(false);
@@ -94,6 +102,9 @@ function RowWithHistory({ row, isRecipient, onAddPayment, onVoidPayment, onEditP
     try {
       await onAddPayment(row.id, amount);
       setAmount("");
+      setJustLogged(true);
+      clearTimeout(justLoggedTimeoutRef.current);
+      justLoggedTimeoutRef.current = setTimeout(() => setJustLogged(false), 1400);
     } finally {
       setBusy(false);
     }
@@ -239,8 +250,12 @@ function RowWithHistory({ row, isRecipient, onAddPayment, onVoidPayment, onEditP
                   onChange={(e) => setAmount(e.target.value)}
                   className="cell-input"
                 />
-                <button className="btn-ghost-dark" disabled={busy} onClick={submit}>
-                  {busy ? "Saving…" : "+ Log payment"}
+                <button
+                  className={"btn-ghost-dark" + (justLogged ? " btn-confirmed" : "")}
+                  disabled={busy}
+                  onClick={submit}
+                >
+                  {busy ? "Saving…" : justLogged ? "✓ Logged" : "+ Log payment"}
                 </button>
               </div>
             </div>

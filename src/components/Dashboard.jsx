@@ -10,12 +10,14 @@ import {
   sumFundBalances,
   buildCycleTimeline,
   findRecentPayout,
+  upcomingDates,
 } from "../lib/dashboardMath.js";
 import { useCountUp } from "../hooks/useCountUp.js";
 import ProgressRing from "./ProgressRing.jsx";
 import CycleTimeline from "./CycleTimeline.jsx";
 import GroupPulse from "./GroupPulse.jsx";
 import PayoutAcknowledgment from "./PayoutAcknowledgment.jsx";
+import UpcomingDates from "./UpcomingDates.jsx";
 
 function formatDate(dateISO) {
   const d = new Date(dateISO + "T00:00:00");
@@ -54,6 +56,7 @@ export default function Dashboard({ session, config, ledger, totals }) {
   const timelineRows = buildCycleTimeline(config.schedule);
   const nextUpRow = timelineRows.find((r) => r.status === "next");
   const recentPayout = findRecentPayout(config.schedule);
+  const upcomingRows = upcomingDates(timelineRows);
 
   return (
     <>
@@ -113,6 +116,8 @@ export default function Dashboard({ session, config, ledger, totals }) {
 
         <CycleTimeline rows={timelineRows} />
       </div>
+
+      <UpcomingDates rows={upcomingRows} />
 
       <GroupPulse data={pulseData} loading={pulseLoading} />
     </>

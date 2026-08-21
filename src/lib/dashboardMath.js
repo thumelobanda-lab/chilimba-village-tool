@@ -58,7 +58,13 @@ export function relativeDueLabel(days) {
  * Per-date payout status across the whole schedule, for the cycle
  * timeline — each row tagged "past" (that date's payout has happened),
  * "next" (the soonest date still ahead — exactly one row, the first
- * future date), or "future" (everyone else still waiting).
+ * future date), or "future" (everyone else still waiting). Returned in
+ * chronological order regardless of the input order — GroupSetup's
+ * "+ Add date" appends new rows to the end of the array rather than
+ * inserting them in date order (same reason findNextDue in
+ * scheduleUtils.js already sorts defensively before picking a "next"),
+ * so trusting array order here would tag the wrong row "next" for any
+ * schedule that's been hand-edited out of date order.
  *
  * Deliberately built only from the schedule's own dates, not from
  * anyone's actual payment/payout records — the app has no cross-member
@@ -71,13 +77,14 @@ export function relativeDueLabel(days) {
  *
  * @param {Array<{id: string, date: string}>} schedule
  * @param {string} [todayISO] - "YYYY-MM-DD", defaults to today
- * @returns {Array<object>} schedule rows, each with an added `status` field
+ * @returns {Array<object>} schedule rows in date order, each with an added `status` field
  */
 export function buildCycleTimeline(schedule, todayISO = new Date().toISOString().slice(0, 10)) {
   const today = new Date(todayISO + "T00:00:00");
+  const sorted = [...(schedule || [])].sort((a, b) => new Date(a.date) - new Date(b.date));
   let markedNext = false;
 
-  return schedule.map((row) => {
+  return sorted.map((row) => {
     const d = new Date(row.date + "T00:00:00");
     const isPast = !isNaN(d.getTime()) && d <= today;
     if (isPast) return { ...row, status: "past" };
@@ -87,6 +94,22 @@ export function buildCycleTimeline(schedule, todayISO = new Date().toISOString()
     }
     return { ...row, status: "future" };
   });
+}
+
+/**
+ * The next `count` upcoming (not-yet-passed) dates across the whole
+ * group, in chronological order — for the dashboard's "Upcoming"
+ * section, so there's always something relevant to check even between
+ * the signed-in member's own due dates. Takes buildCycleTimeline's
+ * already-sorted, already-tagged output rather than re-deriving it —
+ * Dashboard.jsx computes that once and both sections share it.
+ *
+ * @param {Array<object>} timelineRows - output of buildCycleTimeline
+ * @param {number} [count]
+ * @returns {Array<object>}
+ */
+export function upcomingDates(timelineRows, count = 3) {
+  return (timelineRows || []).filter((row) => row.status !== "past").slice(0, count);
 }
 
 /**

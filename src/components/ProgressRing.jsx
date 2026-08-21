@@ -2,10 +2,13 @@ import React, { useEffect, useState } from "react";
 
 /**
  * SVG "how far through the cycle" ring for the home dashboard. Animates
- * from empty to `percent` on mount purely via a CSS transition on
- * stroke-dashoffset (see .progress-ring-arc in styles.css) — that
- * transition is itself disabled under prefers-reduced-motion, so there's
- * no separate JS motion check needed here.
+ * from empty to `percent` on mount, and — since the CSS transition on
+ * stroke-dashoffset animates from whatever the arc's current position
+ * is, not from a fixed start — fills smoothly toward a new value too, if
+ * `percent` changes while this stays mounted (see .progress-ring-arc in
+ * styles.css). That transition is itself disabled under
+ * prefers-reduced-motion, so there's no separate JS motion check needed
+ * here.
  */
 export default function ProgressRing({ percent, size = 96, strokeWidth = 8, sublabel }) {
   const clamped = Math.max(0, Math.min(100, percent));

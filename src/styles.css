@@ -314,6 +314,26 @@ body { margin: 0; background: var(--bg); color: var(--ink); }
   cursor: pointer;
   font-weight: 600;
   font-size: 0.85rem;
+  transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease;
+}
+
+/* Payment-logged confirmation — a brief state on the button itself
+   (right where the member just clicked), not a separate toast. The
+   class is removed after ~1.4s (see LedgerTable.jsx), and the
+   transition above fades it back to normal rather than snapping. */
+.btn-confirmed {
+  background: var(--green);
+  border-color: var(--green);
+  color: white;
+  animation: btn-confirmed-pop 0.4s ease;
+}
+@keyframes btn-confirmed-pop {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.07); }
+  100% { transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn-confirmed { animation: none; }
 }
 
 .tag-rate { background: #FCEFD9; color: #8A5A12; }
@@ -660,6 +680,36 @@ body { margin: 0; background: var(--bg); color: var(--ink); }
   white-space: nowrap;
 }
 .cycle-node-next .cycle-node-payee { color: #8A5A12; }
+
+/* Upcoming — the next few group-wide payout dates, so there's always
+   something relevant even between the member's own due dates. */
+.upcoming-panel { margin-top: 14px; }
+.upcoming-list { margin-top: 6px; }
+.upcoming-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+.upcoming-item:last-child { border-bottom: none; padding-bottom: 0; }
+.upcoming-item-date { flex: 0 0 84px; }
+.upcoming-item-day { font-weight: 700; color: var(--ink); font-size: 0.88rem; }
+.upcoming-item-info { flex: 1; min-width: 0; }
+.upcoming-item-payee {
+  font-weight: 600;
+  color: var(--ink);
+  font-size: 0.9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.upcoming-item-amount {
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
 
 /* Group Pulse — the communal layer: an aggregate total and a plain
    activity count, deliberately never who specifically has paid. */

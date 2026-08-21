@@ -1,5 +1,13 @@
 import { describe, it, expect } from "vitest";
-import { computeCycleProgress, daysUntil, relativeDueLabel, sumFundBalances, buildCycleTimeline, findRecentPayout } from "./dashboardMath.js";
+import {
+  computeCycleProgress,
+  daysUntil,
+  relativeDueLabel,
+  sumFundBalances,
+  buildCycleTimeline,
+  findRecentPayout,
+  upcomingDates,
+} from "./dashboardMath.js";
 
 describe("computeCycleProgress", () => {
   it("returns all zeros for an empty schedule", () => {
@@ -120,6 +128,20 @@ describe("buildCycleTimeline", () => {
     const result = buildCycleTimeline(schedule, "2026-08-20");
     expect(result.map((r) => r.status)).toEqual(["past", "next"]);
   });
+
+  it("sorts into chronological order regardless of input order, tagging the actual earliest future date as next", () => {
+    // GroupSetup's "+ Add date" appends to the end of the array, not in
+    // date order — a hand-edited schedule can easily look like this.
+    const schedule = [
+      { id: "d", date: "2026-09-12" }, // entered first, but chronologically last
+      { id: "a", date: "2026-08-01" },
+      { id: "c", date: "2026-08-29" }, // chronologically the true "next"
+      { id: "b", date: "2026-08-15" },
+    ];
+    const result = buildCycleTimeline(schedule, "2026-08-20");
+    expect(result.map((r) => r.id)).toEqual(["a", "b", "c", "d"]); // returned in date order
+    expect(result.map((r) => r.status)).toEqual(["past", "past", "next", "future"]);
+  });
 });
 
 describe("findRecentPayout", () => {
@@ -156,5 +178,45 @@ describe("findRecentPayout", () => {
       { id: "newer", date: "2026-08-20" },
     ];
     expect(findRecentPayout(schedule, "2026-08-20")?.id).toBe("newer");
+  });
+});
+
+describe("upcomingDates", () => {
+  it("returns an empty array when there's nothing upcoming", () => {
+    expect(upcomingDates([])).toEqual([]);
+    expect(upcomingDates(buildCycleTimeline([{ id: "a", date: "2026-01-01" }], "2026-08-20"))).toEqual([]);
+  });
+
+  it("excludes past dates, keeping next/future ones in order", () => {
+    const timeline = buildCycleTimeline(
+      [
+        { id: "a", date: "2026-08-01" }, // past
+        { id: "b", date: "2026-08-29" }, // next
+        { id: "c", date: "2026-09-12" }, // future
+      ],
+      "2026-08-20"
+    );
+    expect(upcomingDates(timeline).map((r) => r.id)).toEqual(["b", "c"]);
+  });
+
+  it("defaults to the next 3 dates", () => {
+    const timeline = buildCycleTimeline(
+      [
+        { id: "a", date: "2026-08-22" },
+        { id: "b", date: "2026-09-05" },
+        { id: "c", date: "2026-09-19" },
+        { id: "d", date: "2026-10-03" },
+      ],
+      "2026-08-20"
+    );
+    expect(upcomingDates(timeline).map((r) => r.id)).toEqual(["a", "b", "c"]);
+  });
+
+  it("respects a custom count", () => {
+    const timeline = buildCycleTimeline(
+      [{ id: "a", date: "2026-08-22" }, { id: "b", date: "2026-09-05" }],
+      "2026-08-20"
+    );
+    expect(upcomingDates(timeline, 1).map((r) => r.id)).toEqual(["a"]);
   });
 });
