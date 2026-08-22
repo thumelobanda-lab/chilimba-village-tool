@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { getPayees, payeesLabel, isRecipient, resolveDue, findNextDue, generateScheduleDates } from "./scheduleUtils.js";
+import { getPayees, payeesLabel, isRecipient, resolveDue, findNextDue, myNextDueDates, generateScheduleDates } from "./scheduleUtils.js";
 
 describe("getPayees", () => {
   it("reads a payees array directly", () => {
@@ -124,6 +124,85 @@ describe("findNextDue", () => {
 
   it("returns null for an empty schedule", () => {
     expect(findNextDue([], "Fridah", true, {}, {})).toBeNull();
+  });
+});
+
+describe("myNextDueDates", () => {
+  // Fridah is never a payee here, so every date genuinely owes something
+  // for her — Harriet's own exempt date (d2) is the one deliberately
+  // testing the recipient-skip rule.
+  const schedule = [
+    { id: "d1", date: "2026-06-20", group: "GROUP 1", payees: ["Someone"], due: 1200 },
+    { id: "d2", date: "2026-07-04", group: "GROUP 2", payees: ["Harriet"], due: 1200 },
+    { id: "d3", date: "2026-07-18", group: "GROUP 3", payees: ["Someone Else"], due: 1500 },
+    { id: "d4", date: "2026-08-01", group: "GROUP 4", payees: ["Yet Another"], due: 1500 },
+  ];
+
+  it("returns the next N unpaid dates in chronological order", () => {
+    const result = myNextDueDates(schedule, "Fridah", true, {}, {}, 3);
+    expect(result.map((r) => r.date)).toEqual(["2026-06-20", "2026-07-04", "2026-07-18"]);
+    expect(result.every((r) => r.projected === false)).toBe(true);
+  });
+
+  it("skips a date the member already paid in full", () => {
+    const result = myNextDueDates(schedule, "Fridah", true, {}, { d1: 1200 }, 3);
+    expect(result.map((r) => r.date)).toEqual(["2026-07-04", "2026-07-18", "2026-08-01"]);
+  });
+
+  it("skips the member's own payout date when recipients are exempt", () => {
+    const result = myNextDueDates(schedule, "Harriet", true, {}, {}, 4);
+    expect(result.map((r) => r.date)).not.toContain("2026-07-04");
+  });
+
+  it("still counts an unpaid past date as next due, same as findNextDue", () => {
+    // None of these dates are "in the future" relative to a real clock,
+    // but with nothing paid they should all still show up as real
+    // (non-projected) entries — asking for exactly as many as exist,
+    // so nothing pads out with a projection.
+    const result = myNextDueDates(schedule, "Fridah", true, {}, {}, 4);
+    expect(result).toHaveLength(4);
+    expect(result.every((r) => r.projected === false)).toBe(true);
+  });
+
+  it("applies a due override in place of the schedule default", () => {
+    const result = myNextDueDates(schedule, "Fridah", true, { d1: 500 }, {}, 1);
+    expect(result[0].due).toBe(500);
+  });
+
+  it("extrapolates beyond the real schedule using its own last interval, when fewer than count real dates remain", () => {
+    const result = myNextDueDates(schedule, "Fridah", true, {}, { d1: 1200, d2: 1200, d3: 1500, d4: 1500 }, 3);
+    // Real dates are all settled — every entry should be projected,
+    // spaced by the schedule's own last gap (14 days: 2026-07-18 -> 2026-08-01).
+    expect(result).toHaveLength(3);
+    expect(result.every((r) => r.projected === true)).toBe(true);
+    expect(result.map((r) => r.date)).toEqual(["2026-08-15", "2026-08-29", "2026-09-12"]);
+  });
+
+  it("carries the last known due amount forward for projected dates", () => {
+    const result = myNextDueDates(schedule, "Fridah", true, {}, { d1: 1200, d2: 1200, d3: 1500, d4: 1500 }, 1);
+    expect(result[0].due).toBe(1500);
+  });
+
+  it("mixes real and projected entries when only some real dates remain", () => {
+    const result = myNextDueDates(schedule, "Fridah", true, {}, { d1: 1200, d2: 1200, d3: 1500 }, 3);
+    expect(result[0]).toMatchObject({ date: "2026-08-01", projected: false });
+    expect(result[1].projected).toBe(true);
+    expect(result[2].projected).toBe(true);
+  });
+
+  it("does not extrapolate when there's only one (or zero) real schedule date to infer an interval from", () => {
+    const oneRow = [{ id: "d1", date: "2026-06-20", group: "G1", payees: ["Someone"], due: 1200 }];
+    expect(myNextDueDates(oneRow, "Fridah", true, {}, { d1: 1200 }, 3)).toEqual([]);
+    expect(myNextDueDates([], "Fridah", true, {}, {}, 3)).toEqual([]);
+  });
+
+  it("recalculates correctly when the schedule changes (no caching)", () => {
+    const before = myNextDueDates(schedule, "Fridah", true, {}, {}, 2);
+    expect(before.map((r) => r.date)).toEqual(["2026-06-20", "2026-07-04"]);
+
+    const edited = schedule.filter((r) => r.id !== "d1"); // admin removes the earliest date
+    const after = myNextDueDates(edited, "Fridah", true, {}, {}, 2);
+    expect(after.map((r) => r.date)).toEqual(["2026-07-04", "2026-07-18"]);
   });
 });
 

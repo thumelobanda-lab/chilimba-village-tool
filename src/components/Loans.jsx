@@ -13,6 +13,10 @@ export default function Loans() {
   const [busy, setBusy] = useState(false);
   const [formError, setFormError] = useState("");
   const [status, setStatus] = useState("");
+  const [expanded, setExpanded] = useState(null); // one loan's id at a time
+  const [repayDrafts, setRepayDrafts] = useState({}); // { [loanId]: "amount typed" }
+  const [repayBusyId, setRepayBusyId] = useState(null);
+  const [repayError, setRepayError] = useState("");
 
   useEffect(() => {
     if (data && !fundId) {
@@ -46,10 +50,26 @@ export default function Loans() {
     }
   };
 
-  const markRepaid = async (loanId) => {
-    if (!window.confirm("Mark this loan as repaid? This returns the amount to the fund's available balance.")) return;
-    await repayLoan(loanId);
-    await refresh();
+  const toggleExpand = (loanId) => setExpanded(expanded === loanId ? null : loanId);
+
+  const submitRepayment = async (loan) => {
+    const draft = repayDrafts[loan.id];
+    const amt = Number(draft);
+    setRepayError("");
+    if (!draft || !amt || amt <= 0) {
+      setRepayError("Enter an amount greater than zero.");
+      return;
+    }
+    setRepayBusyId(loan.id);
+    try {
+      await repayLoan(loan.id, amt);
+      setRepayDrafts((prev) => ({ ...prev, [loan.id]: "" }));
+      await refresh();
+    } catch (e) {
+      setRepayError(e.message || "Could not record that repayment.");
+    } finally {
+      setRepayBusyId(null);
+    }
   };
 
   return (
@@ -112,38 +132,85 @@ export default function Loans() {
       {data && (
         <>
           <h3 className="panel-subtitle" style={{ marginTop: 20 }}>Loan history</h3>
+          <p className="muted tiny" style={{ marginBottom: 10 }}>
+            Tap a borrower's name to see every repayment logged against their loan, or record a new one —
+            partial repayments are fine, the balance just goes down each time.
+          </p>
           <div className="grid-wrap">
             <table className="grid-table">
           <thead>
             <tr>
               <th className="al">Borrower</th>
               <th className="al">Fund</th>
-              <th className="ar">Amount (K)</th>
+              <th className="ar">Borrowed (K)</th>
+              <th className="ar">Balance (K)</th>
               <th className="al">Status</th>
               <th className="al">Issued</th>
-              <th></th>
             </tr>
           </thead>
           <tbody>
             {(data?.loans || []).map((l) => (
-              <tr key={l.id}>
-                <td className="al">{l.borrowerName}</td>
-                <td className="al muted">{l.fundName}</td>
-                <td className="ar">{l.amount.toLocaleString()}</td>
-                <td className="al">
-                  {l.status === "outstanding" ? (
-                    <span className="status-outstanding">Still Owed</span>
-                  ) : (
-                    <span className="status-paid">Repaid</span>
-                  )}
-                </td>
-                <td className="al muted small">{new Date(l.issuedAt).toLocaleDateString()}</td>
-                <td>
-                  {l.status === "outstanding" && (
-                    <button className="btn-link" onClick={() => markRepaid(l.id)}>mark repaid</button>
-                  )}
-                </td>
-              </tr>
+              <React.Fragment key={l.id}>
+                <tr>
+                  <td className="al" data-label="Borrower">
+                    <button className="link-amount" onClick={() => toggleExpand(l.id)} title="View repayment history">
+                      {l.borrowerName}
+                      {l.repayments && l.repayments.length > 0 && <span className="entry-count"> ({l.repayments.length})</span>}
+                    </button>
+                  </td>
+                  <td className="al muted" data-label="Fund">{l.fundName}</td>
+                  <td className="ar" data-label="Borrowed (K)">{l.amount.toLocaleString()}</td>
+                  <td className="ar" data-label="Balance (K)">{(l.balance ?? l.amount).toLocaleString()}</td>
+                  <td className="al" data-label="Status">
+                    {l.status === "outstanding" ? (
+                      <span className="status-outstanding">Still Owed</span>
+                    ) : (
+                      <span className="status-paid">Repaid</span>
+                    )}
+                  </td>
+                  <td className="al muted small" data-label="Issued">{new Date(l.issuedAt).toLocaleDateString()}</td>
+                </tr>
+                {expanded === l.id && (
+                  <tr className="history-row">
+                    <td colSpan={6}>
+                      <div className="history-panel">
+                        {(l.repayments || []).length === 0 && (
+                          <p className="muted tiny">No repayments logged yet.</p>
+                        )}
+                        {(l.repayments || []).map((r) => (
+                          <div key={r.id} className="history-entry-wrap">
+                            <div className="history-entry">
+                              <span>{money(r.amount)}</span>
+                              <span className="muted tiny">
+                                {new Date(r.recordedAt).toLocaleDateString()} · {r.recordedBy}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                        {l.status === "outstanding" && (
+                          <div className="history-add">
+                            <input
+                              type="number"
+                              placeholder="Repayment amount (K)"
+                              value={repayDrafts[l.id] || ""}
+                              onChange={(e) => setRepayDrafts((prev) => ({ ...prev, [l.id]: e.target.value }))}
+                              className="cell-input"
+                            />
+                            <button
+                              className="btn-ghost-dark"
+                              disabled={repayBusyId === l.id}
+                              onClick={() => submitRepayment(l)}
+                            >
+                              {repayBusyId === l.id ? "Recording…" : "Record repayment"}
+                            </button>
+                          </div>
+                        )}
+                        {repayError && expanded === l.id && <div className="error-text tiny">{repayError}</div>}
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </React.Fragment>
             ))}
             {(!data || data.loans.length === 0) && (
               <tr><td colSpan={6} className="muted small">No loans issued yet.</td></tr>

@@ -1,19 +1,24 @@
-/* Theme: "money growth, health, prosperity" — deep forest green as the
-   primary brand color (header, primary buttons, progress-ring base
-   state), warm gold reserved for meaningful moments only (progress-ring
-   glow, confirmations, milestones, the admin badge — never a default/
-   neutral UI color), warm ivory instead of stark white, deep charcoal
-   instead of near-black text. --green/--pending/--red are status colors,
-   deliberately distinct hues from the brand pair above so "this succeeded"
-   reads differently from "this is gold-branded" at a glance. */
+/* Theme: "Loyalty Blue" + Gold — a rich, trustworthy blue as the primary
+   brand color (header, primary buttons, progress-ring base state),
+   replacing the earlier deep-green "prosperity" palette; warm gold stays
+   exactly as it was, still reserved for meaningful moments only
+   (progress-ring glow, confirmations, milestones, the admin badge —
+   never a default/neutral UI color). Warm ivory background and deep
+   charcoal text both carried over unchanged. --green/--pending/--red are
+   status colors, deliberately distinct hues from the brand pair above so
+   "this succeeded" reads differently from "this is gold-branded" at a
+   glance. --accent-dark is the darker gradient stop used alongside
+   --accent in the header/hero gradients (an actual color, not derivable
+   from --accent alone, since CSS can't darken a custom property inline). */
 :root {
   --ink: #2A2A28;
   --ink-faint: #6E685F;
   --line: #E6DFCF;
   --bg: #FAF7F0;
   --panel: #FFFDF8;
-  --accent: #0F4C3A;
-  --accent-light: #1B5E42;
+  --accent: #1B4C8C;
+  --accent-light: #2E63AC;
+  --accent-dark: #0F2E5C;
   --accent-2: #C9962E;
   --accent-2-light: #D4A94A;
   --red: #B5453A;
@@ -29,7 +34,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .app-shell { min-height: 100vh; display: flex; flex-direction: column; }
 
 .app-header {
-  background: linear-gradient(135deg, var(--accent), #0A3729);
+  background: linear-gradient(135deg, var(--accent), var(--accent-dark));
   color: white;
   padding: 14px 20px;
   display: flex;
@@ -96,7 +101,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   cursor: pointer;
 }
 .nav-menu-item:hover { background: #EFEAE0; }
-.nav-menu-item-active { color: var(--accent); background: #E7F1EB; }
+.nav-menu-item-active { color: var(--accent); background: #E5EEF8; }
 .nav-menu-divider { border-top: 1px solid var(--line); margin: 6px 2px; }
 
 .back-link { display: inline-block; margin-bottom: 14px; }
@@ -155,7 +160,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   text-align: left;
 }
 .group-switcher-item:hover { background: #EFEAE0; }
-.group-switcher-item-active { background: #E7F1EB; cursor: default; }
+.group-switcher-item-active { background: #E5EEF8; cursor: default; }
 .group-switcher-item-info { min-width: 0; display: flex; flex-direction: column; gap: 2px; width: 100%; }
 .group-switcher-item-name {
   font-weight: 600;
@@ -272,14 +277,24 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .small { font-size: 0.85rem; }
 .tiny { font-size: 0.75rem; }
 
-.field { display: flex; flex-direction: column; gap: 4px; font-size: 0.8rem; color: var(--ink-faint); margin-bottom: 12px; }
+/* min-width: 0 overrides the flex-item default (min-width: auto), which
+   otherwise refuses to let a field shrink below its content's natural
+   width — a <select> with long option text (e.g. a fund name + balance)
+   would silently push past its container/the viewport in a wrapping
+   .field-row without this, no matter how narrow the screen. width: 100%
+   on the input/select is the other half — without it, either element
+   sizes to its own content instead of filling whatever room .field
+   actually has. */
+.field { display: flex; flex-direction: column; gap: 4px; font-size: 0.8rem; color: var(--ink-faint); margin-bottom: 12px; min-width: 0; }
 .field input, .field select {
+  width: 100%;
   padding: 8px 10px;
   border: 1px solid var(--line);
   border-radius: 4px;
   font-size: 0.95rem;
   color: var(--ink);
   background: var(--panel);
+  box-sizing: border-box;
 }
 .field input:disabled, .field select:disabled { opacity: 0.5; cursor: not-allowed; }
 .field-row { display: flex; gap: 14px; flex-wrap: wrap; }
@@ -619,7 +634,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
    persistent history. */
 .platform-message-stack { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
 .platform-message-banner {
-  background: linear-gradient(135deg, var(--accent), #0A3729);
+  background: linear-gradient(135deg, var(--accent), var(--accent-dark));
   border: 1px solid var(--accent-2);
   border-radius: 8px;
   padding: 14px 16px;
@@ -878,7 +893,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
    moments (see .dashboard-hero-ring below and ProgressRing.jsx's `glow`
    prop) rather than a small, easy-to-miss corner widget. */
 .dashboard-hero {
-  background: linear-gradient(135deg, var(--accent), #0A3729);
+  background: linear-gradient(135deg, var(--accent), var(--accent-dark));
   border-radius: 12px;
   padding: 22px 24px;
   margin-bottom: 22px;
@@ -938,13 +953,18 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   border-radius: 10px;
   padding: 18px 20px;
 }
+/* A loan is a genuinely different kind of obligation from the regular
+   contribution balance it sits next to — pending-amber border keeps it
+   visually distinct rather than blending in as just another green-accent
+   stat card. */
+.vital-card-loan { border-top-color: var(--pending); }
 .vital-card-clickable {
   cursor: pointer;
   transition: box-shadow 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
 }
 .vital-card-clickable:hover, .vital-card-clickable:focus-visible {
   border-color: var(--accent);
-  box-shadow: 0 4px 14px rgba(15, 76, 58, 0.18);
+  box-shadow: 0 4px 14px rgba(27, 76, 140, 0.18);
   transform: translateY(-1px);
 }
 .vital-card-label {

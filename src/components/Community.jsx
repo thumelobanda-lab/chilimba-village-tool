@@ -64,6 +64,9 @@ export default function Community() {
                     <span className="feed-name">A member</span>
                     <span className="muted small">
                       borrowed {money(l.amount)} from {l.fundName}
+                      {l.status === "outstanding" && (l.repaidTotal || 0) > 0
+                        ? ` — ${money(l.balance)} still owed`
+                        : ""}
                     </span>
                     {l.status === "outstanding" ? (
                       <span className="status-outstanding">Still Owed</span>

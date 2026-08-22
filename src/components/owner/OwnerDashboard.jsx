@@ -153,11 +153,11 @@ export default function OwnerDashboard({ session, onSignedOut }) {
                 <tbody>
                   {pending.map((p) => (
                     <tr key={p.id}>
-                      <td className="al">{p.groupName}</td>
-                      <td className="al">{p.paidBy}</td>
-                      <td className="al">{p.network} · {p.maskedPhone}</td>
-                      <td className="ar">{p.amount.toLocaleString()}</td>
-                      <td className="al muted tiny">{new Date(p.paidAt).toLocaleString()}</td>
+                      <td className="al" data-label="Group">{p.groupName}</td>
+                      <td className="al" data-label="Submitted by">{p.paidBy}</td>
+                      <td className="al" data-label="Network / Phone">{p.network} · {p.maskedPhone}</td>
+                      <td className="ar" data-label="Amount (K)">{p.amount.toLocaleString()}</td>
+                      <td className="al muted tiny" data-label="Submitted">{new Date(p.paidAt).toLocaleString()}</td>
                       <td className="cell-action">
                         <button className="btn-link" disabled={busyId === p.id} onClick={() => doConfirm(p.id)}>
                           confirm
@@ -193,14 +193,14 @@ export default function OwnerDashboard({ session, onSignedOut }) {
                 <tbody>
                   {groups.map((g) => (
                     <tr key={g.id}>
-                      <td className="al">{g.groupName}</td>
-                      <td className="al muted">{g.slug}</td>
-                      <td className="al">
+                      <td className="al" data-label="Name">{g.groupName}</td>
+                      <td className="al muted" data-label="Code">{g.slug}</td>
+                      <td className="al" data-label="Tier">
                         <span className={g.tier === "premium" ? "status-paid" : "muted small"}>{g.tier}</span>
                       </td>
-                      <td className="ar">{g.memberCount}</td>
-                      <td className="al muted tiny">{new Date(g.createdAt).toLocaleDateString()}</td>
-                      <td className="al">
+                      <td className="ar" data-label="Members">{g.memberCount}</td>
+                      <td className="al muted tiny" data-label="Created">{new Date(g.createdAt).toLocaleDateString()}</td>
+                      <td className="al" data-label="Status">
                         {g.suspendedAt ? (
                           <span className="status-outstanding" title={g.suspendedReason}>suspended</span>
                         ) : (

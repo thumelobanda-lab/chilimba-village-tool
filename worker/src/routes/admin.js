@@ -417,10 +417,23 @@ export default function registerAdminRoutes(router) {
     const balanceRow = await env.DB.prepare(
       `SELECT COALESCE(SUM(amount), 0) as total FROM fund_contributions WHERE group_id = ? AND fund_id = ?`
     ).bind(admin.groupId, body.fundId).first();
-    const outstandingRow = await env.DB.prepare(
-      `SELECT COALESCE(SUM(amount), 0) as total FROM fund_loans WHERE group_id = ? AND fund_id = ? AND status = 'outstanding'`
+    // "Still out on loan" is every loan's amount minus whatever's been
+    // repaid against it so far (migration 014) — not just loans still
+    // flagged 'outstanding', since a PARTIALLY repaid loan still ties up
+    // its remaining balance even though it hasn't flipped to 'repaid'
+    // yet. Summing across every loan against this fund and netting out
+    // every repayment against any of them gives the same answer
+    // regardless of individual loan status.
+    const loanTotalRow = await env.DB.prepare(
+      `SELECT COALESCE(SUM(amount), 0) as total FROM fund_loans WHERE group_id = ? AND fund_id = ?`
     ).bind(admin.groupId, body.fundId).first();
-    const available = balanceRow.total - outstandingRow.total;
+    const repaidTotalRow = await env.DB.prepare(
+      `SELECT COALESCE(SUM(lr.amount), 0) as total FROM loan_repayments lr
+       JOIN fund_loans fl ON fl.id = lr.loan_id
+       WHERE fl.group_id = ? AND fl.fund_id = ?`
+    ).bind(admin.groupId, body.fundId).first();
+    const outstandingTotal = loanTotalRow.total - repaidTotalRow.total;
+    const available = balanceRow.total - outstandingTotal;
     if (amount > available) {
       throw new HttpError(400, `Only K${available.toLocaleString()} is available in ${fund.name}.`);
     }
@@ -437,13 +450,47 @@ export default function registerAdminRoutes(router) {
     return json({ id, ok: true }, 201, cors);
   });
 
+  // Records one repayment against a loan — append-only (migration 014),
+  // never mutates fund_loans.amount. Accepts any amount up to what's
+  // still owed, so an admin can log partial repayments over time, not
+  // just a single "fully repaid" flip; fund_loans.status still flips to
+  // 'repaid' automatically once the running balance reaches zero, purely
+  // so the existing status-based queries (available-balance checks,
+  // Community.jsx's outstanding/repaid tag) keep working unchanged.
   router.post("/api/admin/loans/:id/repay", async ({ request, env, params, cors }) => {
     const admin = await requireAdmin(request, env);
+    const body = await request.json().catch(() => ({}));
+    const amount = Number(body.amount);
+    if (!amount || amount <= 0) throw new HttpError(400, "Amount must be greater than zero.");
+
     // Ownership check — an admin can only repay a loan that belongs to
     // their own group, not any loan id they happen to guess or be told.
-    await env.DB.prepare(
-      `UPDATE fund_loans SET status = 'repaid', repaid_at = datetime('now') WHERE id = ? AND group_id = ? AND status = 'outstanding'`
-    ).bind(params.id, admin.groupId).run();
-    return json({ ok: true }, 200, cors);
+    const loan = await env.DB.prepare(`SELECT * FROM fund_loans WHERE id = ? AND group_id = ?`)
+      .bind(params.id, admin.groupId).first();
+    if (!loan) throw new HttpError(404, "Loan not found.");
+
+    const repaidRow = await env.DB.prepare(
+      `SELECT COALESCE(SUM(amount), 0) as total FROM loan_repayments WHERE loan_id = ?`
+    ).bind(loan.id).first();
+    const remaining = loan.amount - repaidRow.total;
+    if (remaining <= 0) throw new HttpError(400, "This loan is already fully repaid.");
+    if (amount > remaining) {
+      throw new HttpError(400, `Only K${remaining.toLocaleString()} is still owed on this loan.`);
+    }
+
+    const stmts = [
+      env.DB.prepare(
+        `INSERT INTO loan_repayments (id, group_id, loan_id, amount, recorded_by) VALUES (?,?,?,?,?)`
+      ).bind(uid(), admin.groupId, loan.id, amount, admin.name),
+    ];
+    const newRemaining = remaining - amount;
+    if (newRemaining <= 0) {
+      stmts.push(
+        env.DB.prepare(`UPDATE fund_loans SET status = 'repaid', repaid_at = datetime('now') WHERE id = ?`).bind(loan.id)
+      );
+    }
+    await env.DB.batch(stmts);
+
+    return json({ ok: true, remaining: Math.max(0, newRemaining) }, 200, cors);
   });
 }

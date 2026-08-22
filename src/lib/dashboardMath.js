@@ -205,3 +205,25 @@ export function greeting(hour = new Date().getHours()) {
   if (hour < 17) return "Good afternoon";
   return "Good evening";
 }
+
+/**
+ * How much the signed-in member personally still owes across every
+ * loan borrowed in their own name — the Dashboard's "Loan owed" card is
+ * deliberately hidden entirely (not shown as K0) when this is zero, per
+ * the same "don't show a zero that isn't news" principle as the payout
+ * acknowledgment. Matches by name (case-insensitive), the same way
+ * isRecipient/findNextDue already resolve "which member is this" —
+ * loans carry no session-linked id, only the name typed in when the
+ * admin issued it.
+ *
+ * @param {Array<{borrowerName: string, balance?: number, amount: number}>} loans
+ * @param {string} name
+ * @returns {number}
+ */
+export function myOutstandingLoanTotal(loans, name) {
+  if (!name) return 0;
+  const target = name.trim().toLowerCase();
+  return (loans || [])
+    .filter((l) => (l.borrowerName || "").trim().toLowerCase() === target)
+    .reduce((sum, l) => sum + Math.max(0, Number(l.balance ?? l.amount) || 0), 0);
+}

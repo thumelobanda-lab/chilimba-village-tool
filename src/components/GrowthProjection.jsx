@@ -52,9 +52,9 @@ export default function GrowthProjection({ fundTotal }) {
           <tbody>
             {schedule.map((p) => (
               <tr key={p.months}>
-                <td className="al">{monthsLabel(p.months)}</td>
-                <td className="ar muted">{money(p.interest)}</td>
-                <td className="ar">{money(p.projectedTotal)}</td>
+                <td className="al" data-label="In">{monthsLabel(p.months)}</td>
+                <td className="ar muted" data-label="Projected Interest">{money(p.interest)}</td>
+                <td className="ar" data-label="Projected Total">{money(p.projectedTotal)}</td>
               </tr>
             ))}
           </tbody>

@@ -203,7 +203,7 @@ export default function Reconciliation({ config, premiumActive, onOpenGroupSetup
                 {data.members.map((m) => (
                   <React.Fragment key={m.name}>
                     <tr>
-                      <td className="al">
+                      <td className="al" data-label="Name">
                         {m.entries && m.entries.length > 0 ? (
                           <button className="link-amount" onClick={() => toggleExpand(m.name)} title="View payment entries">
                             {m.name} <span className="entry-count">({m.entries.length})</span>
@@ -212,12 +212,12 @@ export default function Reconciliation({ config, premiumActive, onOpenGroupSetup
                           m.name
                         )}
                       </td>
-                      <td className="ar">{m.due.toLocaleString()}</td>
-                      <td className="ar">{m.paid.toLocaleString()}</td>
-                      <td className={"ar " + (m.balance > 0 && !m.isRecipient ? "neg" : "pos")}>
+                      <td className="ar" data-label="Due (K)">{m.due.toLocaleString()}</td>
+                      <td className="ar" data-label="Paid (K)">{m.paid.toLocaleString()}</td>
+                      <td className={"ar " + (m.balance > 0 && !m.isRecipient ? "neg" : "pos")} data-label="Balance (K)">
                         {m.balance.toLocaleString()}
                       </td>
-                      <td className="al">
+                      <td className="al" data-label="Status">
                         {m.isRecipient ? (
                           <span className="tag">recipient</span>
                         ) : m.balance > 0 ? (

@@ -2,7 +2,7 @@ import React from "react";
 import { money } from "./LedgerTable.jsx";
 import { getGroupFunds, getGroupPulse, getPendingPayments } from "../lib/api.js";
 import { useApiData } from "../lib/useApiData.js";
-import { findNextDue, payeesLabel } from "../lib/scheduleUtils.js";
+import { findNextDue, myNextDueDates, payeesLabel } from "../lib/scheduleUtils.js";
 import {
   computeCycleProgress,
   daysUntil,
@@ -14,6 +14,7 @@ import {
   isMemberTurnSoon,
   isCycleNearingCompletion,
   greeting,
+  myOutstandingLoanTotal,
 } from "../lib/dashboardMath.js";
 import { useCountUp } from "../hooks/useCountUp.js";
 import ProgressRing from "./ProgressRing.jsx";
@@ -21,6 +22,7 @@ import CycleTimeline from "./CycleTimeline.jsx";
 import GroupPulse from "./GroupPulse.jsx";
 import PayoutAcknowledgment from "./PayoutAcknowledgment.jsx";
 import UpcomingDates from "./UpcomingDates.jsx";
+import MyNextPayments from "./MyNextPayments.jsx";
 import QuickActions from "./QuickActions.jsx";
 
 function formatDate(dateISO) {
@@ -67,6 +69,8 @@ export default function Dashboard({
   const fundTotalDisplay = useCountUp(fundTotal);
   const balanceDisplay = useCountUp(totals.balance);
   const paidDisplay = useCountUp(totals.paid);
+  const myLoanTotal = fundsData ? myOutstandingLoanTotal(fundsData.loans, session?.name) : 0;
+  const loanTotalDisplay = useCountUp(myLoanTotal);
 
   const paidByRowId = Object.fromEntries(totals.rowsComputed.map((r) => [r.id, r.paid]));
   const nextDue = findNextDue(
@@ -75,6 +79,14 @@ export default function Dashboard({
     config.recipientExempt,
     ledger.dueOverrides || {},
     paidByRowId
+  );
+  const myNextPayments = myNextDueDates(
+    config.schedule,
+    session?.name,
+    config.recipientExempt,
+    ledger.dueOverrides || {},
+    paidByRowId,
+    3
   );
 
   const cycle = computeCycleProgress(config.schedule);
@@ -198,7 +210,18 @@ export default function Dashboard({
             {fundsLoading ? <span className="muted small">Loading…</span> : money(fundTotalDisplay)}
           </div>
         </div>
+
+        {myLoanTotal > 0 && (
+          <div className="vital-card vital-card-loan">
+            <div className="vital-card-label">Amount You Owe (Loan)</div>
+            <div className="vital-card-value vital-card-value-warn">
+              {money(loanTotalDisplay)}
+            </div>
+          </div>
+        )}
       </div>
+
+      <MyNextPayments rows={myNextPayments} />
 
       <GroupPulse data={pulseData} loading={pulseLoading} />
 

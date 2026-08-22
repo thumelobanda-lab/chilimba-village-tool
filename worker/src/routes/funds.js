@@ -70,10 +70,35 @@ export default function registerFundsRoutes(router) {
               issued_by as issuedBy, issued_at as issuedAt, repaid_at as repaidAt
        FROM fund_loans WHERE group_id = ? ORDER BY issued_at DESC LIMIT 50`
     ).bind(user.groupId).all();
-    const loans = (loanRows.results || []).map((l) => ({
-      ...l,
-      fundName: funds.find((f) => f.id === l.fundId)?.name || l.fundId,
-    }));
+
+    // Every repayment against any of this group's loans, in one query —
+    // grouped client-side (here, not in SQL) by loan so each loan's own
+    // balance and full repayment history travel together. Same
+    // full-auditability standard as fund_contributions: nothing is ever
+    // collapsed into just a total, the individual entries are always
+    // there to inspect (admin.js's Loans.jsx and, for a member's own
+    // loan, Dashboard.jsx both read this).
+    const repaymentRows = await env.DB.prepare(
+      `SELECT lr.id, lr.loan_id as loanId, lr.amount, lr.recorded_by as recordedBy, lr.recorded_at as recordedAt
+       FROM loan_repayments lr JOIN fund_loans fl ON fl.id = lr.loan_id
+       WHERE fl.group_id = ? ORDER BY lr.recorded_at ASC`
+    ).bind(user.groupId).all();
+    const repaymentsByLoan = {};
+    for (const r of repaymentRows.results || []) {
+      (repaymentsByLoan[r.loanId] ||= []).push(r);
+    }
+
+    const loans = (loanRows.results || []).map((l) => {
+      const repayments = repaymentsByLoan[l.id] || [];
+      const repaidTotal = repayments.reduce((sum, r) => sum + r.amount, 0);
+      return {
+        ...l,
+        fundName: funds.find((f) => f.id === l.fundId)?.name || l.fundId,
+        repaidTotal,
+        balance: Math.max(0, l.amount - repaidTotal),
+        repayments,
+      };
+    });
 
     return json({ funds: fundsOut, feed, loans }, 200, cors);
   });

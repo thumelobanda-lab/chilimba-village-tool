@@ -389,6 +389,22 @@ CREATE TABLE IF NOT EXISTS fund_loans (
 );
 CREATE INDEX IF NOT EXISTS idx_loans_group ON fund_loans(group_id, fund_id);
 
+-- Append-only repayment ledger against a loan (migration 014) — a loan's
+-- remaining balance is always fund_loans.amount minus the sum of its
+-- loan_repayments, computed fresh, never stored/mutated directly. Same
+-- audit standard as payments/fund_contributions: every repayment is its
+-- own row, nothing is ever overwritten to correct or reduce a balance.
+CREATE TABLE IF NOT EXISTS loan_repayments (
+  id TEXT PRIMARY KEY,
+  group_id TEXT NOT NULL REFERENCES groups(id),
+  loan_id TEXT NOT NULL REFERENCES fund_loans(id),
+  amount REAL NOT NULL,
+  recorded_by TEXT NOT NULL,
+  recorded_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_loan_repayments_loan ON loan_repayments(loan_id);
+CREATE INDEX IF NOT EXISTS idx_loan_repayments_group ON loan_repayments(group_id);
+
 -- Seed one example group so the app is usable immediately after a fresh
 -- deploy. Real groups are created via POST /api/groups (see routes/groups.js)
 -- — a new group and its first admin are created together in one step, since

@@ -54,11 +54,11 @@ export default function LedgerTable({
         <tfoot>
           <tr>
             <td colSpan={2}>TOTAL</td>
-            <td className="ar">{totals.due.toLocaleString()}</td>
-            <td className="ar">{totals.paid.toLocaleString()}</td>
-            <td className="ar">{totals.balance.toLocaleString()}</td>
+            <td className="ar" data-label="Due (K)">{totals.due.toLocaleString()}</td>
+            <td className="ar" data-label="Paid (K)">{totals.paid.toLocaleString()}</td>
+            <td className="ar" data-label="Balance (K)">{totals.balance.toLocaleString()}</td>
             <td className="ar"></td>
-            <td className="ar">{Math.round(totals.suggestedTotal).toLocaleString()}</td>
+            <td className="ar" data-label="Suggested (K)">{Math.round(totals.suggestedTotal).toLocaleString()}</td>
           </tr>
         </tfoot>
       </table>
@@ -143,13 +143,13 @@ function RowWithHistory({ row, isRecipient, onAddPayment, onVoidPayment, onEditP
   return (
     <>
       <tr>
-        <td className="al">{row.date}</td>
-        <td className="al muted">
+        <td className="al" data-label="Payment Date">{row.date}</td>
+        <td className="al muted" data-label="Group Paying Out">
           {row.group}
           <div className="tiny muted">{payeesLabel(row)}</div>
           {isRecipient && <span className="tag">your payout</span>}
         </td>
-        <td className="ar">
+        <td className="ar" data-label="Due (K)">
           {isRecipient ? (
             row.due.toLocaleString()
           ) : editingDue ? (
@@ -174,15 +174,15 @@ function RowWithHistory({ row, isRecipient, onAddPayment, onVoidPayment, onEditP
             </button>
           )}
         </td>
-        <td className="ar">
+        <td className="ar" data-label="Paid (K)">
           <button className="link-amount" onClick={() => setOpen(!open)} title="View payment entries">
             {row.paid.toLocaleString()}
             <span className="entry-count">{activeEntries.length ? ` (${activeEntries.length})` : ""}</span>
           </button>
         </td>
-        <td className={"ar " + (row.balance > 0 ? "neg" : "pos")}>{row.balance.toLocaleString()}</td>
-        <td className="ar muted">{row.cumulative.toLocaleString()}</td>
-        <td className="ar">{Math.round(row.suggested).toLocaleString()}</td>
+        <td className={"ar " + (row.balance > 0 ? "neg" : "pos")} data-label="Balance (K)">{row.balance.toLocaleString()}</td>
+        <td className="ar muted" data-label="Total Paid So Far (K)">{row.cumulative.toLocaleString()}</td>
+        <td className="ar" data-label="Suggested (K)">{Math.round(row.suggested).toLocaleString()}</td>
       </tr>
       {open && (
         <tr className="history-row">

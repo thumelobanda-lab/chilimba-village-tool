@@ -239,9 +239,9 @@ function DateOverrideRow({ row, override, defaultLeadDays, onChange }) {
 
   return (
     <tr>
-      <td className="al">{row.date}</td>
-      <td className="al">{row.group}</td>
-      <td className="al">
+      <td className="al" data-label="Date">{row.date}</td>
+      <td className="al" data-label="Group">{row.group}</td>
+      <td className="al" data-label="Reminder">
         <select value={mode} disabled={saving} onChange={(e) => applyMode(e.target.value)} style={{ marginRight: 8 }}>
           <option value="default">Default ({defaultLeadDays} days)</option>
           <option value="custom">Custom</option>

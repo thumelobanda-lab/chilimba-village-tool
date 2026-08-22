@@ -22,6 +22,7 @@ export async function getGroupFunds() {
     const scheduleById = Object.fromEntries((config?.schedule || []).map((r) => [r.id, r]));
     const contributions = lsGet(groupScopedKey(session, "fund-contributions"), []);
     const loans = lsGet(groupScopedKey(session, "fund-loans"), []);
+    const repayments = lsGet(groupScopedKey(session, "fund-loan-repayments"), []);
 
     const balanceByFund = {};
     contributions.forEach((c) => {
@@ -37,9 +38,19 @@ export async function getGroupFunds() {
     const funds = communityFundDeduction > 0 || hasCommunityFundHistory
       ? [...namedFunds, { id: COMMUNITY_FUND_ID, name: COMMUNITY_FUND_NAME, amount: communityFundDeduction, loanable: false }]
       : namedFunds;
+
+    const repaidByLoan = {};
+    repayments.forEach((r) => {
+      repaidByLoan[r.loanId] = (repaidByLoan[r.loanId] || 0) + r.amount;
+    });
+    // "Still out on loan" nets every loan's amount against whatever's
+    // been repaid so far, same as the Worker route — a partially repaid
+    // loan still ties up its remaining balance even before its status
+    // flips to 'repaid'.
     const outstandingByFund = {};
-    loans.filter((l) => l.status === "outstanding").forEach((l) => {
-      outstandingByFund[l.fundId] = (outstandingByFund[l.fundId] || 0) + l.amount;
+    loans.forEach((l) => {
+      const remaining = l.amount - (repaidByLoan[l.id] || 0);
+      outstandingByFund[l.fundId] = (outstandingByFund[l.fundId] || 0) + Math.max(0, remaining);
     });
 
     const fundsOut = funds.map((f) => {
@@ -61,7 +72,17 @@ export async function getGroupFunds() {
     const loansOut = [...loans]
       .sort((a, b) => new Date(b.issuedAt) - new Date(a.issuedAt))
       .slice(0, 50)
-      .map((l) => ({ ...l, fundName: funds.find((f) => f.id === l.fundId)?.name || l.fundId }));
+      .map((l) => {
+        const loanRepayments = repayments.filter((r) => r.loanId === l.id).sort((a, b) => new Date(a.recordedAt) - new Date(b.recordedAt));
+        const repaidTotal = loanRepayments.reduce((s, r) => s + r.amount, 0);
+        return {
+          ...l,
+          fundName: funds.find((f) => f.id === l.fundId)?.name || l.fundId,
+          repaidTotal,
+          balance: Math.max(0, l.amount - repaidTotal),
+          repayments: loanRepayments,
+        };
+      });
 
     return { funds: fundsOut, feed, loans: loansOut };
   }
@@ -85,7 +106,12 @@ export async function issueLoan({ fundId, borrowerName, amount, notes = "" }) {
     const contributions = lsGet(groupScopedKey(session, "fund-contributions"), []);
     const balance = contributions.filter((c) => c.fundId === fundId).reduce((s, c) => s + c.amount, 0);
     const loans = lsGet(groupScopedKey(session, "fund-loans"), []);
-    const outstanding = loans.filter((l) => l.fundId === fundId && l.status === "outstanding").reduce((s, l) => s + l.amount, 0);
+    const repayments = lsGet(groupScopedKey(session, "fund-loan-repayments"), []);
+    const repaidByLoan = {};
+    repayments.forEach((r) => { repaidByLoan[r.loanId] = (repaidByLoan[r.loanId] || 0) + r.amount; });
+    const outstanding = loans
+      .filter((l) => l.fundId === fundId)
+      .reduce((s, l) => s + Math.max(0, l.amount - (repaidByLoan[l.id] || 0)), 0);
     const available = balance - outstanding;
     if (amt > available) throw new Error(`Only K${available.toLocaleString()} is available in ${fund.name}.`);
 
@@ -110,18 +136,37 @@ export async function issueLoan({ fundId, borrowerName, amount, notes = "" }) {
   });
 }
 
-export async function repayLoan(loanId) {
+// Records one repayment against a loan — append-only, mirroring the
+// Worker's loan_repayments table (migration 014). Any amount up to
+// what's still owed; the loan's status flips to 'repaid' automatically
+// once the running balance reaches zero.
+export async function repayLoan(loanId, amount) {
   const session = currentSession();
   if (!session || session.role !== "admin") throw new Error("Admin access required.");
+  const amt = Number(amount);
+  if (!amt || amt <= 0) throw new Error("Enter an amount greater than zero.");
 
   if (MOCK_MODE) {
     const loans = lsGet(groupScopedKey(session, "fund-loans"), []);
-    const next = loans.map((l) =>
-      l.id === loanId ? { ...l, status: "repaid", repaidAt: new Date().toISOString() } : l
-    );
-    lsSet(groupScopedKey(session, "fund-loans"), next);
-    return { ok: true };
+    const loan = loans.find((l) => l.id === loanId);
+    if (!loan) throw new Error("Loan not found.");
+
+    const repayments = lsGet(groupScopedKey(session, "fund-loan-repayments"), []);
+    const repaidSoFar = repayments.filter((r) => r.loanId === loanId).reduce((s, r) => s + r.amount, 0);
+    const remaining = loan.amount - repaidSoFar;
+    if (remaining <= 0) throw new Error("This loan is already fully repaid.");
+    if (amt > remaining) throw new Error(`Only K${remaining.toLocaleString()} is still owed on this loan.`);
+
+    const entry = { id: uidFund(), loanId, amount: amt, recordedBy: session.name, recordedAt: new Date().toISOString() };
+    lsSet(groupScopedKey(session, "fund-loan-repayments"), [...repayments, entry]);
+
+    const newRemaining = remaining - amt;
+    if (newRemaining <= 0) {
+      const next = loans.map((l) => (l.id === loanId ? { ...l, status: "repaid", repaidAt: new Date().toISOString() } : l));
+      lsSet(groupScopedKey(session, "fund-loans"), next);
+    }
+    return { ok: true, remaining: Math.max(0, newRemaining) };
   }
 
-  return realFetch(`/api/admin/loans/${loanId}/repay`, { method: "POST" });
+  return realFetch(`/api/admin/loans/${loanId}/repay`, { method: "POST", body: JSON.stringify({ amount: amt }) });
 }

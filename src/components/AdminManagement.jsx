@@ -119,22 +119,22 @@ export default function AdminManagement() {
               <tbody>
                 {data.members.map((m) => (
                   <tr key={m.name}>
-                    <td className="al">
+                    <td className="al" data-label="Name">
                       {m.name}
                       {isNewMember(m.joinedAt) && <span className="tag">new</span>}
                     </td>
-                    <td className="al">
+                    <td className="al" data-label="Role">
                       {m.role === "admin" ? <span className="tag tag-rate">admin</span> : <span className="muted tiny">member</span>}
                     </td>
-                    <td className="al muted small">
+                    <td className="al muted small" data-label="Joined">
                       {m.joinedAt ? new Date(m.joinedAt).toLocaleDateString() : "—"}
                     </td>
-                    <td className="al small">
+                    <td className="al small" data-label="Next Due">
                       {m.nextDueDate
                         ? <>{m.nextDueDate} <span className="muted tiny">({money(m.nextDueAmount)})</span></>
                         : <span className="muted tiny">settled</span>}
                     </td>
-                    <td>
+                    <td className="cell-action">
                       <button
                         className="btn-link"
                         style={{ marginRight: 10 }}

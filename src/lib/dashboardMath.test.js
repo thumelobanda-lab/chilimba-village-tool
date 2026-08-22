@@ -10,6 +10,7 @@ import {
   isMemberTurnSoon,
   isCycleNearingCompletion,
   greeting,
+  myOutstandingLoanTotal,
 } from "./dashboardMath.js";
 
 describe("computeCycleProgress", () => {
@@ -326,5 +327,38 @@ describe("greeting", () => {
   it("is an evening greeting from 5pm onward", () => {
     expect(greeting(17)).toBe("Good evening");
     expect(greeting(22)).toBe("Good evening");
+  });
+});
+
+describe("myOutstandingLoanTotal", () => {
+  const loans = [
+    { borrowerName: "Fridah", amount: 800, balance: 500 },
+    { borrowerName: "Susan", amount: 300, balance: 300 },
+    { borrowerName: "fridah", amount: 200, balance: 0 },
+  ];
+
+  it("is 0 when the member has no loans at all", () => {
+    expect(myOutstandingLoanTotal(loans, "Doreen")).toBe(0);
+  });
+
+  it("is 0 when there's no name to match", () => {
+    expect(myOutstandingLoanTotal(loans, "")).toBe(0);
+    expect(myOutstandingLoanTotal(loans, null)).toBe(0);
+  });
+
+  it("sums balance (not the original amount) across every loan in that member's name", () => {
+    expect(myOutstandingLoanTotal(loans, "Fridah")).toBe(500);
+  });
+
+  it("matches case-insensitively", () => {
+    expect(myOutstandingLoanTotal(loans, "FRIDAH")).toBe(500);
+  });
+
+  it("falls back to amount when a loan has no balance field yet (pre-migration shape)", () => {
+    expect(myOutstandingLoanTotal([{ borrowerName: "Susan", amount: 300 }], "Susan")).toBe(300);
+  });
+
+  it("never returns negative even if balance is stored as negative", () => {
+    expect(myOutstandingLoanTotal([{ borrowerName: "X", amount: 100, balance: -50 }], "X")).toBe(0);
   });
 });

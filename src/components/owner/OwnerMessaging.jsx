@@ -347,11 +347,11 @@ export default function OwnerMessaging({ groups }) {
             <tbody>
               {log.map((m) => (
                 <tr key={m.id}>
-                  <td className="al"><CategoryTag categoryId={m.category} /></td>
-                  <td className="al">{m.targetLabel}</td>
-                  <td className="al" style={{ whiteSpace: "pre-wrap" }}>{m.message}</td>
-                  <td className="ar">{m.recipientCount}</td>
-                  <td className="al muted tiny">{new Date(m.sentAt).toLocaleString()}</td>
+                  <td className="al" data-label="Category"><CategoryTag categoryId={m.category} /></td>
+                  <td className="al" data-label="Recipient">{m.targetLabel}</td>
+                  <td className="al" data-label="Message" style={{ whiteSpace: "pre-wrap" }}>{m.message}</td>
+                  <td className="ar" data-label="Reached">{m.recipientCount}</td>
+                  <td className="al muted tiny" data-label="Sent">{new Date(m.sentAt).toLocaleString()}</td>
                 </tr>
               ))}
               {log.length === 0 && (
