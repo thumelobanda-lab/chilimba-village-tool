@@ -3,6 +3,7 @@ import { getMyMessages, markMessageRead, getNotices } from "../lib/api.js";
 import { useApiData } from "../lib/useApiData.js";
 import { groupScopedKey, lsGet, lsSet } from "../lib/api/core.js";
 import { recentPaymentEvents, paymentEventId, isReminderDue } from "../lib/notifications.js";
+import { parseServerTimestamp } from "../lib/serverTime.js";
 import { relativeDueLabel, daysUntil } from "../lib/dashboardMath.js";
 import { money } from "../components/LedgerTable.jsx";
 
@@ -117,7 +118,7 @@ export function useNotifications(session, payments, nextDue) {
       }
     }
 
-    return out.sort((a, b) => new Date(b.at || 0) - new Date(a.at || 0));
+    return out.sort((a, b) => (parseServerTimestamp(b.at) || 0) - (parseServerTimestamp(a.at) || 0));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session, ownerData, noticesData, payments, nextDue, dismissTick]);
 

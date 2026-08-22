@@ -10,6 +10,8 @@
  * and SubscriptionExpiryBanner already use elsewhere in this app).
  */
 
+import { parseServerTimestamp } from "./serverTime.js";
+
 const DEFAULT_EVENT_WINDOW_DAYS = 21;
 const DEFAULT_REMINDER_LEAD_DAYS = 3;
 
@@ -29,7 +31,7 @@ export function recentPaymentEvents(payments, now = new Date(), windowDays = DEF
     if (p.voidedAt) return false;
     const at = p.rejectedAt || p.confirmedAt;
     if (!at) return false;
-    const days = (now.getTime() - new Date(at).getTime()) / (24 * 60 * 60 * 1000);
+    const days = (now.getTime() - parseServerTimestamp(at).getTime()) / (24 * 60 * 60 * 1000);
     return days >= 0 && days <= windowDays;
   });
 }

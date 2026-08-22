@@ -42,6 +42,18 @@ describe("recentPaymentEvents", () => {
     expect(recentPaymentEvents([p], NOW, 7)).toEqual([]);
     expect(recentPaymentEvents([p], NOW, 30)).toEqual([p]);
   });
+
+  // Regression: the real API returns confirmedAt/rejectedAt in SQLite's
+  // "YYYY-MM-DD HH:MM:SS" format (see worker/schema/schema.sql's
+  // datetime('now') default), not ISO-with-Z like the fixtures above.
+  // Discovered live — a payment confirmed seconds earlier was silently
+  // excluded because new Date() on that format parses as local time,
+  // shifting it by the viewer's UTC offset (see serverTime.js).
+  it("includes a payment confirmed moments ago in the real API's timestamp format", () => {
+    const justNow = new Date(NOW.getTime() - 1000).toISOString().slice(0, 19).replace("T", " ");
+    const p = { ...base, confirmedAt: justNow };
+    expect(recentPaymentEvents([p], NOW)).toEqual([p]);
+  });
 });
 
 describe("isReminderDue", () => {
