@@ -21,6 +21,8 @@ import PlatformMessageBanner from "./components/PlatformMessageBanner.jsx";
 import PaymentOptions from "./components/PaymentOptions.jsx";
 import QuickCalculator from "./components/QuickCalculator.jsx";
 import Walkthrough, { hasSeenWalkthrough } from "./components/Walkthrough.jsx";
+import GroupSwitcher from "./components/GroupSwitcher.jsx";
+import AddGroupModal from "./components/AddGroupModal.jsx";
 import { useSession } from "./hooks/useSession.js";
 import { useGroupConfig } from "./hooks/useGroupConfig.js";
 import { useLedger } from "./hooks/useLedger.js";
@@ -43,7 +45,18 @@ const TABS = [
 ];
 
 export default function App() {
-  const { session, login, join, createAdditionalGroup, logout, renameSession, refreshSession } = useSession();
+  const {
+    session,
+    myGroups,
+    login,
+    join,
+    createAdditionalGroup,
+    switchGroup,
+    removeGroup,
+    logout,
+    renameSession,
+    refreshSession,
+  } = useSession();
   const { config, setConfig } = useGroupConfig(session);
   const {
     ledger,
@@ -64,6 +77,7 @@ export default function App() {
   const [showCalculator, setShowCalculator] = useState(false);
   const [showWalkthrough, setShowWalkthrough] = useState(false);
   const [sessionEndedNotice, setSessionEndedNotice] = useState(false);
+  const [showAddGroup, setShowAddGroup] = useState(false);
 
   // Auto-opens once per account, the first time the dashboard is actually
   // reached (after login and onboarding) — a free-tier group reaches the
@@ -143,13 +157,18 @@ export default function App() {
       <header className="app-header">
         <div>
           <div className="brand">OpenBook</div>
-          <div className="muted small">
-            {session
-              ? config.cycleName
-                ? `${session.groupName} · ${config.cycleName}`
-                : session.groupName
-              : "Your group's honest record."}
-          </div>
+          {session ? (
+            <GroupSwitcher
+              session={session}
+              config={config}
+              myGroups={myGroups}
+              onSwitch={switchGroup}
+              onRemove={removeGroup}
+              onAddGroup={() => setShowAddGroup(true)}
+            />
+          ) : (
+            <div className="muted small">Your group's honest record.</div>
+          )}
         </div>
         {session && (
           <div className="header-right">
@@ -169,6 +188,9 @@ export default function App() {
       {showCalculator && <QuickCalculator onClose={() => setShowCalculator(false)} />}
       {showWalkthrough && (
         <Walkthrough session={session} onClose={() => setShowWalkthrough(false)} />
+      )}
+      {showAddGroup && (
+        <AddGroupModal onJoin={join} onLogin={login} onClose={() => setShowAddGroup(false)} />
       )}
 
       <main className="app-main">

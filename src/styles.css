@@ -101,6 +101,93 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 
 .back-link { display: inline-block; margin-bottom: 14px; }
 
+/* Group switcher — sits where the plain "GroupName · Cycle" subtitle
+   used to, in the dark header, so the trigger reads as text-on-dark
+   (not a light chip like nav-menu-trigger) but the popup panel below it
+   is a normal light panel, same visual language as the nav menu. */
+.group-switcher { position: relative; }
+.group-switcher-trigger {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--ink-faint);
+  font-size: 0.85rem;
+  cursor: pointer;
+  text-align: left;
+}
+.group-switcher-trigger:hover, .group-switcher-trigger:focus-visible { color: rgba(255,255,255,0.85); }
+.group-switcher-caret { font-size: 0.7rem; }
+.group-switcher-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 20;
+  min-width: 260px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+}
+.group-switcher-heading {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--ink-faint);
+  font-weight: 600;
+  padding: 6px 10px 4px;
+}
+.group-switcher-row { display: flex; align-items: center; gap: 4px; }
+.group-switcher-item {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 8px 10px;
+  border: none;
+  background: none;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+}
+.group-switcher-item:hover { background: #EFEAE0; }
+.group-switcher-item-active { background: #E7F1EB; cursor: default; }
+.group-switcher-item-info { min-width: 0; display: flex; flex-direction: column; gap: 2px; width: 100%; }
+.group-switcher-item-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+.group-switcher-remove {
+  background: none;
+  border: none;
+  color: var(--ink-faint);
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 4px 6px;
+  flex-shrink: 0;
+}
+.group-switcher-remove:hover { color: var(--red); }
+.group-switcher-add {
+  border: none;
+  background: none;
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 0.88rem;
+  text-align: left;
+}
+.group-switcher-add:hover { background: #EFEAE0; }
+
+.add-group-body { padding: 4px 2px 2px; }
+
 .panel {
   background: var(--panel);
   border: 1px solid var(--line);
