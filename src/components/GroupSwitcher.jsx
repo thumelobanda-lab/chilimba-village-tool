@@ -79,7 +79,11 @@ export default function GroupSwitcher({ session, config, myGroups, onSwitch, onR
                   <span className="group-switcher-item-name">{g.groupName}</span>
                   <span className="muted tiny">
                     {g.name}
-                    {g.role === "admin" && <span className="tag tag-rate" style={{ marginLeft: 6 }}>admin</span>}
+                    {g.role && (
+                      <span className={"tag" + (g.role === "admin" ? " tag-rate" : "")} style={{ marginLeft: 6 }}>
+                        {g.role}
+                      </span>
+                    )}
                     {g.groupSlug === session.groupSlug && <span className="muted tiny"> · current</span>}
                   </span>
                 </span>

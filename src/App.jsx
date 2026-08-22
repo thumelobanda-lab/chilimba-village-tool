@@ -23,12 +23,15 @@ import QuickCalculator from "./components/QuickCalculator.jsx";
 import Walkthrough, { hasSeenWalkthrough } from "./components/Walkthrough.jsx";
 import GroupSwitcher from "./components/GroupSwitcher.jsx";
 import AddGroupModal from "./components/AddGroupModal.jsx";
+import NotificationBell from "./components/NotificationBell.jsx";
 import { useSession } from "./hooks/useSession.js";
 import { useGroupConfig } from "./hooks/useGroupConfig.js";
 import { useLedger } from "./hooks/useLedger.js";
 import { useOnboarding } from "./hooks/useOnboarding.js";
 import { useSubscription } from "./hooks/useSubscription.js";
+import { useNotifications } from "./hooks/useNotifications.js";
 import { greeting } from "./lib/dashboardMath.js";
+import { findNextDue } from "./lib/scheduleUtils.js";
 
 const TABS = [
   { id: "ledger", label: "My Payment History" },
@@ -72,6 +75,18 @@ export default function App() {
   } = useLedger(session, config);
   const onboarding = useOnboarding({ applyFlatRate });
   const subscription = useSubscription(session);
+  // Cheap and pure — recomputed here (App.jsx) rather than lifted out of
+  // Dashboard.jsx's own copy, since the notification bell lives in the
+  // global header and needs it on every tab, not just Home.
+  const paidByRowId = Object.fromEntries((totals.rowsComputed || []).map((r) => [r.id, r.paid]));
+  const nextDue = findNextDue(
+    config.schedule,
+    session?.name,
+    config.recipientExempt,
+    ledger.dueOverrides || {},
+    paidByRowId
+  );
+  const notifications = useNotifications(session, ledger.payments, nextDue);
 
   const [tab, setTab] = useState("home");
   const [showCalculator, setShowCalculator] = useState(false);
@@ -172,6 +187,7 @@ export default function App() {
         </div>
         {session && (
           <div className="header-right">
+            <NotificationBell items={notifications.items} />
             <button
               className="btn-ghost calc-icon-btn"
               onClick={() => setShowCalculator(true)}
@@ -180,7 +196,6 @@ export default function App() {
             >
               🧮 <span className="calc-icon-label">Calc</span>
             </button>
-            <button className="btn-ghost" onClick={handleLogout}>Log out</button>
           </div>
         )}
       </header>
@@ -208,7 +223,11 @@ export default function App() {
             {tab !== "home" && (
               <div className="dashboard-greeting">
                 <span className="greeting-emoji">👋</span> {greeting()}, <strong>{session.name}</strong>
-                {session.role === "admin" && <span className="tag tag-rate" style={{ marginLeft: 8 }}>admin</span>}
+                {session.role && (
+                  <span className={"tag" + (session.role === "admin" ? " tag-rate" : "")} style={{ marginLeft: 8 }}>
+                    {session.role}
+                  </span>
+                )}
               </div>
             )}
 
@@ -243,7 +262,7 @@ export default function App() {
                   onOpenLedger={() => setTab("ledger")}
                   onOpenGroupSetup={session.role === "admin" ? () => setTab("setup") : undefined}
                   onOpenPaymentOptions={() => setTab("payment-options")}
-                  onOpenReminders={() => setTab("reminders")}
+                  onOpenCommunity={() => setTab("community")}
                 />
               </>
             )}
@@ -394,7 +413,7 @@ export default function App() {
 
             {tab === "account" && (
               <div role="tabpanel" id="panel-account" aria-labelledby="tab-account">
-                <Profile session={session} onRenamed={renameSession} />
+                <Profile session={session} onRenamed={renameSession} onLogout={handleLogout} />
               </div>
             )}
 

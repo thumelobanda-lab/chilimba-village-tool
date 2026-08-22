@@ -52,7 +52,7 @@ export default function Dashboard({
   onOpenLedger,
   onOpenGroupSetup,
   onOpenPaymentOptions,
-  onOpenReminders,
+  onOpenCommunity,
 }) {
   const { data: fundsData, loading: fundsLoading } = useApiData(getGroupFunds, []);
   const { data: pulseData, loading: pulseLoading } = useApiData(getGroupPulse, []);
@@ -66,6 +66,7 @@ export default function Dashboard({
   const fundTotal = fundsData ? sumFundBalances(fundsData.funds) : 0;
   const fundTotalDisplay = useCountUp(fundTotal);
   const balanceDisplay = useCountUp(totals.balance);
+  const paidDisplay = useCountUp(totals.paid);
 
   const paidByRowId = Object.fromEntries(totals.rowsComputed.map((r) => [r.id, r.paid]));
   const nextDue = findNextDue(
@@ -115,7 +116,11 @@ export default function Dashboard({
         <div className="dashboard-hero-left">
           <div className="dashboard-hero-greeting">
             <span className="greeting-emoji">👋</span> {greeting()}, <strong>{session?.name}</strong>
-            {session?.role === "admin" && <span className="tag tag-rate" style={{ marginLeft: 8 }}>admin</span>}
+            {session?.role && (
+              <span className={"tag" + (session.role === "admin" ? " tag-rate" : "")} style={{ marginLeft: 8 }}>
+                {session.role}
+              </span>
+            )}
           </div>
           <p className="dashboard-hero-sub">
             {config.groupName ? `Here's where ${config.groupName} stands today.` : "Here's where things stand today."}
@@ -181,6 +186,13 @@ export default function Dashboard({
         </div>
 
         <div className="vital-card">
+          <div className="vital-card-label">What You've Paid So Far</div>
+          <div className="vital-card-value">
+            {money(paidDisplay)}
+          </div>
+        </div>
+
+        <div className="vital-card">
           <div className="vital-card-label">Group Savings Fund Total</div>
           <div className="vital-card-value">
             {fundsLoading ? <span className="muted small">Loading…</span> : money(fundTotalDisplay)}
@@ -197,7 +209,7 @@ export default function Dashboard({
         onOpenLedger={onOpenLedger}
         onOpenPaymentOptions={onOpenPaymentOptions}
         onOpenGroupSetup={onOpenGroupSetup}
-        onOpenReminders={onOpenReminders}
+        onOpenCommunity={onOpenCommunity}
       />
     </>
   );

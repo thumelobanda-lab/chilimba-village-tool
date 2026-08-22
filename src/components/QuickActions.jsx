@@ -1,21 +1,20 @@
 import React from "react";
 
 /**
- * A row of one-tap shortcuts to the actions members reach for most often
- * — deliberately just 3, not a menu duplicate: Log a Payment and Payment
- * Options are universal, the third slot is role-aware (Roster for an
- * admin, since managing who's in the group is admin-only; Reminders for
- * a regular member, since it's equally universal but Roster isn't
- * reachable for them at all).
+ * One-tap shortcuts to the actions members reach for most often — not a
+ * menu duplicate: Log a Payment, Payment Options, and Community Fund
+ * details are universal; Roster & Admins is admin-only, since managing
+ * who's in the group is an admin-only capability (GroupSetup.jsx's
+ * Members & Group Leaders section) with nothing for a regular member to
+ * reach there at all.
  */
-export default function QuickActions({ isAdmin, onOpenLedger, onOpenPaymentOptions, onOpenGroupSetup, onOpenReminders }) {
+export default function QuickActions({ isAdmin, onOpenLedger, onOpenPaymentOptions, onOpenGroupSetup, onOpenCommunity }) {
   const actions = [
     { icon: "💸", label: "Log a Payment", onClick: onOpenLedger },
     { icon: "📱", label: "Payment Options", onClick: onOpenPaymentOptions },
-    isAdmin
-      ? { icon: "👥", label: "Roster", onClick: onOpenGroupSetup }
-      : { icon: "🔔", label: "Reminders", onClick: onOpenReminders },
-  ];
+    isAdmin && { icon: "👥", label: "Roster & Admins", onClick: onOpenGroupSetup },
+    { icon: "🤝", label: "Community Fund", onClick: onOpenCommunity },
+  ].filter(Boolean);
 
   return (
     <div className="quick-actions">

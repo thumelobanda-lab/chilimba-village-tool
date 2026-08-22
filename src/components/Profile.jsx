@@ -8,7 +8,7 @@ import TermsModal from "./TermsModal.jsx";
 // rename isn't offered here) and changing your own PIN. Nothing here can
 // touch another member's account — updateProfile() always acts on the
 // signed-in session, never a name passed in from outside.
-export default function Profile({ session, onRenamed }) {
+export default function Profile({ session, onRenamed, onLogout }) {
   const [displayName, setDisplayName] = useState(session.name);
   const [currentPin, setCurrentPin] = useState("");
   const [newPin, setNewPin] = useState("");
@@ -136,6 +136,12 @@ export default function Profile({ session, onRenamed }) {
         <button className="btn-link" onClick={() => setShowTerms(true)}>Terms &amp; Conditions</button>
       </div>
       {showTerms && <TermsModal onClose={() => setShowTerms(false)} />}
+
+      {onLogout && (
+        <div className="account-signout-row">
+          <button className="btn-ghost-dark" onClick={onLogout}>Log out</button>
+        </div>
+      )}
     </div>
   );
 }
