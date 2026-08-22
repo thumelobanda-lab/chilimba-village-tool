@@ -333,7 +333,11 @@ export default function App() {
 
             {tab === "reconciliation" && session.role === "admin" && (
               <div role="tabpanel" id="panel-reconciliation" aria-labelledby="tab-reconciliation">
-                <Reconciliation config={config} premiumActive={subscription.status?.active} />
+                <Reconciliation
+                  config={config}
+                  premiumActive={subscription.status?.active}
+                  onOpenGroupSetup={() => setTab("setup")}
+                />
               </div>
             )}
 

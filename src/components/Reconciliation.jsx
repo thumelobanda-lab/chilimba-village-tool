@@ -6,7 +6,7 @@ import Receipt from "./Receipt.jsx";
 
 const money = (n) => "K" + (Number(n) || 0).toLocaleString("en-ZM", { maximumFractionDigits: 0 });
 
-export default function Reconciliation({ config, premiumActive }) {
+export default function Reconciliation({ config, premiumActive, onOpenGroupSetup }) {
   const [rowId, setRowId] = useState(() => pickDefaultRow(config.schedule)?.id);
   const [expanded, setExpanded] = useState(null); // one member's name at a time
   const [busyEntryId, setBusyEntryId] = useState(null);
@@ -149,14 +149,25 @@ export default function Reconciliation({ config, premiumActive }) {
         </div>
       )}
 
-      <label className="field" style={{ maxWidth: 320 }}>
-        Payout date
-        <select value={rowId} onChange={(e) => setRowId(e.target.value)}>
-          {config.schedule.map((r) => (
-            <option key={r.id} value={r.id}>{r.date} — {r.group} ({payeesLabel(r)})</option>
-          ))}
-        </select>
-      </label>
+      {config.schedule.length === 0 ? (
+        <p className="muted small" style={{ padding: "20px 0" }}>
+          No payout dates are set up yet, so there's nothing to review here.{" "}
+          {onOpenGroupSetup ? (
+            <button className="btn-link" onClick={onOpenGroupSetup}>Add them from Group Setup.</button>
+          ) : (
+            "Add them from Group Setup."
+          )}
+        </p>
+      ) : (
+        <label className="field" style={{ maxWidth: 320 }}>
+          Payout date
+          <select value={rowId} onChange={(e) => setRowId(e.target.value)}>
+            {config.schedule.map((r) => (
+              <option key={r.id} value={r.id}>{r.date} — {r.group} ({payeesLabel(r)})</option>
+            ))}
+          </select>
+        </label>
+      )}
 
       {loading && <p className="muted small">Loading…</p>}
       {error && <div className="error-text">{error}</div>}
