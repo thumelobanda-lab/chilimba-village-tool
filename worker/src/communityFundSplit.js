@@ -55,7 +55,7 @@ export function effectiveContribution(payment) {
 // it's a singular concept tied to community_fund_deduction rather than
 // one of the group's own named funds list.
 export const COMMUNITY_FUND_ID = "community-fund";
-export const COMMUNITY_FUND_NAME = "Community Fund";
+export const COMMUNITY_FUND_NAME = "Group Savings Fund";
 
 /**
  * The SQL CASE expression for "how much of this payments row counts

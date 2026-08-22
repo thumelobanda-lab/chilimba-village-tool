@@ -124,7 +124,7 @@ export default function Dashboard({ session, config, ledger, totals, onOpenRecon
         </div>
 
         <div className="vital-card">
-          <div className="vital-card-label">Community Fund Total</div>
+          <div className="vital-card-label">Group Savings Fund Total</div>
           <div className="vital-card-value">
             {fundsLoading ? <span className="muted small">Loading…</span> : money(fundTotalDisplay)}
           </div>
@@ -134,7 +134,7 @@ export default function Dashboard({ session, config, ledger, totals, onOpenRecon
       <div className="panel cycle-progress-panel">
         <div className="cycle-progress-header">
           <div>
-            <div className="vital-card-label">Cycle Progress</div>
+            <div className="vital-card-label">Round Progress</div>
             {config.cycleName && <div className="panel-subtitle" style={{ margin: "2px 0 0" }}>{config.cycleName}</div>}
             {session?.role === "admin" && onOpenGroupSetup && (
               <button

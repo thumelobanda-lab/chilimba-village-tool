@@ -10,7 +10,7 @@ import React from "react";
  * everything else until it's active.
  */
 export default function SubscriptionGate({ status }) {
-  if (!status) return <div className="panel">Checking subscription…</div>;
+  if (!status) return <div className="panel">Checking group membership plan…</div>;
 
   if (status.active) {
     return (
@@ -28,8 +28,8 @@ export default function SubscriptionGate({ status }) {
       <h2 className="panel-title">Free Plan</h2>
       <p className="muted small">
         This group is on the free plan — up to {status.freeTierMaxMembers} members and every
-        core payment-tracking feature. Receipts, automated reminders, and community fund splitting
-        need premium, which only a group admin can activate.
+        core payment-tracking feature. Receipts, automated reminders, and group savings fund splitting
+        need premium, which only a group leader can activate.
       </p>
       {status.pending && (
         <p className="muted small">

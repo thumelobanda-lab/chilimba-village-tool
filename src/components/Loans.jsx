@@ -56,7 +56,7 @@ export default function Loans() {
     <div className="panel">
       <div className="setup-header">
         <h2 className="panel-title">Loans</h2>
-        <span className="badge badge-admin">Admin only</span>
+        <span className="badge badge-admin">Group Leader only</span>
       </div>
 
       {loading && !data && <p className="muted small" aria-live="polite">Loading…</p>}
@@ -88,7 +88,7 @@ export default function Loans() {
           </div>
           <label className="field">
             Notes (optional)
-            <input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="e.g. school fees, repay by next cycle" />
+            <input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="e.g. school fees, repay by next round" />
           </label>
 
           {selectedFund && (

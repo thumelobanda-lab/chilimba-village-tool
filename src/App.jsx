@@ -32,7 +32,7 @@ const TABS = [
   { id: "summary", label: "Payment Summary" },
   { id: "reminders", label: "Reminders" },
   { id: "community", label: "Community" },
-  { id: "subscription", label: "Subscription" },
+  { id: "subscription", label: "Group Membership Plan" },
   { id: "account", label: "My Account" },
   { id: "setup", label: "Group Setup", adminOnly: true },
   { id: "reconciliation", label: "Payment Review", adminOnly: true },
@@ -234,12 +234,12 @@ export default function App() {
 
                 {config.schedule.length === 0 ? (
                   <p className="muted small" style={{ padding: "20px 0" }}>
-                    No payout dates are set up yet. An admin can add them from Group Setup.
+                    No payout dates are set up yet. A group leader can add them from Group Setup.
                   </p>
                 ) : (
                   <>
                     <p className="muted tiny" style={{ marginBottom: 10 }}>
-                      Tap "Amount Paid" to log a payment or view its history. Tap "Amount Due" to
+                      Tap "Paid" to log a payment or view its history. Tap "Due" to
                       set your own agreed rate for a date.
                     </p>
                     <LedgerTable
@@ -259,7 +259,7 @@ export default function App() {
                 )}
 
                 <div className="payout-block">
-                  <h3 className="panel-subtitle">Payout Received</h3>
+                  <h3 className="panel-subtitle">Your Turn's Payout</h3>
                   <div className="field-row">
                     <label className="field">
                       Amount (K)
@@ -282,12 +282,12 @@ export default function App() {
 
                   <table className="summary-table">
                     <tbody>
-                      <tr><td>Payout Received</td><td className="ar">{money(ledger.payoutInfo?.amount)}</td></tr>
+                      <tr><td>Your Turn's Payout</td><td className="ar">{money(ledger.payoutInfo?.amount)}</td></tr>
                       <tr><td>Total Paid to Date</td><td className="ar">{money(totals.paid)}</td></tr>
                       <tr className={totals.net > 0 ? "neg" : "pos"}>
                         <td>Balance After Payout (Payout − Paid)</td><td className="ar">{money(totals.net)}</td>
                       </tr>
-                      <tr><td>Remaining Contributions Owed</td><td className="ar">{money(totals.balance)}</td></tr>
+                      <tr><td>What You Still Owe</td><td className="ar">{money(totals.balance)}</td></tr>
                     </tbody>
                   </table>
                 </div>
@@ -312,10 +312,10 @@ export default function App() {
                   (that's the 🧮 icon in the header).
                 </p>
                 <div className="calc-grid">
-                  <Card label="Amount Due So Far" value={money(totals.due)} />
-                  <Card label="Amount You've Put In" value={money(totals.paid)} />
+                  <Card label="What You Should Have Paid So Far" value={money(totals.due)} />
+                  <Card label="What You've Paid So Far" value={money(totals.paid)} />
                   <Card label="What You Still Owe" value={money(totals.balance)} warn={totals.balance > 0} />
-                  <Card label="Payout Received" value={money(ledger.payoutInfo?.amount)} highlight />
+                  <Card label="Your Turn's Payout" value={money(ledger.payoutInfo?.amount)} highlight />
                   <Card label="Balance After Payout" value={money(totals.net)} warn={totals.net > 0} />
                   <Card
                     label="Suggested Amount per Remaining Date"

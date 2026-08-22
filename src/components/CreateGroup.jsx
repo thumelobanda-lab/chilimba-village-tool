@@ -48,7 +48,7 @@ export default function CreateGroup({ onCreate, onBackToLogin }) {
     <div className="panel login-panel">
       <h2 className="panel-title">Create a Chilimba group</h2>
       <p className="muted small" style={{ marginBottom: 14 }}>
-        You'll be the group's first admin — you can promote a co-admin later by asking
+        You'll be the group's first group leader — you can promote a co-leader later by asking
         them to sign up, then setting their role directly in the database.
       </p>
 

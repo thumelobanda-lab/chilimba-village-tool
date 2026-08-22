@@ -49,7 +49,7 @@ export default function Community() {
               </div>
             ))}
             {data.funds.length === 0 && (
-              <p className="muted small">No community funds are set up yet.</p>
+              <p className="muted small">No group savings funds are set up yet.</p>
             )}
           </div>
 

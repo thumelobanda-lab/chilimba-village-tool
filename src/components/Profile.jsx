@@ -80,7 +80,7 @@ export default function Profile({ session, onRenamed }) {
       </label>
       <p className="muted tiny" style={{ marginTop: -6, marginBottom: 14 }}>
         You can fix spelling or capitalization here. To change to a genuinely different
-        name, ask an admin — your name is also how the payout schedule recognizes you.
+        name, ask a group leader — your name is also how the payout schedule recognizes you.
       </p>
 
       <h3 className="panel-subtitle">Change PIN</h3>

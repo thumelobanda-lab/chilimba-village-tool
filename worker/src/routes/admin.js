@@ -108,7 +108,7 @@ export default function registerAdminRoutes(router) {
     const members = membersResult.results || [];
 
     if (wouldLeaveZeroAdmins(members, body.name)) {
-      throw new HttpError(400, "This is the only admin left — promote someone else first.");
+      throw new HttpError(400, "This is the only group leader left — promote someone else first.");
     }
 
     const target = await env.DB.prepare(`SELECT id FROM users WHERE group_id = ? AND name = ?`)
@@ -134,7 +134,7 @@ export default function registerAdminRoutes(router) {
       .bind(admin.groupId, body.name.trim().toLowerCase()).first();
     if (!target) throw new HttpError(404, "No member with that name in your group.");
     if (target.role === "admin") {
-      throw new HttpError(400, "This member is an admin — demote them first, then remove.");
+      throw new HttpError(400, "This member is a group leader — demote them first, then remove.");
     }
 
     await env.DB.batch([

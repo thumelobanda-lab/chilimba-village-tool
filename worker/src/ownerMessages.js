@@ -45,7 +45,7 @@ export function isValidCategory(category) {
  */
 export function buildTargetLabel({ targetType, groupName, userDisplayName }) {
   if (targetType === "user") return `${userDisplayName} (${groupName})`;
-  if (targetType === "group_admins") return `All admins — ${groupName}`;
+  if (targetType === "group_admins") return `All group leaders — ${groupName}`;
   if (targetType === "group_members") return `All members — ${groupName}`;
   throw new Error(`Unknown targetType: ${targetType}`);
 }

@@ -26,7 +26,7 @@ describe("buildTargetLabel", () => {
 
   it("labels a group-admins broadcast", () => {
     expect(buildTargetLabel({ targetType: "group_admins", groupName: "Hillcrest Chilimba" }))
-      .toBe("All admins — Hillcrest Chilimba");
+      .toBe("All group leaders — Hillcrest Chilimba");
   });
 
   it("labels a group-members broadcast", () => {

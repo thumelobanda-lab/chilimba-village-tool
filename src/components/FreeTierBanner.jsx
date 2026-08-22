@@ -19,7 +19,7 @@ export default function FreeTierBanner({ status, isAdmin, onUpgrade }) {
           <strong>Free plan</strong>
           <span className="muted small" style={{ marginLeft: 8 }}>
             core payment-tracking features, {status.memberCount}/{status.freeTierMaxMembers} members — no
-            receipts, automated reminders, or community fund splitting
+            receipts, automated reminders, or group savings fund splitting
           </span>
         </div>
         {isAdmin && (

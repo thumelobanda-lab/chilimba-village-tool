@@ -46,7 +46,7 @@ export default function Subscription({ status, onPaid }) {
     }
   };
 
-  if (!status) return <div className="panel">Checking subscription…</div>;
+  if (!status) return <div className="panel">Checking group membership plan…</div>;
 
   if (status.active) {
     return (
@@ -80,7 +80,7 @@ export default function Subscription({ status, onPaid }) {
         K{price} unlocks premium features for every member of the group for {months} months —
         one-time group payment, members never pay individually. Your group already works on
         the free plan (up to {status.freeTierMaxMembers} members, core payment-tracking features); this
-        adds receipts, automated reminders, and community fund splitting.
+        adds receipts, automated reminders, and group savings fund splitting.
       </p>
 
       <label className="field">

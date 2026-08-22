@@ -108,7 +108,7 @@ export default function Reconciliation({ config, premiumActive, onOpenGroupSetup
         <h2 className="panel-title">
           Payment Review <span className="muted tiny">(Reconciliation)</span>
         </h2>
-        <span className="badge badge-admin">Admin only</span>
+        <span className="badge badge-admin">Group Leader only</span>
       </div>
 
       {pendingData && pendingData.pending.length > 0 && (
@@ -269,7 +269,7 @@ export default function Reconciliation({ config, premiumActive, onOpenGroupSetup
                                 </div>
                                 {e.confirmedAt && e.communityFundAmount > 0 && (
                                   <div className="muted tiny split-breakdown">
-                                    {money(e.amount)} paid → {money(e.communityFundAmount)} to Community Fund,{" "}
+                                    {money(e.amount)} paid → {money(e.communityFundAmount)} to Group Savings Fund,{" "}
                                     {money(e.amount - e.communityFundAmount)} to contribution
                                   </div>
                                 )}
@@ -347,6 +347,6 @@ function reconBulbClass(entry) {
 function reconBulbTitle(entry) {
   if (entry.confirmedAt) return `Confirmed by ${entry.confirmedBy}`;
   if (entry.rejectedAt) return `Not confirmed by ${entry.rejectedBy}${entry.rejectionReason ? `: ${entry.rejectionReason}` : ""}`;
-  if (entry.status === "pending") return "Pending — awaiting admin review";
+  if (entry.status === "pending") return "Pending — awaiting group leader review";
   return "Not yet confirmed";
 }

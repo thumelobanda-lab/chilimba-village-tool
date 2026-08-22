@@ -76,11 +76,11 @@ export function buildReceiptMessage(data) {
   return (
     `Chilimba Circle — Payment Receipt 🧾\n\n` +
     `Group: ${data.groupName}\n` +
-    (data.cycleName ? `Cycle: ${data.cycleName}\n` : "") +
+    (data.cycleName ? `Round: ${data.cycleName}\n` : "") +
     `Member: ${data.memberName}\n` +
     `Amount paid: K${data.amount.toLocaleString()}\n` +
     (data.communityFundAmount > 0
-      ? `K${data.communityFundAmount.toLocaleString()} to Community Fund, K${data.contributionAmount.toLocaleString()} to contribution\n`
+      ? `K${data.communityFundAmount.toLocaleString()} to Group Savings Fund, K${data.contributionAmount.toLocaleString()} to contribution\n`
       : "") +
     `For payout date: ${payoutLine}\n` +
     `Date paid: ${datePaid}\n` +

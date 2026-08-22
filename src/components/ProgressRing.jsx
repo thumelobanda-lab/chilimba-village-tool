@@ -38,7 +38,7 @@ export default function ProgressRing({ percent, size = 96, strokeWidth = 8, subl
         height={size}
         viewBox={`0 0 ${size} ${size}`}
         role="img"
-        aria-label={`Cycle progress: ${Math.round(clamped)}%`}
+        aria-label={`Round progress: ${Math.round(clamped)}%`}
       >
         <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="var(--line)" strokeWidth={strokeWidth} />
         <circle

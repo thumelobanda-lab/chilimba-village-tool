@@ -35,17 +35,17 @@ function buildSteps(session) {
     {
       emoji: "📒",
       title: "My Payment History",
-      body: "Tap \"Amount Paid\" on any date to log a payment or see its history. Tap \"Amount Due\" if your agreed rate is different from the group default — not everyone contributes the same amount. Nothing is ever overwritten; corrections happen by voiding an entry and logging a new one.",
+      body: "Tap \"Paid\" on any date to log a payment or see its history. Tap \"Due\" if your agreed rate is different from the group default — not everyone contributes the same amount. Nothing is ever overwritten; corrections happen by voiding an entry and logging a new one.",
     },
     {
       emoji: "💚",
       title: "Confirmed payments",
-      body: "Every payment you log shows a small dot next to it: amber means it's waiting on an admin to check it (it won't count toward your balance yet), green means an admin has confirmed the money arrived, and red means it was rejected, with a reason shown.",
+      body: "Every payment you log shows a small dot next to it: amber means it's waiting on a group leader to check it (it won't count toward your balance yet), green means a group leader has confirmed the money arrived, and red means it was rejected, with a reason shown.",
     },
     {
       emoji: "📱",
       title: "Where to Pay",
-      body: "Your Payment History shows the mobile money or bank details your group's admin has set up — that's where your contribution actually goes.",
+      body: "Your Payment History shows the mobile money or bank details your group's leader has set up — that's where your contribution actually goes.",
     },
     {
       emoji: "🔔",
@@ -67,8 +67,8 @@ function buildSteps(session) {
   if (isAdmin) {
     steps.push({
       emoji: "⚙️",
-      title: "Group Setup (you're an admin)",
-      body: "Edit the payout schedule, community funds, and payment details here. The \"Members & Admins\" section shows every member, when they joined, and who's due next — and lets you promote, demote, or remove someone.",
+      title: "Group Setup (you're a group leader)",
+      body: "Edit the payout schedule, group savings funds, and payment details here. The \"Members & Group Leaders\" section shows every member, when they joined, and who's due next — and lets you promote, demote, or remove someone.",
     });
     steps.push({
       emoji: "📢",

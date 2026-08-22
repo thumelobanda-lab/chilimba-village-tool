@@ -82,7 +82,7 @@ export default function Reminders({ config, premiumActive }) {
         <h2 className="panel-title">Payment Reminders</h2>
         <p className="muted small">
           Automated push and SMS reminders are a premium feature. This group is on the free
-          plan — ask an admin to upgrade from the Subscription tab to turn these on.
+          plan — ask a group leader to upgrade from the Group Membership Plan tab to turn these on.
         </p>
       </div>
     );

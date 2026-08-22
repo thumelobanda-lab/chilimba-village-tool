@@ -9,7 +9,7 @@ import {
 
 const TARGET_LABELS = {
   user: "A specific person",
-  group_admins: "All admins of this group",
+  group_admins: "All group leaders of this group",
   group_members: "All members of this group",
 };
 
@@ -178,7 +178,7 @@ export default function OwnerMessaging({ groups }) {
     <div className="panel">
       <h2 className="panel-title">Send a Message</h2>
       <p className="muted small" style={{ marginBottom: 14 }}>
-        A one-way message to a specific person, a group's admins, or a group's members —
+        A one-way message to a specific person, a group's leaders, or a group's members —
         not a chat, there's no reply channel. It shows up in-app for whoever it's addressed
         to the next time they open Chilimba Circle.
       </p>

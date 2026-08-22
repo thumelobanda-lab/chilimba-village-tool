@@ -116,7 +116,7 @@ export async function login(env, groupSlug, identifier, pin) {
     `SELECT * FROM users WHERE group_id = ? AND (name = ? OR (phone IS NOT NULL AND phone = ?))`
   ).bind(group.id, key, phoneKey).first();
   if (!user) throw new HttpError(404, "No account found with that name or phone number — sign up first.");
-  if (!user.active) throw new HttpError(403, "This account has been removed by an admin.");
+  if (!user.active) throw new HttpError(403, "This account has been removed by a group leader.");
 
   // An admin-reset account (see POST /api/admin/reset-pin) has its
   // pin_hash cleared to '' rather than the row being deleted — role,

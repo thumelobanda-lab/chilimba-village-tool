@@ -107,7 +107,7 @@ export default function Login({ onLogin, onJoin, sessionEndedNotice }) {
         <>
           <h2 className="panel-title">New here? Join your group</h2>
           <p className="muted small" style={{ marginBottom: 14 }}>
-            First time? Enter the group code your admin shared with you, your name and
+            First time? Enter the group code your group leader shared with you, your name and
             phone number, and set a PIN.
           </p>
         </>
@@ -219,8 +219,8 @@ export default function Login({ onLogin, onJoin, sessionEndedNotice }) {
       ) : (
         <p className="muted tiny">
           Your PIN is never stored or sent in plain text — only a one-way hash of it is
-          checked. If your group doesn't have a code yet, ask its admin — starting a
-          brand-new Chilimba group is an admin action from inside the app now, not
+          checked. If your group doesn't have a code yet, ask its group leader — starting a
+          brand-new Chilimba group is a group leader action from inside the app now, not
           something reachable from here.
         </p>
       )}

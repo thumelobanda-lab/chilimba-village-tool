@@ -26,7 +26,7 @@ export default function GroupPulse({ data, loading }) {
       ) : data ? (
         <>
           <div className="group-pulse-total">{money(totalDisplay)}</div>
-          <p className="muted small" style={{ margin: "2px 0 10px" }}>contributed this cycle</p>
+          <p className="muted small" style={{ margin: "2px 0 10px" }}>contributed this round</p>
           <p className="group-pulse-activity">
             👥 <strong>{data.membersPaidThisWeek}</strong> of {data.totalActiveMembers} members have paid this week
           </p>

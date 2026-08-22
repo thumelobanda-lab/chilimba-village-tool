@@ -150,13 +150,13 @@ export default function GroupSetup({ config, onSaved, session, premiumActive }) 
     <div className="panel">
       <div className="setup-header">
         <h2 className="panel-title">Group Setup</h2>
-        <span className="badge badge-admin">Admin only</span>
+        <span className="badge badge-admin">Group Leader only</span>
       </div>
 
       <CollapsibleSection
         icon="🏷️"
         title="Group Basics"
-        summary={`${draft.groupName || "Untitled group"} · ${draft.cycleName || "no cycle set"}`}
+        summary={`${draft.groupName || "Untitled group"} · ${draft.cycleName || "no round name set"}`}
         defaultOpen
       >
         <div className="field-row">
@@ -165,7 +165,7 @@ export default function GroupSetup({ config, onSaved, session, premiumActive }) 
             <input value={draft.groupName} onChange={(e) => setDraft({ ...draft, groupName: e.target.value })} />
           </label>
           <label className="field">
-            Cycle name
+            Round name
             <input value={draft.cycleName} onChange={(e) => setDraft({ ...draft, cycleName: e.target.value })} />
           </label>
           <label className="field checkbox-field">
@@ -251,20 +251,20 @@ export default function GroupSetup({ config, onSaved, session, premiumActive }) 
 
       <CollapsibleSection
         icon="💰"
-        title="Community Funds"
+        title="Group Savings Funds"
         summary={fundCount === 0 ? "None set up" : `${fundCount} fund${fundCount === 1 ? "" : "s"}`}
       >
         <h3 className="panel-subtitle">Automatic Payment Split</h3>
         <p className="muted tiny" style={{ marginBottom: 10 }}>
-          A fixed amount taken off every payment once an admin confirms it — the rest still
-          counts toward the member's due. Split into one always-on "Community Fund" balance
+          A fixed amount taken off every payment once a group leader confirms it — the rest still
+          counts toward the member's due. Split into one always-on "Group Savings Fund" balance
           (shown in the Community tab and on the dashboard), separate from the named funds
           below. Set to K0 to turn it off.
         </p>
         {!premiumActive && (
           <p className="muted small" style={{ marginBottom: 10 }}>
             This is a premium feature — this group is on the free plan. Upgrade from the
-            Subscription tab to enable it.
+            Group Membership Plan tab to enable it.
           </p>
         )}
         <label className="field" style={{ maxWidth: 220, marginBottom: 16 }}>
@@ -309,7 +309,7 @@ export default function GroupSetup({ config, onSaved, session, premiumActive }) 
                 </tr>
               ))}
               {(!draft.funds || draft.funds.length === 0) && (
-                <tr><td colSpan={4} className="muted small">No community funds set up.</td></tr>
+                <tr><td colSpan={4} className="muted small">No group savings funds set up.</td></tr>
               )}
             </tbody>
           </table>
@@ -341,7 +341,7 @@ export default function GroupSetup({ config, onSaved, session, premiumActive }) 
         <InviteCard groupName={config.groupName} groupSlug={session?.groupSlug} cycleName={config.cycleName} />
       </CollapsibleSection>
 
-      <CollapsibleSection icon="👥" title="Members & Admins" summary="Members, roles, next due dates">
+      <CollapsibleSection icon="👥" title="Members & Group Leaders" summary="Members, roles, next due dates">
         <AdminManagement />
       </CollapsibleSection>
 

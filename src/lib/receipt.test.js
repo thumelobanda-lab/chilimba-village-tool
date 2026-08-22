@@ -112,18 +112,18 @@ describe("buildReceiptMessage", () => {
 
   it("omits the cycle line entirely when there's no cycle name", () => {
     const msg = buildReceiptMessage({ ...data, cycleName: "" });
-    expect(msg).not.toContain("Cycle:");
+    expect(msg).not.toContain("Round:");
   });
 
   it("includes the split breakdown line when a community fund amount was deducted", () => {
     const msg = buildReceiptMessage({ ...data, communityFundAmount: 10, contributionAmount: 490 });
-    expect(msg).toContain("K10 to Community Fund");
+    expect(msg).toContain("K10 to Group Savings Fund");
     expect(msg).toContain("K490 to contribution");
   });
 
   it("omits the split breakdown line when nothing was deducted", () => {
     const msg = buildReceiptMessage({ ...data, communityFundAmount: 0, contributionAmount: 500 });
-    expect(msg).not.toContain("Community Fund");
+    expect(msg).not.toContain("Group Savings Fund");
   });
 });
 

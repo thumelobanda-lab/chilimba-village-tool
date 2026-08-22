@@ -46,7 +46,7 @@ export default function TermsContent() {
         Chilimba Circle is a record-keeping and coordination tool for a Chilimba — a
         rotating savings circle, sometimes called a stokvel or merry-go-round. It helps a
         group track who has paid, whose turn it is to receive the next payout, and how much
-        a shared community fund holds.
+        a shared group savings fund holds.
       </p>
 
       <h3 className="panel-subtitle">2. This App Does Not Hold or Move Money</h3>
@@ -55,10 +55,10 @@ export default function TermsContent() {
         <strong>the app never holds, transfers, or guarantees any money.</strong> Every
         contribution and every payout happens directly between members — by cash, mobile
         money, bank transfer, or however your group has agreed — entirely outside this app.
-        Chilimba Circle only records what members and admins report. It does not verify
+        Chilimba Circle only records what members and group leaders report. It does not verify
         that a reported payment actually took place, does not act as an escrow or payment
         processor, and is not a bank, lender, or financial institution. If a member reports
-        a payment that never happened, or an admin confirms one in error or in bad faith,
+        a payment that never happened, or a group leader confirms one in error or in bad faith,
         the app has no way to detect or reverse that on its own — the record only reflects
         what was entered, and disputes are resolved between members, with the process in
         Section 6 below.
@@ -73,7 +73,7 @@ export default function TermsContent() {
         phone number is never shown to other members; it exists so you can sign in with it
         and so a future PIN-reset option is possible. Your name is visible to other members
         of your own group (the payout schedule is inherently shared), but your individual
-        payment history and balance are visible only to you and your group's admins — never
+        payment history and balance are visible only to you and your group's leaders — never
         to another regular member, and never to a different group entirely. If your group
         enables a mobile money subscription payment, the full number is only used for that
         one request; only the last 3 digits are kept afterward. Full technical detail on
@@ -91,17 +91,17 @@ export default function TermsContent() {
       <ul className="small">
         <li>Give accurate information when you sign up, and keep your PIN private — anyone who has it can act as you.</li>
         <li>Report payments honestly. Logging a payment that didn't happen, or an amount that's wrong, misleads the rest of your group about real money that's already changed hands outside the app.</li>
-        <li>Understand that a member-submitted payment sits as pending until your group's admin confirms it — it isn't verified just because it's been entered.</li>
+        <li>Understand that a member-submitted payment sits as pending until your group's leader confirms it — it isn't verified just because it's been entered.</li>
         <li>Treat other members' information (names, contribution status) as something to keep within your group, not to share elsewhere.</li>
       </ul>
 
-      <h3 className="panel-subtitle">5. Admin Responsibilities</h3>
+      <h3 className="panel-subtitle">5. Group Leader Responsibilities</h3>
       <p className="small">
-        A group's admin(s) confirm or reject payments, manage the payout schedule, and can
+        A group's leader(s) confirm or reject payments, manage the payout schedule, and can
         promote, demote, or remove members of their own group. This is a position of trust:
         confirming a payment is a signal to the rest of the group that the money has
         genuinely been checked and arrived, and getting the schedule and due amounts right
-        is what everyone else relies on to know what they owe. An admin should only confirm
+        is what everyone else relies on to know what they owe. A group leader should only confirm
         a payment they've actually verified (e.g. checked a mobile money statement or
         deposit slip), should keep the group's schedule accurate, and should not remove or
         demote another member to settle a personal disagreement rather than a genuine
@@ -110,12 +110,12 @@ export default function TermsContent() {
 
       <h3 className="panel-subtitle">6. Disputes &amp; Complaints</h3>
       <p className="small">
-        If you believe a payment record is wrong, think an admin has acted unfairly, or want
+        If you believe a payment record is wrong, think a group leader has acted unfairly, or want
         to raise a concern about another member,{" "}
         {contactLine ? (
           <>contact us at <strong>{contactLine}</strong>.</>
         ) : (
-          <>contact your group's admin first, or reach out to Chilimba Circle directly (contact details are configured by the platform owner).</>
+          <>contact your group's leader first, or reach out to Chilimba Circle directly (contact details are configured by the platform owner).</>
         )}{" "}
         We may mark a complaint as under review and follow up with you through an in-app
         message — you'll see it as a notice the next time you open the app. Chilimba Circle

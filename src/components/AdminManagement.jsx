@@ -45,7 +45,7 @@ export default function AdminManagement() {
   };
 
   const handleDemote = async (name) => {
-    if (!window.confirm(`Remove admin access from ${name}?`)) return;
+    if (!window.confirm(`Remove group leader access from ${name}?`)) return;
     setActionError("");
     setBusy(true);
     try {
@@ -89,14 +89,14 @@ export default function AdminManagement() {
 
   return (
     <div style={{ marginTop: 20 }}>
-      <h3 className="panel-subtitle">Members & Admins</h3>
+      <h3 className="panel-subtitle">Members & Group Leaders</h3>
       <p className="muted tiny" style={{ marginBottom: 10 }}>
         Every active member, newest-joined first, tagged "new" for their first 48 hours so
         a fresh sign-up doesn't get missed — this is the only place that shows one. Any
-        admin can promote another member, demote another admin (the group is never
+        group leader can promote another member, demote another group leader (the group is never
         left without at least one), remove a member entirely (keeps their payment history,
         just revokes access), or reset a member's PIN if they've forgotten it — PINs are
-        one-way hashed, so this is the only recovery path. To remove an admin, demote them
+        one-way hashed, so this is the only recovery path. To remove a group leader, demote them
         first.
       </p>
 
@@ -162,7 +162,7 @@ export default function AdminManagement() {
             <label className="field">
               Promote a member
               {promotableMembers.length === 0 ? (
-                <span className="muted small">Everyone here is already an admin.</span>
+                <span className="muted small">Everyone here is already a group leader.</span>
               ) : (
                 <select
                   value={promoteName}

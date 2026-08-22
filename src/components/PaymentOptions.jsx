@@ -47,7 +47,7 @@ export default function PaymentOptions({ session, config, onSaved }) {
         <h2 className="panel-title">Payment Options</h2>
         <p className="muted small" style={{ marginBottom: 14 }}>
           Where to actually send your contribution — mobile money and/or bank details, set
-          up by your group's admin.
+          up by your group's leader.
         </p>
         {config.paymentMethods && config.paymentMethods.length > 0 ? (
           <div className="payment-methods-list">
@@ -62,7 +62,7 @@ export default function PaymentOptions({ session, config, onSaved }) {
           </div>
         ) : (
           <p className="muted small">
-            No payment details set up yet — ask your admin where to send your contribution.
+            No payment details set up yet — ask your group leader where to send your contribution.
           </p>
         )}
       </div>
@@ -73,7 +73,7 @@ export default function PaymentOptions({ session, config, onSaved }) {
     <div className="panel">
       <div className="setup-header">
         <h2 className="panel-title">Payment Options</h2>
-        <span className="badge badge-admin">Admin</span>
+        <span className="badge badge-admin">Group Leader</span>
       </div>
       <p className="muted small" style={{ marginBottom: 14 }}>
         Mobile money and/or bank details for where members should send their contribution

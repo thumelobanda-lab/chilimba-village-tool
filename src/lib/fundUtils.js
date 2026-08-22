@@ -38,7 +38,7 @@ export function fundsStillToCredit(funds, alreadyCreditedFundIds) {
 // group's communityFundDeduction setting rather than one of the group's
 // own named funds list. Mirrors worker/src/communityFundSplit.js.
 export const COMMUNITY_FUND_ID = "community-fund";
-export const COMMUNITY_FUND_NAME = "Community Fund";
+export const COMMUNITY_FUND_NAME = "Group Savings Fund";
 
 /**
  * Splits a confirmed payment between the community fund and the

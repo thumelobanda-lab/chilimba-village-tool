@@ -29,8 +29,8 @@ export default function LedgerTable({
           <tr>
             <th className="al">Payment Date</th>
             <th className="al">Group Paying Out</th>
-            <th className="ar">Amount Due (K)</th>
-            <th className="ar">Amount Paid (K)</th>
+            <th className="ar">Due (K)</th>
+            <th className="ar">Paid (K)</th>
             <th className="ar">Balance (K)</th>
             <th className="ar">Total Paid So Far (K)</th>
             <th className="ar">Suggested (K)</th>
@@ -243,7 +243,7 @@ function RowWithHistory({ row, isRecipient, onAddPayment, onVoidPayment, onEditP
                     </div>
                     {!e.voidedAt && e.confirmedAt && e.communityFundAmount > 0 && (
                       <div className="muted tiny split-breakdown">
-                        {money(e.amount)} paid → {money(e.communityFundAmount)} to Community Fund,{" "}
+                        {money(e.amount)} paid → {money(e.communityFundAmount)} to Group Savings Fund,{" "}
                         {money(e.amount - e.communityFundAmount)} to contribution
                       </div>
                     )}
@@ -282,7 +282,7 @@ function RowWithHistory({ row, isRecipient, onAddPayment, onVoidPayment, onEditP
                 </button>
               </div>
               <p className="muted tiny" style={{ marginTop: 4 }}>
-                A logged payment is pending until an admin confirms it — you'll see the dot
+                A logged payment is pending until a group leader confirms it — you'll see the dot
                 turn green once it's checked.
               </p>
             </div>
@@ -307,10 +307,10 @@ function bulbClass(entry) {
 }
 
 function bulbTitle(entry) {
-  if (entry.confirmedAt) return `Confirmed by an admin (${entry.confirmedBy})`;
+  if (entry.confirmedAt) return `Confirmed by a group leader (${entry.confirmedBy})`;
   if (entry.rejectedAt) return `Not confirmed by ${entry.rejectedBy}${entry.rejectionReason ? `: ${entry.rejectionReason}` : ""}`;
-  if (entry.status === "pending") return "Pending — awaiting admin review";
-  return "Not yet confirmed by an admin";
+  if (entry.status === "pending") return "Pending — awaiting group leader review";
+  return "Not yet confirmed by a group leader";
 }
 
 export { money };

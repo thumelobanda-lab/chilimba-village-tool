@@ -54,7 +54,7 @@ export default function registerProfileRoutes(router) {
       if (trimmed.toLowerCase() !== user.name) {
         throw new HttpError(
           400,
-          "You can only change spelling or capitalization here — ask an admin to change your name to something else."
+          "You can only change spelling or capitalization here — ask a group leader to change your name to something else."
         );
       }
       nextDisplayName = trimmed;

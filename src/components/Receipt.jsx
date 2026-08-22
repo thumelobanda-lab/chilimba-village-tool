@@ -24,12 +24,12 @@ function drawReceipt(canvas, data) {
     ["Amount Paid", money(data.amount)],
     ...(data.communityFundAmount > 0
       ? [
-          ["→ Community Fund", money(data.communityFundAmount)],
+          ["→ Group Savings Fund", money(data.communityFundAmount)],
           ["→ Contribution", money(data.contributionAmount)],
         ]
       : []),
     ["For Payout Date", data.dueGroup ? `${data.dueDate} (${data.dueGroup})` : data.dueDate || "—"],
-    ...(data.cycleName ? [["Cycle", data.cycleName]] : []),
+    ...(data.cycleName ? [["Round", data.cycleName]] : []),
     ["Date Paid", data.datePaid ? new Date(data.datePaid).toLocaleDateString() : "—"],
     ["Confirmed By", data.confirmedBy || "—"],
   ];
@@ -95,7 +95,7 @@ function drawReceipt(canvas, data) {
 
   ctx.fillStyle = "#3A8B5C";
   ctx.font = "600 22px system-ui, sans-serif";
-  ctx.fillText("✓ Confirmed by an admin", w / 2, h - 55);
+  ctx.fillText("✓ Confirmed by a group leader", w / 2, h - 55);
 }
 
 /**
