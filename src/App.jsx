@@ -142,13 +142,13 @@ export default function App() {
     <div className="app-shell">
       <header className="app-header">
         <div>
-          <div className="brand">Chilimba Circle</div>
+          <div className="brand">OpenBook</div>
           <div className="muted small">
             {session
               ? config.cycleName
                 ? `${session.groupName} · ${config.cycleName}`
                 : session.groupName
-              : "Sign in to a group"}
+              : "Your group's honest record."}
           </div>
         </div>
         {session && (

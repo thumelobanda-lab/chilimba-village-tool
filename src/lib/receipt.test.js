@@ -2,8 +2,8 @@ import { describe, it, expect } from "vitest";
 import { buildReferenceNumber, buildReceiptData, buildReceiptMessage, buildReceiptFilename } from "./receipt.js";
 
 describe("buildReferenceNumber", () => {
-  it("strips non-alphanumerics and uppercases, prefixed with CHM-", () => {
-    expect(buildReferenceNumber("4f2a9c01-abcd-1234-5678-9abcdef01234")).toBe("CHM-4F2A9C01");
+  it("strips non-alphanumerics and uppercases, prefixed with OBK-", () => {
+    expect(buildReferenceNumber("4f2a9c01-abcd-1234-5678-9abcdef01234")).toBe("OBK-4F2A9C01");
   });
 
   it("returns an empty string for a missing id rather than throwing", () => {
@@ -60,7 +60,7 @@ describe("buildReceiptData", () => {
       dueGroup: "Group A",
       cycleName: "Cycle 3",
       groupName: "Hillcrest Chilimba",
-      referenceNumber: "CHM-PAY12345",
+      referenceNumber: "OBK-PAY12345",
       confirmedBy: "Harriet",
       confirmedAt: "2026-07-05T09:00:00.000Z",
     });
@@ -94,7 +94,7 @@ describe("buildReceiptMessage", () => {
     dueGroup: "Group A",
     cycleName: "Cycle 3",
     groupName: "Hillcrest Chilimba",
-    referenceNumber: "CHM-PAY12345",
+    referenceNumber: "OBK-PAY12345",
     confirmedBy: "Harriet",
   };
 
@@ -107,7 +107,7 @@ describe("buildReceiptMessage", () => {
     expect(msg).toContain("2026-07-04");
     expect(msg).toContain("Group A");
     expect(msg).toContain("Harriet");
-    expect(msg).toContain("CHM-PAY12345");
+    expect(msg).toContain("OBK-PAY12345");
   });
 
   it("omits the cycle line entirely when there's no cycle name", () => {
@@ -129,10 +129,10 @@ describe("buildReceiptMessage", () => {
 
 describe("buildReceiptFilename", () => {
   it("lowercases the reference number into the filename", () => {
-    expect(buildReceiptFilename({ referenceNumber: "CHM-PAY12345" })).toBe("chilimba-receipt-chm-pay12345.png");
+    expect(buildReceiptFilename({ referenceNumber: "OBK-PAY12345" })).toBe("openbook-receipt-obk-pay12345.png");
   });
 
   it("falls back to a generic name when there's no reference number", () => {
-    expect(buildReceiptFilename({})).toBe("chilimba-receipt-receipt.png");
+    expect(buildReceiptFilename({})).toBe("openbook-receipt-receipt.png");
   });
 });

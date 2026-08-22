@@ -90,7 +90,7 @@ export default function OwnerDashboard({ session, onSignedOut }) {
     <div className="app-shell">
       <header className="app-header">
         <div>
-          <div className="brand">Chilimba Circle — Platform Owner</div>
+          <div className="brand">OpenBook — Platform Owner</div>
           <div className="muted small">{session.email}</div>
         </div>
         <div className="header-right">

@@ -1,4 +1,4 @@
-# Privacy & Security — Chilimba Circle
+# Privacy & Security — OpenBook
 
 ## What data this app holds
 

@@ -109,6 +109,12 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 }
 
 .login-panel { max-width: 380px; margin: 40px auto; text-align: left; }
+.login-tagline {
+  margin: -4px 0 16px;
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 0.95rem;
+}
 
 .panel-title { margin: 0 0 12px; font-size: 1.1rem; }
 .panel-subtitle { margin: 0 0 10px; font-size: 0.95rem; color: var(--ink-faint); }

@@ -53,7 +53,7 @@ export function buildWhatsAppDirectUrl(phone, message) {
 
 export function buildInviteCardFilename(groupSlug) {
   const safe = (groupSlug || "group").replace(/[^a-z0-9-]/gi, "-").toLowerCase();
-  return `chilimba-invite-${safe}.png`;
+  return `openbook-invite-${safe}.png`;
 }
 
 /**
@@ -63,12 +63,12 @@ export function buildInviteCardFilename(groupSlug) {
  */
 export function buildCardContent({ groupName, groupSlug, cycleName, appUrl }) {
   return {
-    brand: "Chilimba Circle",
+    brand: "OpenBook",
     groupName: groupName || "Your Chilimba",
     cycleLabel: cycleName ? `${cycleName}` : null,
     codeLabel: "GROUP CODE",
     code: groupSlug || "",
-    tagline: "Everyone sees the same book. No more paper, no more guessing.",
+    tagline: "Your group's honest record.",
     url: buildJoinUrl(appUrl, groupSlug),
   };
 }

@@ -12,9 +12,9 @@ export default defineConfig({
       registerType: "autoUpdate",
       includeAssets: ["favicon.svg"],
       manifest: {
-        name: "Chilimba Circle",
-        short_name: "Chilimba",
-        description: "Shared savings-circle ledger and subscription tracker",
+        name: "OpenBook",
+        short_name: "OpenBook",
+        description: "Your group's honest record — a shared savings-circle ledger and subscription tracker",
         theme_color: "#1F4B3F",
         background_color: "#F3EEDD",
         display: "standalone",

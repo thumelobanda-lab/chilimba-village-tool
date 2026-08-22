@@ -23,12 +23,12 @@
  * to be short enough to write on a receipt and consistent every time.
  *
  * @param {string} paymentId
- * @returns {string} e.g. "CHM-4F2A9C01"
+ * @returns {string} e.g. "OBK-4F2A9C01"
  */
 export function buildReferenceNumber(paymentId) {
   if (!paymentId) return "";
   const clean = String(paymentId).replace(/[^a-z0-9]/gi, "").toUpperCase();
-  return `CHM-${clean.slice(0, 8)}`;
+  return `OBK-${clean.slice(0, 8)}`;
 }
 
 /**
@@ -74,7 +74,7 @@ export function buildReceiptMessage(data) {
   const datePaid = data.datePaid ? new Date(data.datePaid).toLocaleDateString() : "—";
   const payoutLine = data.dueGroup ? `${data.dueDate} (${data.dueGroup})` : data.dueDate || "—";
   return (
-    `Chilimba Circle — Payment Receipt 🧾\n\n` +
+    `OpenBook — Payment Receipt 🧾\n\n` +
     `Group: ${data.groupName}\n` +
     (data.cycleName ? `Round: ${data.cycleName}\n` : "") +
     `Member: ${data.memberName}\n` +
@@ -91,5 +91,5 @@ export function buildReceiptMessage(data) {
 
 export function buildReceiptFilename(data) {
   const safe = (data.referenceNumber || "receipt").toLowerCase();
-  return `chilimba-receipt-${safe}.png`;
+  return `openbook-receipt-${safe}.png`;
 }

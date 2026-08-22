@@ -87,16 +87,16 @@ describe("buildWhatsAppDirectUrl", () => {
 
 describe("buildInviteCardFilename", () => {
   it("builds a filename from the group slug", () => {
-    expect(buildInviteCardFilename("hillcrest")).toBe("chilimba-invite-hillcrest.png");
+    expect(buildInviteCardFilename("hillcrest")).toBe("openbook-invite-hillcrest.png");
   });
 
   it("strips characters that aren't safe in a filename", () => {
-    expect(buildInviteCardFilename("hill crest!/../")).toBe("chilimba-invite-hill-crest-----.png");
+    expect(buildInviteCardFilename("hill crest!/../")).toBe("openbook-invite-hill-crest-----.png");
   });
 
   it("falls back to a generic name when slug is missing", () => {
-    expect(buildInviteCardFilename("")).toBe("chilimba-invite-group.png");
-    expect(buildInviteCardFilename(null)).toBe("chilimba-invite-group.png");
+    expect(buildInviteCardFilename("")).toBe("openbook-invite-group.png");
+    expect(buildInviteCardFilename(null)).toBe("openbook-invite-group.png");
   });
 });
 

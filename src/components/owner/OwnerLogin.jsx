@@ -33,7 +33,7 @@ export default function OwnerLogin({ onSignedIn }) {
     <div className="app-shell">
       <header className="app-header">
         <div>
-          <div className="brand">Chilimba Circle — Platform Owner</div>
+          <div className="brand">OpenBook — Platform Owner</div>
           <div className="muted small">Not a group login — this is a separate, higher-privilege account.</div>
         </div>
       </header>

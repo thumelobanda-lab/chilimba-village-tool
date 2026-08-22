@@ -63,7 +63,7 @@ describe("getMessageCategory", () => {
 
 describe("buildContactLabel", () => {
   it("uses just the email when only email is set", () => {
-    expect(buildContactLabel({ supportEmail: "support@chilimbacircle.app" })).toBe("support@chilimbacircle.app");
+    expect(buildContactLabel({ supportEmail: "support@openbook.app" })).toBe("support@openbook.app");
   });
 
   it("uses just WhatsApp, labeled, when only WhatsApp is set", () => {

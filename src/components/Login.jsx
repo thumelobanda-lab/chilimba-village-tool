@@ -75,6 +75,7 @@ export default function Login({ onLogin, onJoin, sessionEndedNotice }) {
 
   return (
     <div className="panel login-panel">
+      <p className="login-tagline">Your group's honest record.</p>
       {sessionEndedNotice && (
         <div className="error-text" role="alert" style={{ marginBottom: 14 }}>
           Your session ended — this can happen if your access changed (e.g. you were

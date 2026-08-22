@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { getSupportContact } from "../lib/api.js";
 
-export const TERMS_VERSION = "2026-08-21";
+export const TERMS_VERSION = "2026-08-22";
 
 /**
  * The actual Terms & Conditions text — rendered both inside TermsModal.jsx
@@ -41,9 +41,9 @@ export default function TermsContent() {
 
       <p className="muted tiny">Last updated: {TERMS_VERSION}</p>
 
-      <h3 className="panel-subtitle">1. What Chilimba Circle Is</h3>
+      <h3 className="panel-subtitle">1. What OpenBook Is</h3>
       <p className="small">
-        Chilimba Circle is a record-keeping and coordination tool for a Chilimba — a
+        OpenBook is a record-keeping and coordination tool for a Chilimba — a
         rotating savings circle, sometimes called a stokvel or merry-go-round. It helps a
         group track who has paid, whose turn it is to receive the next payout, and how much
         a shared group savings fund holds.
@@ -51,11 +51,11 @@ export default function TermsContent() {
 
       <h3 className="panel-subtitle">2. This App Does Not Hold or Move Money</h3>
       <p className="small">
-        This is the single most important thing to understand about Chilimba Circle:{" "}
+        This is the single most important thing to understand about OpenBook:{" "}
         <strong>the app never holds, transfers, or guarantees any money.</strong> Every
         contribution and every payout happens directly between members — by cash, mobile
         money, bank transfer, or however your group has agreed — entirely outside this app.
-        Chilimba Circle only records what members and group leaders report. It does not verify
+        OpenBook only records what members and group leaders report. It does not verify
         that a reported payment actually took place, does not act as an escrow or payment
         processor, and is not a bank, lender, or financial institution. If a member reports
         a payment that never happened, or a group leader confirms one in error or in bad faith,
@@ -115,10 +115,10 @@ export default function TermsContent() {
         {contactLine ? (
           <>contact us at <strong>{contactLine}</strong>.</>
         ) : (
-          <>contact your group's leader first, or reach out to Chilimba Circle directly (contact details are configured by the platform owner).</>
+          <>contact your group's leader first, or reach out to OpenBook directly (contact details are configured by the platform owner).</>
         )}{" "}
         We may mark a complaint as under review and follow up with you through an in-app
-        message — you'll see it as a notice the next time you open the app. Chilimba Circle
+        message — you'll see it as a notice the next time you open the app. OpenBook
         can look into a complaint and, where appropriate, act on a group's access (Section
         7), but — per Section 2 — cannot recover money that was exchanged outside the app,
         since it was never in the app's possession to begin with.
@@ -126,7 +126,7 @@ export default function TermsContent() {
 
       <h3 className="panel-subtitle">7. Account Suspension &amp; Fraud Policy</h3>
       <p className="small">
-        Chilimba Circle's platform owner may suspend a group's access — meaning every member
+        OpenBook's platform owner may suspend a group's access — meaning every member
         of that group is signed out and can't sign back in — if we detect activity that
         looks fraudulent or abusive, or that goes against these terms. Suspension is not
         permanent by default and no data is deleted when it happens; everything is restored
@@ -140,15 +140,15 @@ export default function TermsContent() {
 
       <h3 className="panel-subtitle">8. Changes to These Terms</h3>
       <p className="small">
-        We may update these terms as the app changes. Continuing to use Chilimba Circle
+        We may update these terms as the app changes. Continuing to use OpenBook
         after an update means you accept the current version, which is always reachable
         from My Account.
       </p>
 
       <h3 className="panel-subtitle">9. A Note on This Document</h3>
       <p className="small">
-        This Terms &amp; Conditions document was drafted to plainly describe how Chilimba
-        Circle actually works, in particular that it is record-keeping only and never holds
+        This Terms &amp; Conditions document was drafted to plainly describe how OpenBook
+        actually works, in particular that it is record-keeping only and never holds
         or moves real money. It has <strong>not</strong> been reviewed by a lawyer, and
         several things a production terms-of-service document normally needs are
         intentionally left open here rather than guessed at: which country's law governs a

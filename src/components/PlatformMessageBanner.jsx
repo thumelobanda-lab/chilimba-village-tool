@@ -38,7 +38,7 @@ export default function PlatformMessageBanner() {
     <div className="platform-message-stack">
       {messages.map((m) => (
         <div className="platform-message-banner" role="status" key={m.recipientId}>
-          <div className="platform-message-badge">✦ Message from Chilimba Circle</div>
+          <div className="platform-message-badge">✦ Message from OpenBook</div>
           <div className="platform-message-body">{m.message}</div>
           <div className="platform-message-footer">
             <span className="muted tiny" style={{ color: "rgba(255,255,255,0.75)" }}>

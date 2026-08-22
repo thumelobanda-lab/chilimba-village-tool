@@ -180,7 +180,7 @@ export default function OwnerMessaging({ groups }) {
       <p className="muted small" style={{ marginBottom: 14 }}>
         A one-way message to a specific person, a group's leaders, or a group's members —
         not a chat, there's no reply channel. It shows up in-app for whoever it's addressed
-        to the next time they open Chilimba Circle.
+        to the next time they open OpenBook.
       </p>
 
       <div className="setup-section-body" style={{ border: "1px solid var(--line)", borderRadius: 8, padding: "12px 14px", marginBottom: 18 }}>

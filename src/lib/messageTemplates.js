@@ -44,7 +44,7 @@ export const MESSAGE_CATEGORIES = [
     icon: "⚠️",
     tagColor: "warning",
     template:
-      "We wanted to flag some activity on [Group Name] that appears to go against Chilimba Circle's platform terms: [Reason].\n\n" +
+      "We wanted to flag some activity on [Group Name] that appears to go against OpenBook's platform terms: [Reason].\n\n" +
       "We're reaching out directly before taking any further action, in case there's a simple explanation. " +
       "Please review our terms and address this by [Date].\n\n" +
       "If nothing changes, we may need to limit or suspend this group's access. To discuss this or share more " +
@@ -58,8 +58,8 @@ export const MESSAGE_CATEGORIES = [
     template:
       "This is a reminder that [Group Name]'s subscription is due for renewal as of [Date].\n\n" +
       "Amount due: [Amount]\n\n" +
-      "Renewing keeps receipts, automated reminders, and community fund splitting active for every member of your group. " +
-      "You can submit payment anytime from the Subscription tab.\n\n" +
+      "Renewing keeps receipts, automated reminders, and group savings fund splitting active for every member of your group. " +
+      "You can submit payment anytime from the Group Membership Plan tab.\n\n" +
       "Questions about your payment or subscription? Reach us at [Contact].",
   },
   {
@@ -81,7 +81,7 @@ export const MESSAGE_CATEGORIES = [
     tagColor: "general",
     template:
       "Hi [Group Name] — we wanted to let you know: [Announcement details].\n\n" +
-      "If you have any questions, reach out to us at [Contact]. Thank you for being part of Chilimba Circle!",
+      "If you have any questions, reach out to us at [Contact]. Thank you for being part of OpenBook!",
   },
   {
     id: "payment_dispute",
