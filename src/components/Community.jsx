@@ -24,9 +24,9 @@ export default function Community() {
     <div className="panel">
       <h2 className="panel-title">Community</h2>
       <p className="muted small" style={{ marginBottom: 16 }}>
-        Fund balances, recent settlements, and any loans against a loanable fund — visible
-        to everyone in the group, the way a shared ledger works. This shows names, amounts,
-        and dates only — never anyone's full payment history or balance.
+        Fund balances, recent settlements, and any loans against a fund that's open for
+        borrowing — visible to everyone in the group, the way a shared payment record works.
+        This shows names, amounts, and dates only — never anyone's full payment history or balance.
       </p>
 
       {error && <div className="error-text" role="alert">{error}</div>}
@@ -66,7 +66,7 @@ export default function Community() {
                       borrowed {money(l.amount)} from {l.fundName}
                     </span>
                     {l.status === "outstanding" ? (
-                      <span className="status-outstanding">Outstanding</span>
+                      <span className="status-outstanding">Still Owed</span>
                     ) : (
                       <span className="status-paid">Repaid</span>
                     )}

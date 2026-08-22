@@ -89,7 +89,7 @@ export default function AdminManagement() {
 
   return (
     <div style={{ marginTop: 20 }}>
-      <h3 className="panel-subtitle">Roster & Admins</h3>
+      <h3 className="panel-subtitle">Members & Admins</h3>
       <p className="muted tiny" style={{ marginBottom: 10 }}>
         Every active member, newest-joined first, tagged "new" for their first 48 hours so
         a fresh sign-up doesn't get missed — this is the only place that shows one. Any

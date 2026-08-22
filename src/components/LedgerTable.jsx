@@ -32,7 +32,7 @@ export default function LedgerTable({
             <th className="ar">Amount Due (K)</th>
             <th className="ar">Amount Paid (K)</th>
             <th className="ar">Balance (K)</th>
-            <th className="ar">Cumulative Paid (K)</th>
+            <th className="ar">Total Paid So Far (K)</th>
             <th className="ar">Suggested (K)</th>
           </tr>
         </thead>

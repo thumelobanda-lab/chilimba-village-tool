@@ -47,7 +47,7 @@ export default function Onboarding({ groupName, groupDefaultRate, onComplete, on
       </button>
 
       <p className="muted tiny" style={{ marginTop: 12 }}>
-        You can still change individual dates any time from My Ledger.
+        You can still change individual dates any time from My Payment History.
       </p>
     </div>
   );

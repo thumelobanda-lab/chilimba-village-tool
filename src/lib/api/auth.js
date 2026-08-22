@@ -114,11 +114,15 @@ export async function login(groupSlug, identifier, pin) {
 // Creates a brand-new member account — full name and phone number are
 // both required (see joinGroup() in worker/src/auth.js for why phone is
 // collected here and nowhere else). Both are unique WITHIN the group.
-export async function join(groupSlug, name, phone, pin) {
+// termsAccepted mirrors the server-side check in joinGroup() — checked
+// here too so mock mode enforces the same rule real users hit, not just
+// the Login.jsx checkbox disabling the submit button.
+export async function join(groupSlug, name, phone, pin, termsAccepted) {
   if (!name || !name.trim()) throw new Error("Full name is required.");
   const phoneKey = normalizePhone(phone);
   if (phoneKey.replace(/^\+/, "").length < 7) throw new Error("Enter a valid phone number.");
   if (!pin || pin.length < 4) throw new Error("Choose a PIN of at least 4 digits.");
+  if (!termsAccepted) throw new Error("You must accept the Terms & Conditions to continue.");
 
   if (MOCK_MODE) {
     const slug = normalizeSlug(groupSlug);
@@ -157,7 +161,10 @@ export async function join(groupSlug, name, phone, pin) {
     // write. Kept here so a solo dev testing locally doesn't have to
     // reproduce the create-group flow just to reach the admin-only tabs.
     const role = isAdminName(name) ? "admin" : "member";
-    lsSet(key, { salt, hash, role, phone: phoneKey, displayName: name.trim(), active: true, joinedAt: new Date().toISOString() });
+    lsSet(key, {
+      salt, hash, role, phone: phoneKey, displayName: name.trim(), active: true,
+      joinedAt: new Date().toISOString(), termsAcceptedAt: new Date().toISOString(),
+    });
 
     const session = {
       name: name.trim(),
@@ -170,7 +177,7 @@ export async function join(groupSlug, name, phone, pin) {
     return { ...session, isNew: true };
   }
 
-  return realFetch("/api/join", { method: "POST", body: JSON.stringify({ groupSlug, name, phone, pin }) }).then(
+  return realFetch("/api/join", { method: "POST", body: JSON.stringify({ groupSlug, name, phone, pin, termsAccepted }) }).then(
     (session) => {
       const { isNew, ...toPersist } = session;
       lsSet("chilimba:session", toPersist);
@@ -185,11 +192,12 @@ export async function join(groupSlug, name, phone, pin) {
 // ONLY self-service way to become an admin; every other promotion still
 // requires a direct database write (see schema.sql), which stays true
 // for groups that already exist.
-export async function createGroup({ slug, groupName, adminName, pin }) {
+export async function createGroup({ slug, groupName, adminName, pin, termsAccepted }) {
   if (!slug || !slug.trim()) throw new Error("Group code is required.");
   if (!groupName || !groupName.trim()) throw new Error("Group name is required.");
   if (!adminName || !adminName.trim()) throw new Error("Your name is required.");
   if (!pin || pin.length < 4) throw new Error("Choose a PIN of at least 4 digits.");
+  if (!termsAccepted) throw new Error("You must accept the Terms & Conditions to continue.");
 
   if (MOCK_MODE) {
     const normalizedSlug = normalizeSlug(slug);
@@ -205,7 +213,10 @@ export async function createGroup({ slug, groupName, adminName, pin }) {
 
     const salt = randomSalt();
     const hash = await hashPin(pin, salt);
-    lsSet(accountKey(normalizedSlug, adminName), { salt, hash, role: "admin", active: true, joinedAt: new Date().toISOString() });
+    lsSet(accountKey(normalizedSlug, adminName), {
+      salt, hash, role: "admin", active: true,
+      joinedAt: new Date().toISOString(), termsAcceptedAt: new Date().toISOString(),
+    });
 
     const session = {
       name: adminName.trim(),
@@ -218,7 +229,7 @@ export async function createGroup({ slug, groupName, adminName, pin }) {
     return { ...session, isNew: true };
   }
 
-  return realFetch("/api/groups", { method: "POST", body: JSON.stringify({ slug, groupName, adminName, pin }) }).then(
+  return realFetch("/api/groups", { method: "POST", body: JSON.stringify({ slug, groupName, adminName, pin, termsAccepted }) }).then(
     (session) => {
       const { isNew, ...toPersist } = session;
       lsSet("chilimba:session", toPersist);

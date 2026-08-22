@@ -565,6 +565,25 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   min-height: 44px;
   touch-action: manipulation;
 }
+
+/* Terms & Conditions modal (TermsModal.jsx) — reuses .calc-modal-backdrop
+   for the overlay but needs its own, wider/taller, scrollable box; a
+   legal document doesn't fit the calculator's narrow 360px card. */
+.terms-modal { max-width: 640px; max-height: 85vh; display: flex; flex-direction: column; }
+.terms-modal-body { overflow-y: auto; padding-right: 4px; }
+.terms-content h3 { margin-top: 18px; }
+.terms-content h3:first-of-type { margin-top: 8px; }
+.terms-content ul { margin: 0 0 12px; padding-left: 20px; }
+.terms-content li { margin-bottom: 6px; }
+.terms-legal-warning {
+  background: #FBEFDD;
+  border: 1px solid var(--pending);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 0.85rem;
+  color: var(--ink);
+  margin-bottom: 10px;
+}
 .calc-display {
   background: var(--ink);
   color: white;

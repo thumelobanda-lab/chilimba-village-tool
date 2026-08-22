@@ -79,7 +79,7 @@ export default function Subscription({ status, onPaid }) {
       <p className="muted small">
         K{price} unlocks premium features for every member of the group for {months} months —
         one-time group payment, members never pay individually. Your group already works on
-        the free plan (up to {status.freeTierMaxMembers} members, core ledger features); this
+        the free plan (up to {status.freeTierMaxMembers} members, core payment-tracking features); this
         adds receipts, automated reminders, and community fund splitting.
       </p>
 

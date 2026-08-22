@@ -27,7 +27,7 @@ import { useOnboarding } from "./hooks/useOnboarding.js";
 import { useSubscription } from "./hooks/useSubscription.js";
 
 const TABS = [
-  { id: "ledger", label: "My Ledger" },
+  { id: "ledger", label: "My Payment History" },
   { id: "payment-options", label: "Payment Options" },
   { id: "summary", label: "Payment Summary" },
   { id: "reminders", label: "Reminders" },
@@ -35,7 +35,7 @@ const TABS = [
   { id: "subscription", label: "Subscription" },
   { id: "account", label: "My Account" },
   { id: "setup", label: "Group Setup", adminOnly: true },
-  { id: "reconciliation", label: "Reconciliation", adminOnly: true },
+  { id: "reconciliation", label: "Payment Review", adminOnly: true },
   { id: "loans", label: "Loans", adminOnly: true },
   { id: "creategroup", label: "Create a New Group", adminOnly: true },
 ];
@@ -123,8 +123,8 @@ export default function App() {
     if (user.isNew) onboarding.trigger();
   };
 
-  const handleJoin = async (groupSlug, name, phone, pin) => {
-    const user = await join(groupSlug, name, phone, pin);
+  const handleJoin = async (groupSlug, name, phone, pin, termsAccepted) => {
+    const user = await join(groupSlug, name, phone, pin, termsAccepted);
     setSessionEndedNotice(false);
     if (user.isNew) onboarding.trigger();
   };
@@ -227,7 +227,9 @@ export default function App() {
 
             {tab === "ledger" && (
               <div className="panel" role="tabpanel" id="panel-ledger" aria-labelledby="tab-ledger">
-                <h2 className="panel-title">My Ledger</h2>
+                <h2 className="panel-title">
+                  My Payment History <span className="muted tiny">(Ledger)</span>
+                </h2>
                 <PaymentInfo paymentMethods={config.paymentMethods} />
 
                 {config.schedule.length === 0 ? (
@@ -283,7 +285,7 @@ export default function App() {
                       <tr><td>Payout Received</td><td className="ar">{money(ledger.payoutInfo?.amount)}</td></tr>
                       <tr><td>Total Paid to Date</td><td className="ar">{money(totals.paid)}</td></tr>
                       <tr className={totals.net > 0 ? "neg" : "pos"}>
-                        <td>Net Position (Payout − Paid)</td><td className="ar">{money(totals.net)}</td>
+                        <td>Balance After Payout (Payout − Paid)</td><td className="ar">{money(totals.net)}</td>
                       </tr>
                       <tr><td>Remaining Contributions Owed</td><td className="ar">{money(totals.balance)}</td></tr>
                     </tbody>
@@ -310,13 +312,13 @@ export default function App() {
                   (that's the 🧮 icon in the header).
                 </p>
                 <div className="calc-grid">
-                  <Card label="Required to Date" value={money(totals.due)} />
+                  <Card label="Amount Due So Far" value={money(totals.due)} />
                   <Card label="Amount You've Put In" value={money(totals.paid)} />
-                  <Card label="Outstanding Balance" value={money(totals.balance)} warn={totals.balance > 0} />
+                  <Card label="What You Still Owe" value={money(totals.balance)} warn={totals.balance > 0} />
                   <Card label="Payout Received" value={money(ledger.payoutInfo?.amount)} highlight />
-                  <Card label="Net Position" value={money(totals.net)} warn={totals.net > 0} />
+                  <Card label="Balance After Payout" value={money(totals.net)} warn={totals.net > 0} />
                   <Card
-                    label="Suggested Rate / Remaining Date"
+                    label="Suggested Amount per Remaining Date"
                     value={totals.remainingCount > 0 ? money(totals.suggestedRate) : "—"}
                   />
                 </div>

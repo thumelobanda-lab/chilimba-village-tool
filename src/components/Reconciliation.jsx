@@ -77,7 +77,7 @@ export default function Reconciliation({ config, premiumActive }) {
     if (!data) return;
     const lines = [["Name", "Due (K)", "Paid (K)", "Balance (K)", "Status"]];
     data.members.forEach((m) => {
-      lines.push([m.name, m.due, m.paid, m.balance, m.isRecipient ? "Recipient" : m.balance > 0 ? "Outstanding" : "Paid"]);
+      lines.push([m.name, m.due, m.paid, m.balance, m.isRecipient ? "Recipient" : m.balance > 0 ? "Still Owed" : "Paid"]);
     });
     const csv = lines.map((row) => row.map(csvEscape).join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
@@ -105,7 +105,9 @@ export default function Reconciliation({ config, premiumActive }) {
   return (
     <div className="panel">
       <div className="setup-header">
-        <h2 className="panel-title">Reconciliation</h2>
+        <h2 className="panel-title">
+          Payment Review <span className="muted tiny">(Reconciliation)</span>
+        </h2>
         <span className="badge badge-admin">Admin only</span>
       </div>
 
@@ -163,9 +165,9 @@ export default function Reconciliation({ config, premiumActive }) {
         <>
           <div className="calc-grid" style={{ marginBottom: 18 }}>
             <SummaryCard label="Total Expected" value={money(totals.due)} />
-            <SummaryCard label="Total Collected" value={money(totals.paid)} />
+            <SummaryCard label="Total Received So Far" value={money(totals.paid)} />
             <SummaryCard
-              label="Still Outstanding"
+              label="Still Owed"
               value={money(totals.due - totals.paid)}
               warn={totals.due - totals.paid > 0}
             />
@@ -208,7 +210,7 @@ export default function Reconciliation({ config, premiumActive }) {
                         {m.isRecipient ? (
                           <span className="tag">recipient</span>
                         ) : m.balance > 0 ? (
-                          <span className="status-outstanding">Outstanding</span>
+                          <span className="status-outstanding">Still Owed</span>
                         ) : (
                           <span className="status-paid">Paid</span>
                         )}

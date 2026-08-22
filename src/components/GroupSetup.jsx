@@ -289,7 +289,7 @@ export default function GroupSetup({ config, onSaved, session, premiumActive }) 
               <tr>
                 <th className="al">Fund name</th>
                 <th className="ar">Amount per date (K)</th>
-                <th className="al">Loanable</th>
+                <th className="al">Members Can Borrow?</th>
                 <th></th>
               </tr>
             </thead>
@@ -298,7 +298,7 @@ export default function GroupSetup({ config, onSaved, session, premiumActive }) 
                 <tr key={f.id}>
                   <td data-label="Fund name"><input className="cell-input-text wide" value={f.name} onChange={(e) => editFund(f.id, "name", e.target.value)} placeholder="e.g. Future Sharing Fund" /></td>
                   <td className="ar" data-label="Amount (K)"><input type="number" className="cell-input" value={f.amount} onChange={(e) => editFund(f.id, "amount", e.target.value)} /></td>
-                  <td data-label="Loanable">
+                  <td data-label="Members Can Borrow?">
                     <input
                       type="checkbox"
                       checked={!!f.loanable}
@@ -341,7 +341,7 @@ export default function GroupSetup({ config, onSaved, session, premiumActive }) 
         <InviteCard groupName={config.groupName} groupSlug={session?.groupSlug} cycleName={config.cycleName} />
       </CollapsibleSection>
 
-      <CollapsibleSection icon="👥" title="Roster & Admins" summary="Members, roles, next due dates">
+      <CollapsibleSection icon="👥" title="Members & Admins" summary="Members, roles, next due dates">
         <AdminManagement />
       </CollapsibleSection>
 
@@ -353,7 +353,7 @@ export default function GroupSetup({ config, onSaved, session, premiumActive }) 
       </div>
 
       <p className="muted tiny" style={{ marginTop: 12 }}>
-        Changes apply for every member using this ledger.
+        Changes apply for every member's payment history.
       </p>
     </div>
   );

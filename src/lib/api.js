@@ -21,3 +21,4 @@ export * from "./api/subscription.js";
 export * from "./api/notices.js";
 export * from "./api/dashboard.js";
 export * from "./api/messages.js";
+export * from "./api/publicSettings.js";

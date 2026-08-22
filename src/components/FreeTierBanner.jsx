@@ -18,7 +18,7 @@ export default function FreeTierBanner({ status, isAdmin, onUpgrade }) {
         <div>
           <strong>Free plan</strong>
           <span className="muted small" style={{ marginLeft: 8 }}>
-            core ledger features, {status.memberCount}/{status.freeTierMaxMembers} members — no
+            core payment-tracking features, {status.memberCount}/{status.freeTierMaxMembers} members — no
             receipts, automated reminders, or community fund splitting
           </span>
         </div>

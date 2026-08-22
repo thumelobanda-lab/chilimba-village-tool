@@ -184,11 +184,16 @@ export async function login(env, groupSlug, identifier, pin) {
 // all — same reasoning as createGroup() below (a failure between two
 // separate writes here previously risked an orphaned account with no
 // session, on a much smaller scale than that bug, but the same fix).
-export async function joinGroup(env, groupSlug, name, phone, pin) {
+export async function joinGroup(env, groupSlug, name, phone, pin, termsAccepted) {
   if (!name || !name.trim()) throw new HttpError(400, "Full name is required.");
   const phoneKey = normalizePhone(phone);
   if (phoneKey.replace(/^\+/, "").length < 7) throw new HttpError(400, "Enter a valid phone number.");
   if (!pin || pin.length < 4) throw new HttpError(400, "Choose a PIN of at least 4 digits.");
+  // Re-checked here, not just gated client-side (Login.jsx disables the
+  // submit button until the checkbox is ticked) — the same "never trust
+  // the client alone for something that matters" rule every other
+  // validation in this file already follows.
+  if (!termsAccepted) throw new HttpError(400, "You must accept the Terms & Conditions to continue.");
 
   const group = await resolveGroupBySlug(env, groupSlug);
 
@@ -220,7 +225,8 @@ export async function joinGroup(env, groupSlug, name, phone, pin) {
   try {
     await env.DB.batch([
       env.DB.prepare(
-        `INSERT INTO users (id, group_id, name, display_name, phone, pin_salt, pin_hash) VALUES (?, ?, ?, ?, ?, ?, ?)`
+        `INSERT INTO users (id, group_id, name, display_name, phone, pin_salt, pin_hash, terms_accepted_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))`
       ).bind(id, group.id, key, name.trim(), phoneKey, salt, hash),
       env.DB.prepare(`INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)`)
         .bind(token, id, expiresAt),
@@ -251,11 +257,15 @@ export async function joinGroup(env, groupSlug, name, phone, pin) {
  * existing admin can promote a member — see /api/admin/promote in
  * routes/admin.js), never requiring database access anymore.
  */
-export async function createGroup(env, { slug, groupName, adminName, pin, phone, createdIp }) {
+export async function createGroup(env, { slug, groupName, adminName, pin, phone, createdIp, termsAccepted }) {
   if (!slug || !slug.trim()) throw new HttpError(400, "Group code is required.");
   if (!groupName || !groupName.trim()) throw new HttpError(400, "Group name is required.");
   if (!adminName || !adminName.trim()) throw new HttpError(400, "Your name is required.");
   if (!pin || pin.length < 4) throw new HttpError(400, "Choose a PIN of at least 4 digits.");
+  // Same re-check as joinGroup() above — creating a group also creates a
+  // brand-new admin account, so it's a "new member/admin registering"
+  // moment too, not just an existing admin's routine action.
+  if (!termsAccepted) throw new HttpError(400, "You must accept the Terms & Conditions to continue.");
 
   const normalizedSlug = slug.trim().toLowerCase().replace(/\s+/g, "-");
   const existing = await env.DB.prepare(`SELECT id FROM groups WHERE slug = ?`).bind(normalizedSlug).first();
@@ -296,7 +306,8 @@ export async function createGroup(env, { slug, groupName, adminName, pin, phone,
          VALUES (?, ?, ?, 'Cycle 1', 1, '[]', '[]', ?, ?)`
       ).bind(groupId, normalizedSlug, groupName.trim(), createdIp || null, normalizedPhone),
       env.DB.prepare(
-        `INSERT INTO users (id, group_id, name, display_name, phone, pin_salt, pin_hash, role) VALUES (?, ?, ?, ?, ?, ?, ?, 'admin')`
+        `INSERT INTO users (id, group_id, name, display_name, phone, pin_salt, pin_hash, role, terms_accepted_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 'admin', datetime('now'))`
       ).bind(userId, groupId, key, adminName.trim(), normalizedPhone, salt, hash),
       env.DB.prepare(`INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)`)
         .bind(token, userId, expiresAt),

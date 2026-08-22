@@ -17,6 +17,7 @@ import registerNoticeRoutes from "./routes/notices.js";
 import registerDashboardRoutes from "./routes/dashboard.js";
 import registerOwnerRoutes from "./routes/owner.js";
 import registerMessageRoutes from "./routes/messages.js";
+import registerPublicContactRoutes from "./routes/publicContact.js";
 
 const router = createRouter();
 router.use(registerAuthRoutes);
@@ -33,6 +34,7 @@ router.use(registerNoticeRoutes);
 router.use(registerDashboardRoutes);
 router.use(registerOwnerRoutes);
 router.use(registerMessageRoutes);
+router.use(registerPublicContactRoutes);
 
 export default {
   async fetch(request, env, ctx) {

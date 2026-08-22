@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { updateProfile } from "../lib/api.js";
+import TermsModal from "./TermsModal.jsx";
 
 // Self-service editing of the signed-in member's own account. Deliberately
 // scoped to just two things: a cosmetic display-name fix (spelling/
@@ -15,6 +16,7 @@ export default function Profile({ session, onRenamed }) {
   const [error, setError] = useState("");
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
 
   const nameChanged = displayName.trim() !== session.name && displayName.trim().length > 0;
   const wantsPinChange = !!(currentPin || newPin || confirmPin);
@@ -129,6 +131,11 @@ export default function Profile({ session, onRenamed }) {
         </button>
         <span className="muted small">{status}</span>
       </div>
+
+      <div className="privacy-row">
+        <button className="btn-link" onClick={() => setShowTerms(true)}>Terms &amp; Conditions</button>
+      </div>
+      {showTerms && <TermsModal onClose={() => setShowTerms(false)} />}
     </div>
   );
 }

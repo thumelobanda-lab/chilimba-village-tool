@@ -64,7 +64,7 @@ export default function Loans() {
 
       {data && (loanableFunds.length === 0 ? (
         <p className="muted small">
-          No fund is marked as loanable yet. Turn on "Loanable" for a fund in Group Setup first.
+          No fund is open for borrowing yet. Turn on "Members Can Borrow?" for a fund in Group Setup first.
         </p>
       ) : (
         <>
@@ -132,7 +132,7 @@ export default function Loans() {
                 <td className="ar">{l.amount.toLocaleString()}</td>
                 <td className="al">
                   {l.status === "outstanding" ? (
-                    <span className="status-outstanding">Outstanding</span>
+                    <span className="status-outstanding">Still Owed</span>
                   ) : (
                     <span className="status-paid">Repaid</span>
                   )}

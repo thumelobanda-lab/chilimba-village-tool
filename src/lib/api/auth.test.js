@@ -93,13 +93,13 @@ describe("join (real-mode branch)", () => {
       groupSlug: "hillcrest", groupName: "Hillcrest Chilimba",
     });
 
-    await join("hillcrest", "Harriet", "0971234567", "1234");
+    await join("hillcrest", "Harriet", "0971234567", "1234", true);
 
     expect(realFetch).toHaveBeenCalledWith(
       "/api/join",
       expect.objectContaining({
         method: "POST",
-        body: JSON.stringify({ groupSlug: "hillcrest", name: "Harriet", phone: "0971234567", pin: "1234" }),
+        body: JSON.stringify({ groupSlug: "hillcrest", name: "Harriet", phone: "0971234567", pin: "1234", termsAccepted: true }),
       })
     );
   });
@@ -110,7 +110,7 @@ describe("join (real-mode branch)", () => {
       groupSlug: "hillcrest", groupName: "Hillcrest Chilimba",
     });
 
-    await join("hillcrest", "Harriet", "0971234567", "1234");
+    await join("hillcrest", "Harriet", "0971234567", "1234", true);
 
     expect(lsSet).toHaveBeenCalledWith("chilimba:session", {
       name: "Harriet", role: "member", token: "xyz", groupSlug: "hillcrest", groupName: "Hillcrest Chilimba",
@@ -118,10 +118,16 @@ describe("join (real-mode branch)", () => {
   });
 
   it("validates required fields locally before ever calling the Worker", async () => {
-    await expect(join("hillcrest", "", "0971234567", "1234")).rejects.toThrow(/name/i);
-    await expect(join("hillcrest", "Harriet", "", "1234")).rejects.toThrow(/phone/i);
-    await expect(join("hillcrest", "Harriet", "123", "1234")).rejects.toThrow(/phone/i); // too short
-    await expect(join("hillcrest", "Harriet", "0971234567", "12")).rejects.toThrow(/pin/i);
+    await expect(join("hillcrest", "", "0971234567", "1234", true)).rejects.toThrow(/name/i);
+    await expect(join("hillcrest", "Harriet", "", "1234", true)).rejects.toThrow(/phone/i);
+    await expect(join("hillcrest", "Harriet", "123", "1234", true)).rejects.toThrow(/phone/i); // too short
+    await expect(join("hillcrest", "Harriet", "0971234567", "12", true)).rejects.toThrow(/pin/i);
+    expect(realFetch).not.toHaveBeenCalled();
+  });
+
+  it("requires Terms & Conditions acceptance before ever calling the Worker", async () => {
+    await expect(join("hillcrest", "Harriet", "0971234567", "1234", false)).rejects.toThrow(/terms/i);
+    await expect(join("hillcrest", "Harriet", "0971234567", "1234")).rejects.toThrow(/terms/i);
     expect(realFetch).not.toHaveBeenCalled();
   });
 
@@ -131,7 +137,7 @@ describe("join (real-mode branch)", () => {
       groupSlug: "hillcrest", groupName: "Hillcrest Chilimba",
     });
 
-    await join("hillcrest", "Harriet", "+260 97-123-4567", "1234");
+    await join("hillcrest", "Harriet", "+260 97-123-4567", "1234", true);
     expect(realFetch).toHaveBeenCalled();
   });
 });
@@ -147,13 +153,13 @@ describe("createGroup (real-mode branch)", () => {
       groupSlug: "hillcrest", groupName: "Hillcrest Chilimba",
     });
 
-    await createGroup({ slug: "hillcrest", groupName: "Hillcrest Chilimba", adminName: "Harriet", pin: "1234" });
+    await createGroup({ slug: "hillcrest", groupName: "Hillcrest Chilimba", adminName: "Harriet", pin: "1234", termsAccepted: true });
 
     expect(realFetch).toHaveBeenCalledWith(
       "/api/groups",
       expect.objectContaining({
         method: "POST",
-        body: JSON.stringify({ slug: "hillcrest", groupName: "Hillcrest Chilimba", adminName: "Harriet", pin: "1234" }),
+        body: JSON.stringify({ slug: "hillcrest", groupName: "Hillcrest Chilimba", adminName: "Harriet", pin: "1234", termsAccepted: true }),
       })
     );
   });
@@ -164,7 +170,7 @@ describe("createGroup (real-mode branch)", () => {
       groupSlug: "hillcrest", groupName: "Hillcrest Chilimba",
     });
 
-    await createGroup({ slug: "hillcrest", groupName: "Hillcrest Chilimba", adminName: "Harriet", pin: "1234" });
+    await createGroup({ slug: "hillcrest", groupName: "Hillcrest Chilimba", adminName: "Harriet", pin: "1234", termsAccepted: true });
 
     expect(lsSet).toHaveBeenCalledWith("chilimba:session", {
       name: "Harriet", role: "admin", token: "xyz", groupSlug: "hillcrest", groupName: "Hillcrest Chilimba",
@@ -176,6 +182,13 @@ describe("createGroup (real-mode branch)", () => {
     await expect(createGroup({ slug: "x", groupName: "", adminName: "Y", pin: "1234" })).rejects.toThrow(/group name/i);
     await expect(createGroup({ slug: "x", groupName: "X", adminName: "", pin: "1234" })).rejects.toThrow(/your name/i);
     await expect(createGroup({ slug: "x", groupName: "X", adminName: "Y", pin: "12" })).rejects.toThrow(/pin/i);
+    expect(realFetch).not.toHaveBeenCalled();
+  });
+
+  it("requires Terms & Conditions acceptance before ever calling the Worker", async () => {
+    await expect(createGroup({ slug: "x", groupName: "X", adminName: "Y", pin: "1234", termsAccepted: false }))
+      .rejects.toThrow(/terms/i);
+    await expect(createGroup({ slug: "x", groupName: "X", adminName: "Y", pin: "1234" })).rejects.toThrow(/terms/i);
     expect(realFetch).not.toHaveBeenCalled();
   });
 });

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import TermsModal from "./TermsModal.jsx";
 
 const LAST_GROUP_KEY = "chilimba:last-group-slug";
 
@@ -29,6 +30,11 @@ export default function Login({ onLogin, onJoin, sessionEndedNotice }) {
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  // Only sign-up needs this — signing in isn't "a new member/admin
+  // registering", so this never gates the sign-in submit button, and
+  // deliberately starts unchecked (not pre-checked) every time.
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
 
   // Drop ?join=... from the address bar once it's been read, so it
   // doesn't linger there or get shared/bookmarked with someone else's
@@ -44,7 +50,7 @@ export default function Login({ onLogin, onJoin, sessionEndedNotice }) {
 
   const isJoin = mode === "join";
   const canSubmit = isJoin
-    ? !!(groupSlug.trim() && joinName.trim() && phone.trim())
+    ? !!(groupSlug.trim() && joinName.trim() && phone.trim() && termsAccepted)
     : !!(groupSlug.trim() && signinIdentifier.trim());
 
   const submit = async () => {
@@ -53,7 +59,7 @@ export default function Login({ onLogin, onJoin, sessionEndedNotice }) {
     setBusy(true);
     try {
       if (isJoin) {
-        await onJoin(groupSlug.trim(), joinName.trim(), phone.trim(), pin);
+        await onJoin(groupSlug.trim(), joinName.trim(), phone.trim(), pin, termsAccepted);
       } else {
         await onLogin(groupSlug.trim(), signinIdentifier.trim(), pin);
       }
@@ -181,10 +187,27 @@ export default function Login({ onLogin, onJoin, sessionEndedNotice }) {
           disabled={busy}
         />
       </label>
+      {isJoin && (
+        <label className="checkbox-field" style={{ marginBottom: 14 }}>
+          <input
+            type="checkbox"
+            checked={termsAccepted}
+            onChange={(e) => setTermsAccepted(e.target.checked)}
+            disabled={busy}
+          />
+          I agree to the{" "}
+          <button type="button" className="btn-link" onClick={() => setShowTerms(true)}>
+            Terms &amp; Conditions
+          </button>
+        </label>
+      )}
+
       {error && <div className="error-text" role="alert" aria-live="assertive">{error}</div>}
       <button className="btn-primary" disabled={!canSubmit || busy} onClick={submit}>
         {busy ? "Checking…" : isJoin ? "Join group" : "Continue"}
       </button>
+
+      {showTerms && <TermsModal onClose={() => setShowTerms(false)} />}
 
       {isJoin ? (
         <p className="muted tiny">

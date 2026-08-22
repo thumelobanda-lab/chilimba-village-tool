@@ -89,6 +89,9 @@ CREATE TABLE IF NOT EXISTS users (
                                       -- delete, their payment history stays intact
   removed_at TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  terms_accepted_at TEXT,           -- set at sign-up (migration 013) — NULL for every
+                                     -- account created before Terms & Conditions
+                                     -- acceptance was required; not retroactive
   UNIQUE(group_id, name)
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_group_phone ON users(group_id, phone);

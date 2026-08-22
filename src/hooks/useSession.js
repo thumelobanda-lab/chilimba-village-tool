@@ -28,8 +28,8 @@ export function useSession() {
   // Deliberately a separate call from login() above, not a fallback it
   // reaches for on a not-found identifier: see auth.js for why the split
   // matters (phone collection has to be unskippable).
-  const join = async (groupSlug, name, phone, pin) => {
-    const user = await apiJoin(groupSlug, name, phone, pin);
+  const join = async (groupSlug, name, phone, pin, termsAccepted) => {
+    const user = await apiJoin(groupSlug, name, phone, pin, termsAccepted);
     setSession(user);
     return user;
   };

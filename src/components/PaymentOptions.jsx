@@ -5,7 +5,7 @@ import PaymentMethodsEditor from "./PaymentMethodsEditor.jsx";
 /**
  * A dedicated, easy-to-find home for "how do I actually pay" — members
  * need this to make their contribution at all, so it gets its own
- * top-level nav-menu entry rather than being buried inside My Ledger
+ * top-level nav-menu entry rather than being buried inside My Payment History
  * (still shown there too, via PaymentInfo.jsx, for convenience) or
  * behind Group Setup's admin-only collapsible section. Read-only for
  * regular members; admins get the same editor GroupSetup.jsx uses

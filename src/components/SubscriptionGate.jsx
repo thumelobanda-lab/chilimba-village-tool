@@ -28,7 +28,7 @@ export default function SubscriptionGate({ status }) {
       <h2 className="panel-title">Free Plan</h2>
       <p className="muted small">
         This group is on the free plan — up to {status.freeTierMaxMembers} members and every
-        core ledger feature. Receipts, automated reminders, and community fund splitting
+        core payment-tracking feature. Receipts, automated reminders, and community fund splitting
         need premium, which only a group admin can activate.
       </p>
       {status.pending && (

@@ -86,7 +86,7 @@ export default function Dashboard({ session, config, ledger, totals, onOpenRecon
         >
           <strong>{pendingData.pending.length}</strong> pending confirmation
           {pendingData.pending.length === 1 ? "" : "s"} —{" "}
-          {onOpenReconciliation ? "tap to review" : "check Reconciliation"}
+          {onOpenReconciliation ? "tap to review" : "check Payment Review"}
         </div>
       )}
 
@@ -99,7 +99,7 @@ export default function Dashboard({ session, config, ledger, totals, onOpenRecon
           onKeyDown={onOpenLedger ? (e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onOpenLedger()) : undefined}
           role={onOpenLedger ? "button" : undefined}
           tabIndex={onOpenLedger ? 0 : undefined}
-          title={onOpenLedger ? "Go to My Ledger" : undefined}
+          title={onOpenLedger ? "Go to My Payment History" : undefined}
         >
           <div className="vital-card-label">Next Payment Due</div>
           {nextDue ? (
@@ -117,7 +117,7 @@ export default function Dashboard({ session, config, ledger, totals, onOpenRecon
         </div>
 
         <div className="vital-card">
-          <div className="vital-card-label">Outstanding Balance</div>
+          <div className="vital-card-label">What You Still Owe</div>
           <div className={"vital-card-value" + (totals.balance > 0 ? " vital-card-value-warn" : " vital-card-value-ok")}>
             {money(balanceDisplay)}
           </div>

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import TermsModal from "./TermsModal.jsx";
 
 export default function CreateGroup({ onCreate, onBackToLogin }) {
   const [groupName, setGroupName] = useState("");
@@ -7,6 +8,11 @@ export default function CreateGroup({ onCreate, onBackToLogin }) {
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  // Creating a group also creates a brand-new admin account — this is
+  // "a new admin registering", same as Login.jsx's sign-up checkbox, so
+  // it gets the same unchecked-by-default gate.
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
 
   const normalizeSlugInput = (value) => value.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 
@@ -22,9 +28,13 @@ export default function CreateGroup({ onCreate, onBackToLogin }) {
       setError("Fill in the group name, group code, and your name.");
       return;
     }
+    if (!termsAccepted) {
+      setError("You must agree to the Terms & Conditions to create a group.");
+      return;
+    }
     setBusy(true);
     try {
-      await onCreate({ slug: slug.trim(), groupName: groupName.trim(), adminName: adminName.trim(), pin });
+      await onCreate({ slug: slug.trim(), groupName: groupName.trim(), adminName: adminName.trim(), pin, termsAccepted });
     } catch (e) {
       setError(e.message || "Could not create the group.");
     } finally {
@@ -90,9 +100,22 @@ export default function CreateGroup({ onCreate, onBackToLogin }) {
         />
       </label>
 
+      <label className="checkbox-field" style={{ marginBottom: 14 }}>
+        <input
+          type="checkbox"
+          checked={termsAccepted}
+          onChange={(e) => setTermsAccepted(e.target.checked)}
+          disabled={busy}
+        />
+        I agree to the{" "}
+        <button type="button" className="btn-link" onClick={() => setShowTerms(true)}>
+          Terms &amp; Conditions
+        </button>
+      </label>
+
       {error && <div className="error-text" role="alert" aria-live="assertive">{error}</div>}
 
-      <button className="btn-primary" disabled={busy} onClick={submit}>
+      <button className="btn-primary" disabled={busy || !termsAccepted} onClick={submit}>
         {busy ? "Creating…" : "Create group"}
       </button>
       {onBackToLogin && (
@@ -100,6 +123,8 @@ export default function CreateGroup({ onCreate, onBackToLogin }) {
           Already have a group code? Sign in instead
         </button>
       )}
+
+      {showTerms && <TermsModal onClose={() => setShowTerms(false)} />}
     </div>
   );
 }
