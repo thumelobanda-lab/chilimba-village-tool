@@ -192,3 +192,16 @@ export function isCycleNearingCompletion(cycle, remainingThreshold = 1) {
 export function sumFundBalances(funds) {
   return (funds || []).reduce((sum, f) => sum + (Number(f.balance) || 0), 0);
 }
+
+/**
+ * Time-of-day greeting shown in the app header and the dashboard hero —
+ * one copy so the two never drift apart.
+ *
+ * @param {number} [hour] - defaults to the real local hour; parameterized for testability
+ * @returns {string}
+ */
+export function greeting(hour = new Date().getHours()) {
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  return "Good evening";
+}

@@ -43,11 +43,15 @@ export default function NoticeBoard({ isAdmin }) {
   if (error) return null; // notices are non-critical — fail quietly, don't block the dashboard
 
   const notices = data?.notices || [];
+  // A member with nothing to read and no post form to see (that's
+  // admin-only) has nothing this component would actually render — stop
+  // here rather than rendering an empty, still-visibly-bordered box.
+  if (notices.length === 0 && !isAdmin) return null;
   const visible = expanded ? notices : notices.slice(0, 1);
 
   return (
     <div className="notice-board">
-      {notices.length === 0 && !isAdmin ? null : (
+      {notices.length === 0 ? null : (
         <>
           {visible.map((n) => (
             <div className="notice-item" key={n.id}>

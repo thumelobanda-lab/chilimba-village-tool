@@ -715,6 +715,61 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
    outstanding balance, community fund total, cycle progress. Everything
    else lives behind the nav menu, so this is the only content competing
    for space here. */
+
+/* Hero — the first thing a member sees: a personal greeting on a rich,
+   deep-green card (same gradient as the app header) with the round-
+   progress ring as its visual centerpiece, gold-glowing on meaningful
+   moments (see .dashboard-hero-ring below and ProgressRing.jsx's `glow`
+   prop) rather than a small, easy-to-miss corner widget. */
+.dashboard-hero {
+  background: linear-gradient(135deg, var(--accent), #0A3729);
+  border-radius: 12px;
+  padding: 22px 24px;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.dashboard-hero-left { min-width: 0; }
+.dashboard-hero-greeting {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #FAF7F0;
+}
+.dashboard-hero-sub {
+  margin: 6px 0 0;
+  color: rgba(250, 247, 240, 0.75);
+  font-size: 0.9rem;
+  max-width: 36ch;
+}
+.dashboard-hero-cycle {
+  margin-top: 10px;
+  color: var(--accent-2-light);
+  font-weight: 600;
+  font-size: 0.85rem;
+  letter-spacing: 0.02em;
+}
+.dashboard-hero-manage {
+  color: rgba(250, 247, 240, 0.85) !important;
+  margin-top: 10px;
+  display: inline-block;
+}
+.dashboard-hero-manage:hover { color: var(--accent-2-light) !important; }
+.dashboard-hero-ring { flex-shrink: 0; }
+/* A soft, always-on gold halo behind the ring — the "rich centerpiece"
+   feel even outside a glow moment — separate from progress-ring-glow's
+   brighter, pulsing highlight, which stays reserved for something
+   actually worth noticing (see Dashboard.jsx's ringGlow). */
+.dashboard-hero-ring .progress-ring-wrap {
+  background: radial-gradient(circle, rgba(201, 150, 46, 0.32), transparent 70%);
+  border-radius: 50%;
+  padding: 8px;
+}
+.dashboard-hero-ring .progress-ring-percent { color: #FAF7F0; font-size: 1.35rem; }
+.dashboard-hero-ring .progress-ring-sublabel.muted { color: rgba(250, 247, 240, 0.75) !important; }
+
 .dashboard-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -723,30 +778,33 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .vital-card {
   background: var(--panel);
   border: 1px solid var(--line);
-  border-left: 4px solid var(--accent);
-  border-radius: 8px;
-  padding: 16px 18px;
+  border-top: 3px solid var(--accent);
+  border-radius: 10px;
+  padding: 18px 20px;
 }
 .vital-card-clickable {
   cursor: pointer;
-  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
 }
 .vital-card-clickable:hover, .vital-card-clickable:focus-visible {
   border-color: var(--accent);
-  box-shadow: 0 2px 10px rgba(15, 76, 58, 0.15);
+  box-shadow: 0 4px 14px rgba(15, 76, 58, 0.18);
+  transform: translateY(-1px);
 }
 .vital-card-label {
-  font-size: 0.72rem;
+  font-size: 0.74rem;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.04em;
   color: var(--ink-faint);
-  margin-bottom: 6px;
+  margin-bottom: 8px;
+  font-weight: 600;
 }
 .vital-card-value {
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-size: 1.9rem;
+  font-weight: 800;
   color: var(--ink);
   font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
 }
 .vital-card-value-warn { color: var(--red); }
 .vital-card-value-ok { color: var(--green); }
@@ -817,17 +875,25 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 /* Upcoming — the next few group-wide payout dates, so there's always
    something relevant even between the member's own due dates. */
 .upcoming-panel { margin-top: 14px; }
-.upcoming-list { margin-top: 6px; }
+.upcoming-list { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
 .upcoming-item {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 0;
-  border-bottom: 1px solid var(--line);
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
 }
-.upcoming-item:last-child { border-bottom: none; padding-bottom: 0; }
-.upcoming-item-date { flex: 0 0 84px; }
-.upcoming-item-day { font-weight: 700; color: var(--ink); font-size: 0.88rem; }
+.upcoming-item-date {
+  flex: 0 0 78px;
+  text-align: center;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 6px 4px;
+}
+.upcoming-item-day { font-weight: 700; color: var(--ink); font-size: 0.86rem; }
 .upcoming-item-info { flex: 1; min-width: 0; }
 .upcoming-item-payee {
   font-weight: 600;
@@ -844,14 +910,57 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   flex-shrink: 0;
 }
 
+/* Quick Actions — one-tap shortcuts at the very bottom of the dashboard,
+   after every "here's where things stand" section above. Deep-green
+   fill on hover (same brand gradient as the hero/header), not a new
+   visual language. */
+.quick-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+.quick-action-btn {
+  flex: 1 1 140px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 12px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+.quick-action-btn:hover:not(:disabled), .quick-action-btn:focus-visible:not(:disabled) {
+  background: var(--accent);
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+.quick-action-btn:hover:not(:disabled) .quick-action-label,
+.quick-action-btn:focus-visible:not(:disabled) .quick-action-label {
+  color: #FAF7F0;
+}
+.quick-action-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.quick-action-icon { font-size: 1.5rem; }
+.quick-action-label {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--ink);
+  text-align: center;
+  transition: color 0.15s ease;
+}
+
 /* Group Pulse — the communal layer: an aggregate total and a plain
    activity count, deliberately never who specifically has paid. */
-.group-pulse-panel { margin-top: 14px; }
+.group-pulse-panel { margin-top: 14px; border-top: 3px solid var(--accent-2); }
 .group-pulse-total {
-  font-size: 1.6rem;
-  font-weight: 700;
+  font-size: 1.8rem;
+  font-weight: 800;
   color: var(--ink);
   font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
   margin-top: 4px;
 }
 .group-pulse-activity { font-size: 0.9rem; color: var(--ink); margin: 0; }

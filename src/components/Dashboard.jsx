@@ -13,6 +13,7 @@ import {
   upcomingDates,
   isMemberTurnSoon,
   isCycleNearingCompletion,
+  greeting,
 } from "../lib/dashboardMath.js";
 import { useCountUp } from "../hooks/useCountUp.js";
 import ProgressRing from "./ProgressRing.jsx";
@@ -20,6 +21,7 @@ import CycleTimeline from "./CycleTimeline.jsx";
 import GroupPulse from "./GroupPulse.jsx";
 import PayoutAcknowledgment from "./PayoutAcknowledgment.jsx";
 import UpcomingDates from "./UpcomingDates.jsx";
+import QuickActions from "./QuickActions.jsx";
 
 function formatDate(dateISO) {
   const d = new Date(dateISO + "T00:00:00");
@@ -34,8 +36,24 @@ function formatDate(dateISO) {
  * Everything else (the ledger table, reminders, admin tools, ...) lives
  * behind NavMenu now, reachable but no longer competing for space on the
  * screen you land on.
+ *
+ * Layout is a deliberate hierarchy, richest/most personal at the top,
+ * most actionable at the bottom: hero greeting + round-progress ring,
+ * rotation detail, vital stat cards, group-wide pulse, what's coming up,
+ * then one-tap shortcuts to the things this screen doesn't itself do
+ * anything about (logging a payment, checking payment details).
  */
-export default function Dashboard({ session, config, ledger, totals, onOpenReconciliation, onOpenLedger, onOpenGroupSetup }) {
+export default function Dashboard({
+  session,
+  config,
+  ledger,
+  totals,
+  onOpenReconciliation,
+  onOpenLedger,
+  onOpenGroupSetup,
+  onOpenPaymentOptions,
+  onOpenReminders,
+}) {
   const { data: fundsData, loading: fundsLoading } = useApiData(getGroupFunds, []);
   const { data: pulseData, loading: pulseLoading } = useApiData(getGroupPulse, []);
   // Admin-only — a regular member has no access to this endpoint (see
@@ -69,14 +87,15 @@ export default function Dashboard({ session, config, ledger, totals, onOpenRecon
   // Golden ring glow: only when something's actually worth highlighting —
   // the viewer's own turn is close, the cycle's in its final stretch, or
   // someone was just paid out — so it draws the eye when it lights up
-  // rather than being a constant, meaningless decoration.
+  // rather than being a constant, meaningless decoration. The ring's soft
+  // ambient halo (see .dashboard-hero-ring in styles.css) is always on;
+  // this pulsing, brighter glow is the "something changed" signal on top
+  // of that baseline.
   const ringGlow =
     isMemberTurnSoon(timelineRows, session?.name) || isCycleNearingCompletion(cycle) || Boolean(recentPayout);
 
   return (
     <>
-      <h2 className="panel-title">Home</h2>
-
       {session?.role === "admin" && pendingData && pendingData.pending.length > 0 && (
         <div
           className="pending-queue-banner"
@@ -91,6 +110,44 @@ export default function Dashboard({ session, config, ledger, totals, onOpenRecon
       )}
 
       {recentPayout && <PayoutAcknowledgment groupSlug={session.groupSlug} row={recentPayout} />}
+
+      <div className="dashboard-hero">
+        <div className="dashboard-hero-left">
+          <div className="dashboard-hero-greeting">
+            <span className="greeting-emoji">👋</span> {greeting()}, <strong>{session?.name}</strong>
+            {session?.role === "admin" && <span className="tag tag-rate" style={{ marginLeft: 8 }}>admin</span>}
+          </div>
+          <p className="dashboard-hero-sub">
+            {config.groupName ? `Here's where ${config.groupName} stands today.` : "Here's where things stand today."}
+          </p>
+          {config.cycleName && <div className="dashboard-hero-cycle">{config.cycleName}</div>}
+          {session?.role === "admin" && onOpenGroupSetup && (
+            <button className="btn-link dashboard-hero-manage" onClick={onOpenGroupSetup}>
+              ⚙ Manage schedule
+            </button>
+          )}
+        </div>
+        <div className="dashboard-hero-ring">
+          <ProgressRing
+            percent={cycle.percent}
+            size={148}
+            strokeWidth={10}
+            sublabel={cycle.total > 0 ? `${cycle.passed} of ${cycle.total} dates` : "No dates yet"}
+            glow={ringGlow}
+          />
+        </div>
+      </div>
+
+      {(nextUpRow || timelineRows.length > 0) && (
+        <div className="panel cycle-progress-panel">
+          {nextUpRow && (
+            <p className="muted small cycle-next-up">
+              Next up: <strong>{payeesLabel(nextUpRow)}</strong> — {formatDate(nextUpRow.date)}
+            </p>
+          )}
+          <CycleTimeline rows={timelineRows} />
+        </div>
+      )}
 
       <div className="dashboard-grid">
         <div
@@ -131,40 +188,17 @@ export default function Dashboard({ session, config, ledger, totals, onOpenRecon
         </div>
       </div>
 
-      <div className="panel cycle-progress-panel">
-        <div className="cycle-progress-header">
-          <div>
-            <div className="vital-card-label">Round Progress</div>
-            {config.cycleName && <div className="panel-subtitle" style={{ margin: "2px 0 0" }}>{config.cycleName}</div>}
-            {session?.role === "admin" && onOpenGroupSetup && (
-              <button
-                className="btn-link"
-                style={{ display: "block", marginTop: 4 }}
-                onClick={onOpenGroupSetup}
-              >
-                ⚙ Manage schedule
-              </button>
-            )}
-          </div>
-          <ProgressRing
-            percent={cycle.percent}
-            sublabel={cycle.total > 0 ? `${cycle.passed} of ${cycle.total} dates` : "No dates yet"}
-            glow={ringGlow}
-          />
-        </div>
-
-        {nextUpRow && (
-          <p className="muted small cycle-next-up">
-            Next up: <strong>{payeesLabel(nextUpRow)}</strong> — {formatDate(nextUpRow.date)}
-          </p>
-        )}
-
-        <CycleTimeline rows={timelineRows} />
-      </div>
+      <GroupPulse data={pulseData} loading={pulseLoading} />
 
       <UpcomingDates rows={upcomingRows} />
 
-      <GroupPulse data={pulseData} loading={pulseLoading} />
+      <QuickActions
+        isAdmin={session?.role === "admin"}
+        onOpenLedger={onOpenLedger}
+        onOpenPaymentOptions={onOpenPaymentOptions}
+        onOpenGroupSetup={onOpenGroupSetup}
+        onOpenReminders={onOpenReminders}
+      />
     </>
   );
 }

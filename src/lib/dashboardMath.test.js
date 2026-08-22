@@ -9,6 +9,7 @@ import {
   upcomingDates,
   isMemberTurnSoon,
   isCycleNearingCompletion,
+  greeting,
 } from "./dashboardMath.js";
 
 describe("computeCycleProgress", () => {
@@ -308,5 +309,22 @@ describe("isCycleNearingCompletion", () => {
   it("respects a custom remainingThreshold", () => {
     expect(isCycleNearingCompletion({ total: 6, passed: 3 }, 3)).toBe(true);
     expect(isCycleNearingCompletion({ total: 6, passed: 2 }, 3)).toBe(false);
+  });
+});
+
+describe("greeting", () => {
+  it("is a morning greeting before noon", () => {
+    expect(greeting(9)).toBe("Good morning");
+    expect(greeting(11)).toBe("Good morning");
+  });
+
+  it("is an afternoon greeting from noon up to 5pm", () => {
+    expect(greeting(12)).toBe("Good afternoon");
+    expect(greeting(16)).toBe("Good afternoon");
+  });
+
+  it("is an evening greeting from 5pm onward", () => {
+    expect(greeting(17)).toBe("Good evening");
+    expect(greeting(22)).toBe("Good evening");
   });
 });

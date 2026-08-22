@@ -5,6 +5,7 @@ import Onboarding from "./components/Onboarding.jsx";
 import Subscription from "./components/Subscription.jsx";
 import SubscriptionGate from "./components/SubscriptionGate.jsx";
 import FreeTierBanner from "./components/FreeTierBanner.jsx";
+import SubscriptionExpiryBanner from "./components/SubscriptionExpiryBanner.jsx";
 import LedgerTable, { money } from "./components/LedgerTable.jsx";
 import GroupSetup from "./components/GroupSetup.jsx";
 import Reconciliation from "./components/Reconciliation.jsx";
@@ -25,6 +26,7 @@ import { useGroupConfig } from "./hooks/useGroupConfig.js";
 import { useLedger } from "./hooks/useLedger.js";
 import { useOnboarding } from "./hooks/useOnboarding.js";
 import { useSubscription } from "./hooks/useSubscription.js";
+import { greeting } from "./lib/dashboardMath.js";
 
 const TABS = [
   { id: "ledger", label: "My Payment History" },
@@ -39,13 +41,6 @@ const TABS = [
   { id: "loans", label: "Loans", adminOnly: true },
   { id: "creategroup", label: "Create a New Group", adminOnly: true },
 ];
-
-function greeting() {
-  const hour = new Date().getHours();
-  if (hour < 12) return "Good morning";
-  if (hour < 17) return "Good afternoon";
-  return "Good evening";
-}
 
 export default function App() {
   const { session, login, join, createAdditionalGroup, logout, renameSession, refreshSession } = useSession();
@@ -188,10 +183,12 @@ export default function App() {
           />
         ) : (
           <>
-            <div className="dashboard-greeting">
-              <span className="greeting-emoji">👋</span> {greeting()}, <strong>{session.name}</strong>
-              {session.role === "admin" && <span className="tag tag-rate" style={{ marginLeft: 8 }}>admin</span>}
-            </div>
+            {tab !== "home" && (
+              <div className="dashboard-greeting">
+                <span className="greeting-emoji">👋</span> {greeting()}, <strong>{session.name}</strong>
+                {session.role === "admin" && <span className="tag tag-rate" style={{ marginLeft: 8 }}>admin</span>}
+              </div>
+            )}
 
             <NavMenu
               items={TABS.filter((t) => !t.adminOnly || session.role === "admin")}
@@ -209,6 +206,12 @@ export default function App() {
                   isAdmin={session.role === "admin"}
                   onUpgrade={() => setTab("subscription")}
                 />
+                <SubscriptionExpiryBanner
+                  status={subscription.status}
+                  isAdmin={session.role === "admin"}
+                  groupSlug={session.groupSlug}
+                  onUpgrade={() => setTab("subscription")}
+                />
                 <Dashboard
                   session={session}
                   config={config}
@@ -217,6 +220,8 @@ export default function App() {
                   onOpenReconciliation={session.role === "admin" ? () => setTab("reconciliation") : undefined}
                   onOpenLedger={() => setTab("ledger")}
                   onOpenGroupSetup={session.role === "admin" ? () => setTab("setup") : undefined}
+                  onOpenPaymentOptions={() => setTab("payment-options")}
+                  onOpenReminders={() => setTab("reminders")}
                 />
               </>
             )}
