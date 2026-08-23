@@ -985,6 +985,71 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .vital-card-value-warn { color: var(--red); }
 .vital-card-value-ok { color: var(--green); }
 
+/* Declutter pass — the one number that's actually actionable ("What You
+   Still Owe") gets a big, unmissable card of its own; everything else
+   that used to sit beside it as an equal-weight card is either a small
+   compact stat (next date, fund total) or moved behind "See full
+   breakdown" (.dashboard-more-toggle / .dashboard-more-section below). */
+.vital-primary {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-top: 4px solid var(--accent);
+  border-radius: 12px;
+  padding: 22px 24px;
+}
+.vital-primary-value {
+  font-size: 2.6rem;
+  font-weight: 800;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+}
+.vital-secondary-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+.vital-secondary {
+  flex: 1 1 140px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+.vital-secondary-value {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.loan-alert-banner {
+  background: #FBEFDD;
+  border: 1px solid var(--pending);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-top: 10px;
+  font-size: 0.88rem;
+  color: var(--ink);
+}
+.dashboard-more-toggle {
+  display: block;
+  width: 100%;
+  text-align: center;
+  background: none;
+  border: 1px dashed var(--line);
+  border-radius: 10px;
+  padding: 10px;
+  margin-top: 14px;
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.dashboard-more-toggle:hover { background: var(--bg); }
+.dashboard-more-section { margin-top: 4px; }
+
 /* Cycle Progress — its own full-width panel below the vital-card grid
    (ring + "who's next" line + the per-date timeline), rather than a
    cramped fourth vital-card, now that it shows more than one number. */
@@ -1086,26 +1151,26 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   flex-shrink: 0;
 }
 
-/* Quick Actions — one-tap shortcuts at the very bottom of the dashboard,
-   after every "here's where things stand" section above. Deep-green
-   fill on hover (same brand gradient as the hero/header), not a new
-   visual language. */
+/* Quick Actions — compact one-tap icon row, right on the dashboard
+   (not behind the "See full breakdown" tap) but sized to not compete
+   with the primary stat above it. Deep-green fill on hover (same brand
+   gradient as the hero/header), not a new visual language. */
 .quick-actions {
   display: flex;
-  gap: 12px;
+  gap: 8px;
   margin-top: 14px;
   flex-wrap: wrap;
 }
 .quick-action-btn {
-  flex: 1 1 140px;
+  flex: 1 1 76px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 3px;
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 10px;
-  padding: 16px 12px;
+  padding: 8px 6px;
   cursor: pointer;
   transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
 }
@@ -1119,10 +1184,10 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   color: #FAF7F0;
 }
 .quick-action-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-.quick-action-icon { font-size: 1.5rem; }
+.quick-action-icon { font-size: 1.2rem; }
 .quick-action-label {
   font-weight: 600;
-  font-size: 0.85rem;
+  font-size: 0.66rem;
   color: var(--ink);
   text-align: center;
   transition: color 0.15s ease;
