@@ -113,6 +113,7 @@ export default function AdminManagement() {
                   <th className="al">Role</th>
                   <th className="al">Joined</th>
                   <th className="al">Next Due</th>
+                  <th className="al">Streak</th>
                   <th></th>
                 </tr>
               </thead>
@@ -134,6 +135,20 @@ export default function AdminManagement() {
                         ? <>{m.nextDueDate} <span className="muted tiny">({money(m.nextDueAmount)})</span></>
                         : <span className="muted tiny">settled</span>}
                     </td>
+                    <td className="al small" data-label="Streak">
+                      {m.streakDots && m.streakDots.length > 0 ? (
+                        <>
+                          {m.currentStreak}
+                          <span className="streak-dot-row streak-dot-row-inline">
+                            {m.streakDots.slice(-5).map((d, i) => (
+                              <span key={i} className={`streak-dot streak-dot-${d.status}`} title={`${d.date} — ${d.status}`}>●</span>
+                            ))}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="muted tiny">no history yet</span>
+                      )}
+                    </td>
                     <td className="cell-action">
                       <button
                         className="btn-link"
@@ -152,7 +167,7 @@ export default function AdminManagement() {
                   </tr>
                 ))}
                 {data.members.length === 0 && (
-                  <tr><td colSpan={5} className="muted small">No members yet.</td></tr>
+                  <tr><td colSpan={6} className="muted small">No members yet.</td></tr>
                 )}
               </tbody>
             </table>

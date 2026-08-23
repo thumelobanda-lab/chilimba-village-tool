@@ -4,6 +4,7 @@ import { json } from "../responses.js";
 import { uid } from "../crypto.js";
 import { isSubscriptionActive, computeExpiryDate } from "../subscriptionUtils.js";
 import { detectSharedSignalFraud } from "../fraudSignals.js";
+import { computeGRS, classifyLifecycleStage, countPastScheduleDates, computeOutstandingOverdueBalance } from "../reliability.js";
 import { isValidTargetType, buildTargetLabel, validateMessageBody, isValidCategory } from "../ownerMessages.js";
 import { validateSupportContact } from "../platformSettings.js";
 
@@ -72,10 +73,20 @@ export default function registerOwnerRoutes(router) {
   });
 
   // The full roster of groups, one row each, with enough to act on —
-  // member count, tier, suspension state. No PIN, payment ledger, or
-  // schedule detail here; that's not what "see everything happening
-  // across the platform" needs to mean day to day, and every group
-  // already has its own admin who owns that detail.
+  // member count, tier, suspension state, and now a lifecycle stage
+  // (New/Active/At Risk) derived from GRS — the group-level aggregate
+  // reliability score (worker/src/reliability.js). Still no PIN, payment
+  // ledger, or per-member/per-transaction detail here; a group-wide
+  // percentage and a badge is the whole of what this route exposes,
+  // same standard as every other owner-facing figure — every group
+  // already has its own admin who owns the granular detail.
+  //
+  // One extra pair of queries per group (payments + active member
+  // names) to compute GRS/outstanding balance — accepted at today's
+  // scale (an owner-only route, not called often, not expected across
+  // an enormous number of groups); worth revisiting with a batched
+  // query if the platform's group count ever grows large enough for
+  // that to matter.
   router.get("/api/owner/groups", async ({ request, env, cors }) => {
     await requireOwner(request, env);
 
@@ -83,14 +94,46 @@ export default function registerOwnerRoutes(router) {
       `SELECT g.id, g.slug, g.group_name as groupName, g.subscription_expires_at as subscriptionExpiresAt,
               g.suspended_at as suspendedAt, g.suspended_reason as suspendedReason, g.suspended_by as suspendedBy,
               g.created_at as createdAt, g.created_ip as createdIp, g.created_by_phone as createdByPhone,
+              g.schedule_json as scheduleJson, g.recipient_exempt as recipientExempt,
               (SELECT COUNT(*) FROM users u WHERE u.group_id = g.id AND u.active = 1) as memberCount
        FROM groups g ORDER BY g.created_at DESC`
     ).all();
 
-    const groups = (groupsResult.results || []).map((g) => ({
-      ...g,
-      tier: isSubscriptionActive(g.subscriptionExpiresAt) ? "premium" : "free",
+    const groups = await Promise.all((groupsResult.results || []).map(async (g) => {
+      const schedule = JSON.parse(g.scheduleJson || "[]");
+      const recipientExempt = !!g.recipientExempt;
+
+      const membersResult = await env.DB.prepare(
+        `SELECT display_name as name FROM users WHERE group_id = ? AND active = 1`
+      ).bind(g.id).all();
+      const memberNames = (membersResult.results || []).map((m) => m.name);
+
+      const paymentsResult = await env.DB.prepare(
+        `SELECT p.amount, p.schedule_row_id as scheduleRowId, p.recorded_at as recordedAt, u.display_name as memberName
+         FROM payments p JOIN users u ON u.id = p.user_id
+         WHERE p.group_id = ? AND p.voided_at IS NULL`
+      ).bind(g.id).all();
+      const payments = paymentsResult.results || [];
+
+      const grs = computeGRS(schedule, payments, memberNames, recipientExempt);
+      const lifecycleStage = classifyLifecycleStage({
+        createdAt: g.createdAt,
+        pastScheduleDateCount: countPastScheduleDates(schedule),
+        grs,
+        outstandingOverdueBalance: computeOutstandingOverdueBalance(schedule, payments, memberNames, recipientExempt),
+      });
+
+      return {
+        id: g.id, slug: g.slug, groupName: g.groupName, subscriptionExpiresAt: g.subscriptionExpiresAt,
+        suspendedAt: g.suspendedAt, suspendedReason: g.suspendedReason, suspendedBy: g.suspendedBy,
+        createdAt: g.createdAt, createdIp: g.createdIp, createdByPhone: g.createdByPhone,
+        memberCount: g.memberCount,
+        tier: isSubscriptionActive(g.subscriptionExpiresAt) ? "premium" : "free",
+        reliabilityScore: grs.score,
+        lifecycleStage,
+      };
     }));
+
     return json({ groups }, 200, cors);
   });
 

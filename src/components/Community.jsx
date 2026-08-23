@@ -1,9 +1,10 @@
 import React from "react";
-import { getGroupFunds } from "../lib/api.js";
+import { getGroupFunds, getGroupPulse } from "../lib/api.js";
 import { useApiData } from "../lib/useApiData.js";
 import { sumFundBalances } from "../lib/dashboardMath.js";
 import { COMMUNITY_FUND_ID } from "../lib/fundUtils.js";
 import GrowthProjection from "./GrowthProjection.jsx";
+import GroupReliabilityScore from "./GroupReliabilityScore.jsx";
 
 const money = (n) => "K" + (Number(n) || 0).toLocaleString("en-ZM", { maximumFractionDigits: 0 });
 
@@ -19,6 +20,7 @@ function timeAgo(iso) {
 
 export default function Community() {
   const { data, error, loading } = useApiData(getGroupFunds, []);
+  const { data: pulseData } = useApiData(getGroupPulse, []);
 
   return (
     <div className="panel">
@@ -28,6 +30,8 @@ export default function Community() {
         borrowing — visible to everyone in the group, the way a shared payment record works.
         This shows names, amounts, and dates only — never anyone's full payment history or balance.
       </p>
+
+      <GroupReliabilityScore grs={pulseData?.grs} />
 
       {error && <div className="error-text" role="alert">{error}</div>}
       {loading && !data && <p className="muted small" aria-live="polite">Loading…</p>}

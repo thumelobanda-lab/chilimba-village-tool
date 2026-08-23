@@ -1,4 +1,6 @@
 import { MOCK_MODE, lsGet, realFetch, currentSession, groupScopedKey } from "./core.js";
+import { computeLedgerTotals } from "../ledgerMath.js";
+import { computeGRS } from "../reliability.js";
 
 // Group-wide aggregate figures for the home dashboard's "Group Pulse"
 // section — deliberately aggregates only (a sum, two counts), never
@@ -13,13 +15,16 @@ export async function getGroupPulse() {
 
   if (MOCK_MODE) {
     const config = lsGet(groupScopedKey(session, "group"), null);
-    const scheduleRowIds = new Set((config?.schedule || []).map((r) => r.id));
+    const schedule = config?.schedule || [];
+    const recipientExempt = !!config?.recipientExempt;
+    const scheduleRowIds = new Set(schedule.map((r) => r.id));
     const weekAgoMs = Date.now() - 7 * 24 * 60 * 60 * 1000;
 
     const accountPrefix = `chilimba:account:${session.groupSlug}:`;
     let totalContributed = 0;
     let totalActiveMembers = 0;
     const recentPayerNames = new Set();
+    const rowsComputedByMember = {};
 
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
@@ -29,16 +34,27 @@ export async function getGroupPulse() {
       if (account.active === false) continue;
       totalActiveMembers += 1;
 
-      const ledger = lsGet(groupScopedKey(session, "ledger", name), { payments: [] });
+      const ledger = lsGet(groupScopedKey(session, "ledger", name), { payments: [], payoutInfo: { amount: 0 }, dueOverrides: {} });
       (ledger.payments || [])
         .filter((p) => !p.voidedAt && scheduleRowIds.has(p.scheduleRowId))
         .forEach((p) => {
           totalContributed += p.amount;
           if (new Date(p.recordedAt).getTime() >= weekAgoMs) recentPayerNames.add(name);
         });
+
+      const totals = computeLedgerTotals({ schedule, ledger, sessionName: name, recipientExempt });
+      rowsComputedByMember[name] = totals.rowsComputed;
     }
 
-    return { totalContributed, membersPaidThisWeek: recentPayerNames.size, totalActiveMembers };
+    // Note: unlike the real Worker endpoint (which deliberately skips
+    // per-member due overrides to keep its query simple — see
+    // worker/src/routes/dashboard.js), this mock version gets them for
+    // free since computeLedgerTotals already applies each member's own
+    // ledger.dueOverrides. A minor, harmless mock/real discrepancy —
+    // due overrides are a rare edge case either way.
+    const grs = computeGRS(rowsComputedByMember);
+
+    return { totalContributed, membersPaidThisWeek: recentPayerNames.size, totalActiveMembers, grs };
   }
 
   return realFetch("/api/dashboard/pulse");

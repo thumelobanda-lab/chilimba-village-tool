@@ -18,6 +18,7 @@ import {
   buildPayoutAvatarRow,
 } from "../lib/dashboardMath.js";
 import { useCountUp } from "../hooks/useCountUp.js";
+import { computeMemberStreak } from "../lib/streakMath.js";
 import ProgressRing from "./ProgressRing.jsx";
 import CycleTimeline from "./CycleTimeline.jsx";
 import GroupPulse from "./GroupPulse.jsx";
@@ -26,6 +27,7 @@ import UpcomingDates from "./UpcomingDates.jsx";
 import MyNextPayments from "./MyNextPayments.jsx";
 import QuickActions from "./QuickActions.jsx";
 import PayoutAvatarRow from "./PayoutAvatarRow.jsx";
+import StreakDots from "./StreakDots.jsx";
 
 function formatDate(dateISO) {
   const d = new Date(dateISO + "T00:00:00");
@@ -108,6 +110,7 @@ export default function Dashboard({
     isMemberTurnSoon(timelineRows, session?.name) || isCycleNearingCompletion(cycle) || Boolean(recentPayout);
   const upcomingCount = upcomingRows.length + myNextPayments.length;
   const payoutAvatarRows = buildPayoutAvatarRow(timelineRows, session?.name);
+  const myStreak = computeMemberStreak(totals.rowsComputed);
 
   return (
     <>
@@ -242,6 +245,8 @@ export default function Dashboard({
               <div className="vital-card-value">{money(paidDisplay)}</div>
             </div>
           </div>
+
+          <StreakDots dots={myStreak.dots} currentStreak={myStreak.currentStreak} />
 
           <MyNextPayments rows={myNextPayments} />
 

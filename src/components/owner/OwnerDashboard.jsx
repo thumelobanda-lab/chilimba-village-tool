@@ -185,6 +185,7 @@ export default function OwnerDashboard({ session, onSignedOut }) {
                     <th className="al">Code</th>
                     <th className="al">Tier</th>
                     <th className="ar">Members</th>
+                    <th className="al">Health</th>
                     <th className="al">Created</th>
                     <th className="al">Status</th>
                     <th></th>
@@ -199,6 +200,12 @@ export default function OwnerDashboard({ session, onSignedOut }) {
                         <span className={g.tier === "premium" ? "status-paid" : "muted small"}>{g.tier}</span>
                       </td>
                       <td className="ar" data-label="Members">{g.memberCount}</td>
+                      <td className="al" data-label="Health">
+                        <span className={"lifecycle-badge lifecycle-badge-" + g.lifecycleStage}>
+                          {g.lifecycleStage === "at_risk" ? "At Risk" : g.lifecycleStage === "new" ? "New" : "Active"}
+                        </span>
+                        {g.reliabilityScore != null && <span className="muted tiny"> {g.reliabilityScore}%</span>}
+                      </td>
                       <td className="al muted tiny" data-label="Created">{new Date(g.createdAt).toLocaleDateString()}</td>
                       <td className="al" data-label="Status">
                         {g.suspendedAt ? (
@@ -221,7 +228,7 @@ export default function OwnerDashboard({ session, onSignedOut }) {
                     </tr>
                   ))}
                   {groups.length === 0 && (
-                    <tr><td colSpan={7} className="muted small">No groups yet.</td></tr>
+                    <tr><td colSpan={8} className="muted small">No groups yet.</td></tr>
                   )}
                 </tbody>
               </table>

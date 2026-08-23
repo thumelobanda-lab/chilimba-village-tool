@@ -6,6 +6,7 @@ import { isRecipient as isRecipientHelper, resolveDue, findNextDue } from "../sc
 import { wouldLeaveZeroAdmins } from "../adminUtils.js";
 import { computeCommunityFundSplit, EFFECTIVE_CONTRIBUTION_SQL, COMMUNITY_FUND_ID } from "../communityFundSplit.js";
 import { computeLatePenalty } from "../latePenalty.js";
+import { computeMemberStreak } from "../streakMath.js";
 import { isSubscriptionActive } from "../subscriptionUtils.js";
 import { maybeRecordFundContributions } from "../fundCrediting.js";
 import { sendPush } from "../push.js";
@@ -49,6 +50,17 @@ export default function registerAdminRoutes(router) {
        WHERE p.group_id = ? AND p.voided_at IS NULL
        GROUP BY u.display_name, p.schedule_row_id`
     ).bind(admin.groupId).all();
+    // Raw (not summed) entries, for the streak column — computeMemberStreak
+    // needs each entry's own recorded_at to find the exact one that
+    // crossed the due amount, which a GROUP BY SUM can't tell it. One
+    // more group-wide query, not a per-member one, same batching
+    // discipline as the rest of this route.
+    const entriesResult = await env.DB.prepare(
+      `SELECT u.display_name as memberName, p.schedule_row_id as scheduleRowId, p.amount,
+              p.recorded_at as recordedAt, p.voided_at as voidedAt
+       FROM payments p JOIN users u ON u.id = p.user_id
+       WHERE p.group_id = ?`
+    ).bind(admin.groupId).all();
 
     const overridesByMember = {};
     for (const o of overridesResult.results || []) {
@@ -58,11 +70,18 @@ export default function registerAdminRoutes(router) {
     for (const p of paidResult.results || []) {
       (paidByMember[p.name] ||= {})[p.rowId] = p.paid;
     }
+    const entriesByMember = {};
+    for (const e of entriesResult.results || []) {
+      (entriesByMember[e.memberName] ||= []).push(e);
+    }
 
     const roster = members.map((m) => {
       const next = findNextDue(
         schedule, m.name, recipientExempt,
         overridesByMember[m.name] || {}, paidByMember[m.name] || {}
+      );
+      const streak = computeMemberStreak(
+        schedule, entriesByMember[m.name] || [], m.name, recipientExempt, overridesByMember[m.name] || {}
       );
       return {
         name: m.name,
@@ -70,6 +89,8 @@ export default function registerAdminRoutes(router) {
         joinedAt: m.joinedAt,
         nextDueDate: next?.row.date || null,
         nextDueAmount: next?.balance || 0,
+        currentStreak: streak.currentStreak,
+        streakDots: streak.dots,
       };
     });
 

@@ -831,6 +831,60 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .confirm-bulb-rejected { color: var(--red); }
 .rejected-reason { color: var(--red); }
 
+/* Streak Dots — a member's own on-time payment history, one dot per
+   past due date. Same inline-bullet sizing as .confirm-bulb above (a
+   row of dates reads better as small bullets than as the heavier
+   avatar-circle style PayoutAvatarRow uses for people). */
+.streak-block { margin-top: 14px; }
+.streak-summary { margin: 4px 0 8px; font-size: 0.85rem; color: var(--ink); }
+.streak-dot-row {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.streak-dot { font-size: 1rem; display: inline-block; }
+.streak-dot-on-time { color: var(--green); }
+.streak-dot-late { color: var(--pending); }
+.streak-dot-missed { color: var(--red); }
+
+/* Compact variant for the admin roster's Streak column — inline next to
+   the streak-count number, smaller dots, no wrapping. */
+.streak-dot-row-inline {
+  display: inline-flex;
+  gap: 2px;
+  margin-left: 6px;
+}
+.streak-dot-row-inline .streak-dot { font-size: 0.65rem; }
+
+/* Group Reliability Score (GRS) — a single group-wide percentage, one
+   slim strip, same "not a card" restraint as Group Pulse. */
+.grs-strip {
+  margin-bottom: 16px;
+  padding: 8px 12px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: var(--ink);
+}
+.grs-good { color: var(--green); font-weight: 700; }
+.grs-ok { color: var(--pending); font-weight: 700; }
+.grs-low { color: var(--red); font-weight: 700; }
+
+/* Owner Groups Health lifecycle badge — New/Active/At Risk, same
+   pill shape as the other status tags in this file. */
+.lifecycle-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+.lifecycle-badge-new { background: var(--surface-active); color: var(--accent-light); }
+.lifecycle-badge-active { background: var(--surface-green); color: var(--green); }
+.lifecycle-badge-at_risk { background: var(--surface-danger); color: var(--red); }
+
 /* Admin's "N pending confirmations" queue (Reconciliation.jsx) and the
    matching callout on the dashboard (Dashboard.jsx). */
 .pending-queue-banner {

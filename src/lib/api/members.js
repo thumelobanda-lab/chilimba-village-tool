@@ -1,7 +1,8 @@
 import { MOCK_MODE, lsGet, lsSet, realFetch, currentSession, groupScopedKey } from "./core.js";
 import { wouldLeaveZeroAdmins } from "../adminUtils.js";
 import { findNextDue } from "../scheduleUtils.js";
-import { effectiveContribution } from "../ledgerMath.js";
+import { effectiveContribution, computeLedgerTotals } from "../ledgerMath.js";
+import { computeMemberStreak } from "../streakMath.js";
 
 // Every ACTIVE member of the signed-in admin's OWN group, with role,
 // when they joined, and the next date they still owe something on —
@@ -32,6 +33,8 @@ export async function getGroupMembers() {
         paidByRowId[p.scheduleRowId] = (paidByRowId[p.scheduleRowId] || 0) + effectiveContribution(p);
       });
       const next = findNextDue(schedule, name, recipientExempt, ledger.dueOverrides || {}, paidByRowId);
+      const totals = computeLedgerTotals({ schedule, ledger, sessionName: name, recipientExempt });
+      const streak = computeMemberStreak(totals.rowsComputed);
 
       members.push({
         name,
@@ -39,6 +42,8 @@ export async function getGroupMembers() {
         joinedAt: account.joinedAt || null,
         nextDueDate: next?.row.date || null,
         nextDueAmount: next?.balance || 0,
+        currentStreak: streak.currentStreak,
+        streakDots: streak.dots,
       });
     }
     // Newest-joined first, matching the real backend (see admin.js's
