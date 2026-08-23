@@ -136,7 +136,12 @@ export default function Dashboard({
           <p className="dashboard-hero-sub">
             {config.groupName ? `Here's where ${config.groupName} stands today.` : "Here's where things stand today."}
           </p>
-          {config.cycleName && <div className="dashboard-hero-cycle">{config.cycleName}</div>}
+          {config.cycleName && (
+            <div className="dashboard-hero-cycle">
+              {config.cycleName}
+              {cycle.total > 0 && ` · ${cycle.passed} of ${cycle.total} dates`}
+            </div>
+          )}
           {session?.role === "admin" && onOpenGroupSetup && (
             <button className="btn-link dashboard-hero-manage" onClick={onOpenGroupSetup}>
               ⚙ Manage schedule
@@ -144,13 +149,7 @@ export default function Dashboard({
           )}
         </div>
         <div className="dashboard-hero-ring">
-          <ProgressRing
-            percent={cycle.percent}
-            size={148}
-            strokeWidth={10}
-            sublabel={cycle.total > 0 ? `${cycle.passed} of ${cycle.total} dates` : "No dates yet"}
-            glow={ringGlow}
-          />
+          <ProgressRing percent={cycle.percent} size={52} strokeWidth={5} glow={ringGlow} />
         </div>
       </div>
 

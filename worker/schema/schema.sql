@@ -391,19 +391,38 @@ CREATE INDEX IF NOT EXISTS idx_loans_group ON fund_loans(group_id, fund_id);
 
 -- Append-only repayment ledger against a loan (migration 014) — a loan's
 -- remaining balance is always fund_loans.amount minus the sum of its
--- loan_repayments, computed fresh, never stored/mutated directly. Same
--- audit standard as payments/fund_contributions: every repayment is its
--- own row, nothing is ever overwritten to correct or reduce a balance.
+-- non-voided loan_repayments, computed fresh, never stored/mutated
+-- directly. Same audit standard as payments/fund_contributions: a wrong
+-- entry is voided (migration 015's voided_at/void_reason), never
+-- overwritten or deleted.
 CREATE TABLE IF NOT EXISTS loan_repayments (
   id TEXT PRIMARY KEY,
   group_id TEXT NOT NULL REFERENCES groups(id),
   loan_id TEXT NOT NULL REFERENCES fund_loans(id),
   amount REAL NOT NULL,
   recorded_by TEXT NOT NULL,
-  recorded_at TEXT NOT NULL DEFAULT (datetime('now'))
+  recorded_at TEXT NOT NULL DEFAULT (datetime('now')),
+  voided_at TEXT,
+  void_reason TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_loan_repayments_loan ON loan_repayments(loan_id);
 CREATE INDEX IF NOT EXISTS idx_loan_repayments_group ON loan_repayments(group_id);
+
+-- Corrections to a loan's own principal/borrower name (migration 015) —
+-- fund_loans is a single "who owes what" record, not a summed ledger, so
+-- fixing a typo is a direct UPDATE; this table captures what it was
+-- before, by whom, and when, so every correction stays auditable.
+CREATE TABLE IF NOT EXISTS loan_edits (
+  id TEXT PRIMARY KEY,
+  group_id TEXT NOT NULL REFERENCES groups(id),
+  loan_id TEXT NOT NULL REFERENCES fund_loans(id),
+  previous_amount REAL NOT NULL,
+  previous_borrower_name TEXT NOT NULL,
+  edited_by TEXT NOT NULL,
+  edited_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_loan_edits_loan ON loan_edits(loan_id);
+CREATE INDEX IF NOT EXISTS idx_loan_edits_group ON loan_edits(group_id);
 
 -- Seed one example group so the app is usable immediately after a fresh
 -- deploy. Real groups are created via POST /api/groups (see routes/groups.js)

@@ -38,10 +38,28 @@ export default function registerFundsRoutes(router) {
       ? [...namedFunds, { id: COMMUNITY_FUND_ID, name: COMMUNITY_FUND_NAME, amount: communityFundDeduction, loanable: false }]
       : namedFunds;
 
-    const outstanding = await env.DB.prepare(
-      `SELECT fund_id as fundId, COALESCE(SUM(amount), 0) as total FROM fund_loans WHERE group_id = ? AND status = 'outstanding' GROUP BY fund_id`
+    // "Still out on loan" per fund — every loan's amount minus whatever's
+    // been (non-voided) repaid against it, same netting as the issuance
+    // check in admin.js. Summing only status='outstanding' loans here
+    // would overcount: a loan can be PARTIALLY repaid and still carry
+    // 'outstanding' status, so its already-repaid portion must still be
+    // subtracted or "available to lend" reads lower than it really is.
+    const loanTotals = await env.DB.prepare(
+      `SELECT fund_id as fundId, COALESCE(SUM(amount), 0) as total FROM fund_loans WHERE group_id = ? GROUP BY fund_id`
     ).bind(user.groupId).all();
-    const outstandingByFund = Object.fromEntries((outstanding.results || []).map((o) => [o.fundId, o.total]));
+    const loanTotalByFund = Object.fromEntries((loanTotals.results || []).map((o) => [o.fundId, o.total]));
+    const repaidTotals = await env.DB.prepare(
+      `SELECT fl.fund_id as fundId, COALESCE(SUM(lr.amount), 0) as total
+       FROM loan_repayments lr JOIN fund_loans fl ON fl.id = lr.loan_id
+       WHERE fl.group_id = ? AND lr.voided_at IS NULL GROUP BY fl.fund_id`
+    ).bind(user.groupId).all();
+    const repaidTotalByFund = Object.fromEntries((repaidTotals.results || []).map((o) => [o.fundId, o.total]));
+    const outstandingByFund = Object.fromEntries(
+      Object.keys(loanTotalByFund).map((fundId) => [
+        fundId,
+        Math.max(0, loanTotalByFund[fundId] - (repaidTotalByFund[fundId] || 0)),
+      ])
+    );
 
     const fundsOut = funds.map((f) => {
       const balance = balanceByFund[f.id] || 0;
@@ -79,7 +97,8 @@ export default function registerFundsRoutes(router) {
     // there to inspect (admin.js's Loans.jsx and, for a member's own
     // loan, Dashboard.jsx both read this).
     const repaymentRows = await env.DB.prepare(
-      `SELECT lr.id, lr.loan_id as loanId, lr.amount, lr.recorded_by as recordedBy, lr.recorded_at as recordedAt
+      `SELECT lr.id, lr.loan_id as loanId, lr.amount, lr.recorded_by as recordedBy, lr.recorded_at as recordedAt,
+              lr.voided_at as voidedAt, lr.void_reason as voidReason
        FROM loan_repayments lr JOIN fund_loans fl ON fl.id = lr.loan_id
        WHERE fl.group_id = ? ORDER BY lr.recorded_at ASC`
     ).bind(user.groupId).all();
@@ -88,15 +107,30 @@ export default function registerFundsRoutes(router) {
       (repaymentsByLoan[r.loanId] ||= []).push(r);
     }
 
+    // Prior amount/borrower-name values before a correction (migration
+    // 015) — kept alongside repayment history so the same expandable
+    // panel shows a loan's full audit trail, not just its repayments.
+    const editRows = await env.DB.prepare(
+      `SELECT le.id, le.loan_id as loanId, le.previous_amount as previousAmount,
+              le.previous_borrower_name as previousBorrowerName, le.edited_by as editedBy, le.edited_at as editedAt
+       FROM loan_edits le JOIN fund_loans fl ON fl.id = le.loan_id
+       WHERE fl.group_id = ? ORDER BY le.edited_at ASC`
+    ).bind(user.groupId).all();
+    const editsByLoan = {};
+    for (const e of editRows.results || []) {
+      (editsByLoan[e.loanId] ||= []).push(e);
+    }
+
     const loans = (loanRows.results || []).map((l) => {
       const repayments = repaymentsByLoan[l.id] || [];
-      const repaidTotal = repayments.reduce((sum, r) => sum + r.amount, 0);
+      const repaidTotal = repayments.filter((r) => !r.voidedAt).reduce((sum, r) => sum + r.amount, 0);
       return {
         ...l,
         fundName: funds.find((f) => f.id === l.fundId)?.name || l.fundId,
         repaidTotal,
         balance: Math.max(0, l.amount - repaidTotal),
         repayments,
+        edits: editsByLoan[l.id] || [],
       };
     });
 

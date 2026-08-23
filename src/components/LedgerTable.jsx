@@ -41,6 +41,7 @@ export default function LedgerTable({
             <RowWithHistory
               key={r.id}
               row={r}
+              allRows={rowsComputed}
               isRecipient={isRecipientRow(r)}
               onAddPayment={onAddPayment}
               onVoidPayment={onVoidPayment}
@@ -77,7 +78,7 @@ export default function LedgerTable({
   );
 }
 
-function RowWithHistory({ row, isRecipient, onAddPayment, onVoidPayment, onEditPayment, onSetDueOverride, onViewReceipt, premiumActive }) {
+function RowWithHistory({ row, allRows, isRecipient, onAddPayment, onVoidPayment, onEditPayment, onSetDueOverride, onViewReceipt, premiumActive }) {
   const [open, setOpen] = useState(false);
   const [editingDue, setEditingDue] = useState(false);
   const [dueDraft, setDueDraft] = useState(row.due);
@@ -94,6 +95,7 @@ function RowWithHistory({ row, isRecipient, onAddPayment, onVoidPayment, onEditP
   useEffect(() => () => clearTimeout(justLoggedTimeoutRef.current), []);
   const [editingEntryId, setEditingEntryId] = useState(null);
   const [entryDraft, setEntryDraft] = useState("");
+  const [entryDateDraft, setEntryDateDraft] = useState(row.id);
   const [entryBusy, setEntryBusy] = useState(false);
 
   const activeEntries = row.entries.filter((e) => !e.voidedAt);
@@ -126,6 +128,7 @@ function RowWithHistory({ row, isRecipient, onAddPayment, onVoidPayment, onEditP
 
   const startEditEntry = (entry) => {
     setEntryDraft(entry.amount);
+    setEntryDateDraft(row.id);
     setEditingEntryId(entry.id);
   };
 
@@ -133,7 +136,7 @@ function RowWithHistory({ row, isRecipient, onAddPayment, onVoidPayment, onEditP
     if (!entryDraft || Number(entryDraft) <= 0) return;
     setEntryBusy(true);
     try {
-      await onEditPayment(entry.id, row.id, entryDraft);
+      await onEditPayment(entry.id, entryDateDraft, entryDraft);
       setEditingEntryId(null);
     } finally {
       setEntryBusy(false);
@@ -206,6 +209,18 @@ function RowWithHistory({ row, isRecipient, onAddPayment, onVoidPayment, onEditP
                             onChange={(ev) => setEntryDraft(ev.target.value)}
                             autoFocus
                           />
+                          {allRows && allRows.length > 1 && (
+                            <select
+                              className="cell-input"
+                              value={entryDateDraft}
+                              onChange={(ev) => setEntryDateDraft(ev.target.value)}
+                              title="Logged against the wrong date? Move it here."
+                            >
+                              {allRows.map((r) => (
+                                <option key={r.id} value={r.id}>{r.date}</option>
+                              ))}
+                            </select>
+                          )}
                           <button className="btn-link" disabled={entryBusy} onClick={() => saveEntryEdit(e)}>
                             {entryBusy ? "saving…" : "save"}
                           </button>

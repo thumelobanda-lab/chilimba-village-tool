@@ -23,6 +23,7 @@ export async function getGroupFunds() {
     const contributions = lsGet(groupScopedKey(session, "fund-contributions"), []);
     const loans = lsGet(groupScopedKey(session, "fund-loans"), []);
     const repayments = lsGet(groupScopedKey(session, "fund-loan-repayments"), []);
+    const edits = lsGet(groupScopedKey(session, "fund-loan-edits"), []);
 
     const balanceByFund = {};
     contributions.forEach((c) => {
@@ -40,7 +41,7 @@ export async function getGroupFunds() {
       : namedFunds;
 
     const repaidByLoan = {};
-    repayments.forEach((r) => {
+    repayments.filter((r) => !r.voidedAt).forEach((r) => {
       repaidByLoan[r.loanId] = (repaidByLoan[r.loanId] || 0) + r.amount;
     });
     // "Still out on loan" nets every loan's amount against whatever's
@@ -74,13 +75,15 @@ export async function getGroupFunds() {
       .slice(0, 50)
       .map((l) => {
         const loanRepayments = repayments.filter((r) => r.loanId === l.id).sort((a, b) => new Date(a.recordedAt) - new Date(b.recordedAt));
-        const repaidTotal = loanRepayments.reduce((s, r) => s + r.amount, 0);
+        const repaidTotal = loanRepayments.filter((r) => !r.voidedAt).reduce((s, r) => s + r.amount, 0);
+        const loanEdits = edits.filter((e) => e.loanId === l.id).sort((a, b) => new Date(a.editedAt) - new Date(b.editedAt));
         return {
           ...l,
           fundName: funds.find((f) => f.id === l.fundId)?.name || l.fundId,
           repaidTotal,
           balance: Math.max(0, l.amount - repaidTotal),
           repayments: loanRepayments,
+          edits: loanEdits,
         };
       });
 
@@ -108,7 +111,7 @@ export async function issueLoan({ fundId, borrowerName, amount, notes = "" }) {
     const loans = lsGet(groupScopedKey(session, "fund-loans"), []);
     const repayments = lsGet(groupScopedKey(session, "fund-loan-repayments"), []);
     const repaidByLoan = {};
-    repayments.forEach((r) => { repaidByLoan[r.loanId] = (repaidByLoan[r.loanId] || 0) + r.amount; });
+    repayments.filter((r) => !r.voidedAt).forEach((r) => { repaidByLoan[r.loanId] = (repaidByLoan[r.loanId] || 0) + r.amount; });
     const outstanding = loans
       .filter((l) => l.fundId === fundId)
       .reduce((s, l) => s + Math.max(0, l.amount - (repaidByLoan[l.id] || 0)), 0);
@@ -152,7 +155,7 @@ export async function repayLoan(loanId, amount) {
     if (!loan) throw new Error("Loan not found.");
 
     const repayments = lsGet(groupScopedKey(session, "fund-loan-repayments"), []);
-    const repaidSoFar = repayments.filter((r) => r.loanId === loanId).reduce((s, r) => s + r.amount, 0);
+    const repaidSoFar = repayments.filter((r) => r.loanId === loanId && !r.voidedAt).reduce((s, r) => s + r.amount, 0);
     const remaining = loan.amount - repaidSoFar;
     if (remaining <= 0) throw new Error("This loan is already fully repaid.");
     if (amt > remaining) throw new Error(`Only K${remaining.toLocaleString()} is still owed on this loan.`);
@@ -169,4 +172,77 @@ export async function repayLoan(loanId, amount) {
   }
 
   return realFetch(`/api/admin/loans/${loanId}/repay`, { method: "POST", body: JSON.stringify({ amount: amt }) });
+}
+
+// Corrects a loan's own amount/borrower name (a typo at issuance) — a
+// direct update, not append-only, since fund_loans is a single "who
+// owes what" record rather than a summed ledger (repayments are the
+// append-only part, see repayLoan above). The prior values are kept
+// (fund-loan-edits / loan_edits) so every correction is still auditable.
+export async function editLoan(loanId, { amount, borrowerName }) {
+  const session = currentSession();
+  if (!session || session.role !== "admin") throw new Error("Admin access required.");
+  const amt = Number(amount);
+  const name = (borrowerName || "").trim();
+  if (!amt || amt <= 0) throw new Error("Enter an amount greater than zero.");
+  if (!name) throw new Error("Borrower name is required.");
+
+  if (MOCK_MODE) {
+    const loans = lsGet(groupScopedKey(session, "fund-loans"), []);
+    const loan = loans.find((l) => l.id === loanId);
+    if (!loan) throw new Error("Loan not found.");
+
+    const repayments = lsGet(groupScopedKey(session, "fund-loan-repayments"), []);
+    const repaidSoFar = repayments.filter((r) => r.loanId === loanId && !r.voidedAt).reduce((s, r) => s + r.amount, 0);
+    if (amt < repaidSoFar) {
+      throw new Error(`Can't set this below K${repaidSoFar.toLocaleString()} — that's already been repaid against it.`);
+    }
+
+    const edits = lsGet(groupScopedKey(session, "fund-loan-edits"), []);
+    lsSet(groupScopedKey(session, "fund-loan-edits"), [
+      ...edits,
+      { id: uidFund(), loanId, previousAmount: loan.amount, previousBorrowerName: loan.borrowerName, editedBy: session.name, editedAt: new Date().toISOString() },
+    ]);
+
+    const nowRepaid = amt - repaidSoFar <= 0;
+    const next = loans.map((l) =>
+      l.id === loanId
+        ? { ...l, amount: amt, borrowerName: name, status: nowRepaid ? "repaid" : "outstanding", repaidAt: nowRepaid ? (l.repaidAt || new Date().toISOString()) : null }
+        : l
+    );
+    lsSet(groupScopedKey(session, "fund-loans"), next);
+    return { ok: true };
+  }
+
+  return realFetch(`/api/admin/loans/${loanId}`, { method: "PUT", body: JSON.stringify({ amount: amt, borrowerName: name }) });
+}
+
+// Voids one repayment entry (a mis-keyed amount) — kept append-only, same
+// pattern as voiding a payment: the wrong entry stays visible, struck
+// through, never deleted or overwritten. If it drops a "repaid" loan's
+// total back below its amount, the loan flips back to 'outstanding'.
+export async function voidRepayment(loanId, repaymentId, reason = "") {
+  const session = currentSession();
+  if (!session || session.role !== "admin") throw new Error("Admin access required.");
+
+  if (MOCK_MODE) {
+    const repayments = lsGet(groupScopedKey(session, "fund-loan-repayments"), []);
+    const target = repayments.find((r) => r.id === repaymentId && r.loanId === loanId);
+    if (!target) throw new Error("Repayment not found.");
+    if (target.voidedAt) throw new Error("This repayment has already been voided.");
+
+    lsSet(
+      groupScopedKey(session, "fund-loan-repayments"),
+      repayments.map((r) => (r.id === repaymentId ? { ...r, voidedAt: new Date().toISOString(), voidReason: reason || "Edited — voided by an admin" } : r))
+    );
+
+    const loans = lsGet(groupScopedKey(session, "fund-loans"), []);
+    const loan = loans.find((l) => l.id === loanId);
+    if (loan?.status === "repaid") {
+      lsSet(groupScopedKey(session, "fund-loans"), loans.map((l) => (l.id === loanId ? { ...l, status: "outstanding", repaidAt: null } : l)));
+    }
+    return { ok: true };
+  }
+
+  return realFetch(`/api/admin/loans/${loanId}/repayments/${repaymentId}/void`, { method: "POST", body: JSON.stringify({ reason }) });
 }

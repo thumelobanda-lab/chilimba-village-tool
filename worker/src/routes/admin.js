@@ -430,7 +430,7 @@ export default function registerAdminRoutes(router) {
     const repaidTotalRow = await env.DB.prepare(
       `SELECT COALESCE(SUM(lr.amount), 0) as total FROM loan_repayments lr
        JOIN fund_loans fl ON fl.id = lr.loan_id
-       WHERE fl.group_id = ? AND fl.fund_id = ?`
+       WHERE fl.group_id = ? AND fl.fund_id = ? AND lr.voided_at IS NULL`
     ).bind(admin.groupId, body.fundId).first();
     const outstandingTotal = loanTotalRow.total - repaidTotalRow.total;
     const available = balanceRow.total - outstandingTotal;
@@ -470,7 +470,7 @@ export default function registerAdminRoutes(router) {
     if (!loan) throw new HttpError(404, "Loan not found.");
 
     const repaidRow = await env.DB.prepare(
-      `SELECT COALESCE(SUM(amount), 0) as total FROM loan_repayments WHERE loan_id = ?`
+      `SELECT COALESCE(SUM(amount), 0) as total FROM loan_repayments WHERE loan_id = ? AND voided_at IS NULL`
     ).bind(loan.id).first();
     const remaining = loan.amount - repaidRow.total;
     if (remaining <= 0) throw new HttpError(400, "This loan is already fully repaid.");
@@ -492,5 +492,83 @@ export default function registerAdminRoutes(router) {
     await env.DB.batch(stmts);
 
     return json({ ok: true, remaining: Math.max(0, newRemaining) }, 200, cors);
+  });
+
+  // Corrects a loan's own amount/borrower name — a direct UPDATE (see
+  // migration 015's comment: fund_loans is a single "who owes what"
+  // record, not a summed ledger), but the prior values are captured in
+  // loan_edits first so every correction stays auditable, same standard
+  // as everywhere else in this feature.
+  router.put("/api/admin/loans/:id", async ({ request, env, params, cors }) => {
+    const admin = await requireAdmin(request, env);
+    const body = await request.json().catch(() => ({}));
+    const amount = Number(body.amount);
+    const borrowerName = (body.borrowerName || "").trim();
+    if (!amount || amount <= 0) throw new HttpError(400, "Amount must be greater than zero.");
+    if (!borrowerName) throw new HttpError(400, "Borrower name is required.");
+
+    const loan = await env.DB.prepare(`SELECT * FROM fund_loans WHERE id = ? AND group_id = ?`)
+      .bind(params.id, admin.groupId).first();
+    if (!loan) throw new HttpError(404, "Loan not found.");
+
+    const repaidRow = await env.DB.prepare(
+      `SELECT COALESCE(SUM(amount), 0) as total FROM loan_repayments WHERE loan_id = ? AND voided_at IS NULL`
+    ).bind(loan.id).first();
+    if (amount < repaidRow.total) {
+      throw new HttpError(400, `Can't set this below K${repaidRow.total.toLocaleString()} — that's already been repaid against it.`);
+    }
+
+    const borrowerUser = await env.DB.prepare(`SELECT id FROM users WHERE group_id = ? AND name = ?`)
+      .bind(admin.groupId, borrowerName.toLowerCase()).first();
+    const nowRepaid = amount - repaidRow.total <= 0;
+
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO loan_edits (id, group_id, loan_id, previous_amount, previous_borrower_name, edited_by)
+         VALUES (?,?,?,?,?,?)`
+      ).bind(uid(), admin.groupId, loan.id, loan.amount, loan.borrower_name, admin.name),
+      env.DB.prepare(
+        `UPDATE fund_loans SET amount = ?, borrower_name = ?, borrower_user_id = ?, status = ?, repaid_at = ?
+         WHERE id = ?`
+      ).bind(amount, borrowerName, borrowerUser?.id || null, nowRepaid ? "repaid" : "outstanding", nowRepaid ? loan.repaid_at || new Date().toISOString() : null, loan.id),
+    ]);
+
+    return json({ ok: true }, 200, cors);
+  });
+
+  // Voids one repayment entry (a typo'd amount, most often) — kept
+  // append-only under the hood, same invariant as payments.voided_at:
+  // the wrong entry stays visible, struck through, never deleted or
+  // overwritten. If voiding it drops the loan's repaid total back below
+  // its amount, status flips back to 'outstanding' — a loan marked
+  // "fully repaid" on the strength of an entry that's now known wrong
+  // shouldn't keep reading as repaid.
+  router.post("/api/admin/loans/:loanId/repayments/:repayId/void", async ({ request, env, params, cors }) => {
+    const admin = await requireAdmin(request, env);
+    const body = await request.json().catch(() => ({}));
+
+    const loan = await env.DB.prepare(`SELECT * FROM fund_loans WHERE id = ? AND group_id = ?`)
+      .bind(params.loanId, admin.groupId).first();
+    if (!loan) throw new HttpError(404, "Loan not found.");
+
+    const repayment = await env.DB.prepare(
+      `SELECT * FROM loan_repayments WHERE id = ? AND loan_id = ?`
+    ).bind(params.repayId, loan.id).first();
+    if (!repayment) throw new HttpError(404, "Repayment not found.");
+    if (repayment.voided_at) throw new HttpError(400, "This repayment has already been voided.");
+
+    const stmts = [
+      env.DB.prepare(
+        `UPDATE loan_repayments SET voided_at = datetime('now'), void_reason = ? WHERE id = ?`
+      ).bind(body.reason || "Edited — voided by an admin", repayment.id),
+    ];
+    if (loan.status === "repaid") {
+      stmts.push(
+        env.DB.prepare(`UPDATE fund_loans SET status = 'outstanding', repaid_at = NULL WHERE id = ?`).bind(loan.id)
+      );
+    }
+    await env.DB.batch(stmts);
+
+    return json({ ok: true }, 200, cors);
   });
 }

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { issueLoan, repayLoan, getGroupFunds } from "../lib/api.js";
+import { issueLoan, repayLoan, editLoan, voidRepayment, getGroupFunds } from "../lib/api.js";
 import { useApiData } from "../lib/useApiData.js";
 
 const money = (n) => "K" + (Number(n) || 0).toLocaleString("en-ZM", { maximumFractionDigits: 0 });
@@ -17,6 +17,11 @@ export default function Loans() {
   const [repayDrafts, setRepayDrafts] = useState({}); // { [loanId]: "amount typed" }
   const [repayBusyId, setRepayBusyId] = useState(null);
   const [repayError, setRepayError] = useState("");
+  const [editingLoanId, setEditingLoanId] = useState(null);
+  const [editDraft, setEditDraft] = useState({ amount: "", borrowerName: "" });
+  const [editBusy, setEditBusy] = useState(false);
+  const [editError, setEditError] = useState("");
+  const [voidBusyId, setVoidBusyId] = useState(null);
 
   useEffect(() => {
     if (data && !fundId) {
@@ -69,6 +74,40 @@ export default function Loans() {
       setRepayError(e.message || "Could not record that repayment.");
     } finally {
       setRepayBusyId(null);
+    }
+  };
+
+  const startEditLoan = (loan) => {
+    setEditError("");
+    setEditDraft({ amount: loan.amount, borrowerName: loan.borrowerName });
+    setEditingLoanId(loan.id);
+    setExpanded(loan.id);
+  };
+
+  const saveEditLoan = async (loan) => {
+    setEditError("");
+    setEditBusy(true);
+    try {
+      await editLoan(loan.id, { amount: editDraft.amount, borrowerName: editDraft.borrowerName });
+      setEditingLoanId(null);
+      await refresh();
+    } catch (e) {
+      setEditError(e.message || "Could not save that correction.");
+    } finally {
+      setEditBusy(false);
+    }
+  };
+
+  const removeRepayment = async (loan, repayment) => {
+    if (!window.confirm(`Void the ${money(repayment.amount)} repayment recorded on ${new Date(repayment.recordedAt).toLocaleDateString()}? It'll stay visible, struck through, for the record.`)) return;
+    setVoidBusyId(repayment.id);
+    try {
+      await voidRepayment(loan.id, repayment.id);
+      await refresh();
+    } catch (e) {
+      setRepayError(e.message || "Could not void that repayment.");
+    } finally {
+      setVoidBusyId(null);
     }
   };
 
@@ -168,25 +207,80 @@ export default function Loans() {
                       <span className="status-paid">Repaid</span>
                     )}
                   </td>
-                  <td className="al muted small" data-label="Issued">{new Date(l.issuedAt).toLocaleDateString()}</td>
+                  <td className="al muted small" data-label="Issued">
+                    {new Date(l.issuedAt).toLocaleDateString()}
+                    <button className="btn-link tiny" style={{ marginLeft: 6 }} onClick={() => startEditLoan(l)} title="Correct the amount or borrower name">
+                      ✏️ edit
+                    </button>
+                  </td>
                 </tr>
                 {expanded === l.id && (
                   <tr className="history-row">
                     <td colSpan={6}>
                       <div className="history-panel">
+                        {editingLoanId === l.id && (
+                          <div className="history-add" style={{ marginBottom: 10 }}>
+                            <input
+                              type="text"
+                              placeholder="Borrower name"
+                              value={editDraft.borrowerName}
+                              onChange={(e) => setEditDraft((d) => ({ ...d, borrowerName: e.target.value }))}
+                              className="cell-input"
+                            />
+                            <input
+                              type="number"
+                              placeholder="Amount (K)"
+                              value={editDraft.amount}
+                              onChange={(e) => setEditDraft((d) => ({ ...d, amount: e.target.value }))}
+                              className="cell-input"
+                            />
+                            <button className="btn-ghost-dark" disabled={editBusy} onClick={() => saveEditLoan(l)}>
+                              {editBusy ? "Saving…" : "Save"}
+                            </button>
+                            <button className="btn-link" disabled={editBusy} onClick={() => setEditingLoanId(null)}>
+                              cancel
+                            </button>
+                            {editError && <div className="error-text tiny">{editError}</div>}
+                          </div>
+                        )}
+
                         {(l.repayments || []).length === 0 && (
                           <p className="muted tiny">No repayments logged yet.</p>
                         )}
                         {(l.repayments || []).map((r) => (
                           <div key={r.id} className="history-entry-wrap">
-                            <div className="history-entry">
+                            <div className={"history-entry" + (r.voidedAt ? " voided" : "")}>
                               <span>{money(r.amount)}</span>
                               <span className="muted tiny">
                                 {new Date(r.recordedAt).toLocaleDateString()} · {r.recordedBy}
                               </span>
+                              {r.voidedAt ? (
+                                <span className="muted tiny">voided</span>
+                              ) : (
+                                <button
+                                  className="btn-link"
+                                  disabled={voidBusyId === r.id}
+                                  onClick={() => removeRepayment(l, r)}
+                                  title="Void this repayment entry"
+                                >
+                                  {voidBusyId === r.id ? "voiding…" : "void"}
+                                </button>
+                              )}
                             </div>
                           </div>
                         ))}
+
+                        {(l.edits || []).length > 0 && (
+                          <>
+                            <p className="muted tiny" style={{ margin: "10px 0 4px" }}>Correction history</p>
+                            {l.edits.map((e) => (
+                              <div key={e.id} className="muted tiny">
+                                Was {e.previousBorrowerName} · {money(e.previousAmount)} — corrected by {e.editedBy}, {new Date(e.editedAt).toLocaleDateString()}
+                              </div>
+                            ))}
+                          </>
+                        )}
+
                         {l.status === "outstanding" && (
                           <div className="history-add">
                             <input

@@ -894,52 +894,55 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
    prop) rather than a small, easy-to-miss corner widget. */
 .dashboard-hero {
   background: linear-gradient(135deg, var(--accent), var(--accent-dark));
-  border-radius: 12px;
-  padding: 22px 24px;
-  margin-bottom: 22px;
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-bottom: 14px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 20px;
+  gap: 14px;
   flex-wrap: wrap;
 }
 .dashboard-hero-left { min-width: 0; }
 .dashboard-hero-greeting {
-  font-size: 1.4rem;
+  font-size: 1.1rem;
   font-weight: 700;
   color: #FAF7F0;
 }
 .dashboard-hero-sub {
-  margin: 6px 0 0;
+  margin: 3px 0 0;
   color: rgba(250, 247, 240, 0.75);
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   max-width: 36ch;
 }
 .dashboard-hero-cycle {
-  margin-top: 10px;
+  margin-top: 4px;
   color: var(--accent-2-light);
   font-weight: 600;
-  font-size: 0.85rem;
+  font-size: 0.76rem;
   letter-spacing: 0.02em;
 }
 .dashboard-hero-manage {
   color: rgba(250, 247, 240, 0.85) !important;
-  margin-top: 10px;
+  margin-top: 4px;
   display: inline-block;
+  font-size: 0.8rem;
 }
 .dashboard-hero-manage:hover { color: var(--accent-2-light) !important; }
 .dashboard-hero-ring { flex-shrink: 0; }
 /* A soft, always-on gold halo behind the ring — the "rich centerpiece"
    feel even outside a glow moment — separate from progress-ring-glow's
    brighter, pulsing highlight, which stays reserved for something
-   actually worth noticing (see Dashboard.jsx's ringGlow). */
+   actually worth noticing (see Dashboard.jsx's ringGlow). Compact now
+   (48-56px, sits right next to the greeting, not a dedicated card) —
+   the halo padding shrinks to match rather than dwarfing the ring. */
 .dashboard-hero-ring .progress-ring-wrap {
   background: radial-gradient(circle, rgba(201, 150, 46, 0.32), transparent 70%);
   border-radius: 50%;
-  padding: 8px;
+  padding: 3px;
+  margin-top: 0;
 }
-.dashboard-hero-ring .progress-ring-percent { color: #FAF7F0; font-size: 1.35rem; }
-.dashboard-hero-ring .progress-ring-sublabel.muted { color: rgba(250, 247, 240, 0.75) !important; }
+.dashboard-hero-ring .progress-ring-percent { color: #FAF7F0; font-size: 0.62rem; }
 
 .dashboard-grid {
   display: grid;
@@ -995,7 +998,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   border: 1px solid var(--line);
   border-top: 4px solid var(--accent);
   border-radius: 12px;
-  padding: 22px 24px;
+  padding: 16px 18px;
 }
 .vital-primary-value {
   font-size: 2.6rem;
@@ -1006,20 +1009,20 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   line-height: 1.1;
 }
 .vital-secondary-row {
-  display: flex;
-  gap: 10px;
-  margin-top: 10px;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 8px;
 }
 .vital-secondary {
-  flex: 1 1 140px;
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 12px 14px;
+  border-radius: 8px;
+  padding: 6px 8px;
 }
+.vital-secondary .vital-card-label { margin-bottom: 2px; font-size: 0.62rem; }
 .vital-secondary-value {
-  font-size: 1.1rem;
+  font-size: 0.92rem;
   font-weight: 700;
   color: var(--ink);
   font-variant-numeric: tabular-nums;
@@ -1158,19 +1161,20 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .quick-actions {
   display: flex;
   gap: 8px;
-  margin-top: 14px;
+  margin-top: 10px;
   flex-wrap: wrap;
 }
 .quick-action-btn {
-  flex: 1 1 76px;
+  flex: 0 0 auto;
+  width: 60px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
+  gap: 2px;
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 10px;
-  padding: 8px 6px;
+  padding: 6px 4px;
   cursor: pointer;
   transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
 }
@@ -1194,17 +1198,22 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 }
 
 /* Group Pulse — the communal layer: an aggregate total and a plain
-   activity count, deliberately never who specifically has paid. */
-.group-pulse-panel { margin-top: 14px; border-top: 3px solid var(--accent-2); }
-.group-pulse-total {
-  font-size: 1.8rem;
-  font-weight: 800;
+   activity count, deliberately never who specifically has paid. A
+   single slim strip (icon + one line), not a card — this is a
+   nice-to-know, not the number someone opens the app to check. */
+.group-pulse-strip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 0.82rem;
   color: var(--ink);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.01em;
-  margin-top: 4px;
 }
-.group-pulse-activity { font-size: 0.9rem; color: var(--ink); margin: 0; }
+.group-pulse-strip strong { font-variant-numeric: tabular-nums; }
 
 /* Payout acknowledgment — a brief, dismissible banner, not a persistent
    fixture. Sits above the vital-card grid, below the Home heading. */
