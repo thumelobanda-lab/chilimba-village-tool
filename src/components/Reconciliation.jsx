@@ -174,18 +174,16 @@ export default function Reconciliation({ config, premiumActive, onOpenGroupSetup
 
       {data && totals && (
         <>
-          <div className="calc-grid" style={{ marginBottom: 18 }}>
-            <SummaryCard label="Total Expected" value={money(totals.due)} />
-            <SummaryCard label="Total Received So Far" value={money(totals.paid)} />
-            <SummaryCard
-              label="Still Owed"
-              value={money(totals.due - totals.paid)}
-              warn={totals.due - totals.paid > 0}
-            />
-            <SummaryCard
-              label="Members Paid"
-              value={`${totals.expectedCount - totals.outstandingCount} / ${totals.expectedCount}`}
-            />
+          <div className="vital-primary" style={{ marginBottom: 8 }}>
+            <div className="vital-card-label">Still Owed for This Date</div>
+            <div className={"vital-primary-value" + (totals.due - totals.paid > 0 ? " vital-card-value-warn" : " vital-card-value-ok")}>
+              {money(totals.due - totals.paid)}
+            </div>
+          </div>
+          <div className="vital-secondary-row" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", marginBottom: 18 }}>
+            <MiniStat label="Total Expected" value={money(totals.due)} />
+            <MiniStat label="Total Received So Far" value={money(totals.paid)} />
+            <MiniStat label="Members Paid" value={`${totals.expectedCount - totals.outstandingCount} / ${totals.expectedCount}`} />
           </div>
 
           <div className="grid-wrap">
@@ -273,6 +271,11 @@ export default function Reconciliation({ config, premiumActive, onOpenGroupSetup
                                     {money(e.amount - e.communityFundAmount)} to contribution
                                   </div>
                                 )}
+                                {e.confirmedAt && e.latePenaltyAmount > 0 && (
+                                  <div className="muted tiny split-breakdown">
+                                    ⏱ {money(e.latePenaltyAmount)} late penalty — added to Group Savings Fund
+                                  </div>
+                                )}
                                 {e.rejectedAt && (
                                   <div className="muted tiny rejected-reason">
                                     Not confirmed by {e.rejectedBy}{e.rejectionReason ? `: ${e.rejectionReason}` : "."}
@@ -313,11 +316,11 @@ export default function Reconciliation({ config, premiumActive, onOpenGroupSetup
   );
 }
 
-function SummaryCard({ label, value, warn }) {
+function MiniStat({ label, value, warn }) {
   return (
-    <div className={"card" + (warn ? " card-warn" : "")}>
-      <div className="card-label">{label}</div>
-      <div className="card-value">{value}</div>
+    <div className="vital-secondary">
+      <div className="vital-card-label">{label}</div>
+      <div className={"vital-secondary-value" + (warn ? " vital-card-value-warn" : "")}>{value}</div>
     </div>
   );
 }

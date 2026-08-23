@@ -15,6 +15,7 @@ import {
   isCycleNearingCompletion,
   greeting,
   myOutstandingLoanTotal,
+  buildPayoutAvatarRow,
 } from "../lib/dashboardMath.js";
 import { useCountUp } from "../hooks/useCountUp.js";
 import ProgressRing from "./ProgressRing.jsx";
@@ -24,6 +25,7 @@ import PayoutAcknowledgment from "./PayoutAcknowledgment.jsx";
 import UpcomingDates from "./UpcomingDates.jsx";
 import MyNextPayments from "./MyNextPayments.jsx";
 import QuickActions from "./QuickActions.jsx";
+import PayoutAvatarRow from "./PayoutAvatarRow.jsx";
 
 function formatDate(dateISO) {
   const d = new Date(dateISO + "T00:00:00");
@@ -105,6 +107,7 @@ export default function Dashboard({
   const ringGlow =
     isMemberTurnSoon(timelineRows, session?.name) || isCycleNearingCompletion(cycle) || Boolean(recentPayout);
   const upcomingCount = upcomingRows.length + myNextPayments.length;
+  const payoutAvatarRows = buildPayoutAvatarRow(timelineRows, session?.name);
 
   return (
     <>
@@ -152,6 +155,8 @@ export default function Dashboard({
           <ProgressRing percent={cycle.percent} size={52} strokeWidth={5} glow={ringGlow} />
         </div>
       </div>
+
+      <PayoutAvatarRow rows={payoutAvatarRows} />
 
       <div
         className={"vital-primary" + (onOpenLedger ? " vital-card-clickable" : "")}

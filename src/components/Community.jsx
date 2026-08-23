@@ -87,7 +87,9 @@ export default function Community() {
               <div className="feed-item" key={entry.id}>
                 <span className="feed-name">{entry.displayName}</span>
                 <span className="muted small">
-                  settled {entry.scheduleGroup} ({entry.scheduleDate}) — {entry.fundName} +{money(entry.amount)}
+                  {entry.kind === "penalty"
+                    ? `⏱ ${money(entry.amount)} late penalty — added to ${entry.fundName}`
+                    : `settled ${entry.scheduleGroup} (${entry.scheduleDate}) — ${entry.fundName} +${money(entry.amount)}`}
                 </span>
                 <span className="muted tiny">{timeAgo(entry.recordedAt)}</span>
               </div>

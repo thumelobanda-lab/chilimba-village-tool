@@ -1,6 +1,6 @@
 import { isRecipient as isRecipientHelper, resolveDue } from "../scheduleUtils.js";
 import { effectiveContribution } from "../ledgerMath.js";
-import { computeCommunityFundSplit, crossedDueThreshold, fundsStillToCredit } from "../fundUtils.js";
+import { computeCommunityFundSplit, computeLatePenalty, crossedDueThreshold, fundsStillToCredit } from "../fundUtils.js";
 import { MOCK_MODE, lsGet, lsSet, uid, realFetch, currentSession, groupScopedKey } from "./core.js";
 
 // Mirrors the Worker's maybeRecordFundContributions (worker/src/fundCrediting.js)
@@ -129,10 +129,19 @@ export async function confirmPayment({ paymentId, memberName, scheduleRowId }) {
     const config = lsGet(groupScopedKey(session, "group"), null);
     const { fundAmount } = computeCommunityFundSplit(target.amount, config?.communityFundDeduction || 0);
     const rowId = scheduleRowId || target.scheduleRowId;
+    const row = config?.schedule?.find((r) => r.id === rowId);
+    const penaltyAmount = row
+      ? computeLatePenalty({
+          recordedAt: target.recordedAt,
+          dueDate: row.date,
+          isRecipient: isRecipientHelper(row, memberName, config?.recipientExempt),
+          penaltyAmount: config?.latePenaltyAmount || 0,
+        })
+      : 0;
 
     ledger.payments = ledger.payments.map((p) =>
       p.id === paymentId
-        ? { ...p, confirmedAt: new Date().toISOString(), confirmedBy: session.name, communityFundAmount: fundAmount }
+        ? { ...p, confirmedAt: new Date().toISOString(), confirmedBy: session.name, communityFundAmount: fundAmount, latePenaltyAmount: penaltyAmount }
         : p
     );
     lsSet(ledgerKey, ledger);
@@ -151,6 +160,21 @@ export async function confirmPayment({ paymentId, memberName, scheduleRowId }) {
         paymentId,
       });
       lsSet(feedKey, feed);
+    }
+
+    if (penaltyAmount > 0) {
+      const penaltyFeedKey = groupScopedKey(session, "late-penalties");
+      const penaltyFeed = lsGet(penaltyFeedKey, []);
+      penaltyFeed.push({
+        id: uid(),
+        userKey: memberName,
+        displayName: memberName,
+        scheduleRowId: rowId,
+        amount: penaltyAmount,
+        recordedAt: new Date().toISOString(),
+        paymentId,
+      });
+      lsSet(penaltyFeedKey, penaltyFeed);
     }
 
     if (target.status === "pending") {
@@ -245,13 +269,17 @@ export async function unconfirmPayment({ paymentId, memberName }) {
     const ledgerKey = groupScopedKey(session, "ledger", memberName);
     const ledger = lsGet(ledgerKey, { payments: [] });
     ledger.payments = (ledger.payments || []).map((p) =>
-      p.id === paymentId ? { ...p, confirmedAt: null, confirmedBy: null, communityFundAmount: 0 } : p
+      p.id === paymentId ? { ...p, confirmedAt: null, confirmedBy: null, communityFundAmount: 0, latePenaltyAmount: 0 } : p
     );
     lsSet(ledgerKey, ledger);
 
     const feedKey = groupScopedKey(session, "fund-contributions");
     const feed = lsGet(feedKey, []);
     lsSet(feedKey, feed.filter((f) => f.paymentId !== paymentId));
+
+    const penaltyFeedKey = groupScopedKey(session, "late-penalties");
+    const penaltyFeed = lsGet(penaltyFeedKey, []);
+    lsSet(penaltyFeedKey, penaltyFeed.filter((f) => f.paymentId !== paymentId));
 
     return { ok: true };
   }

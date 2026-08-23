@@ -5,6 +5,7 @@ import { json } from "../responses.js";
 import { isRecipient as isRecipientHelper, resolveDue, findNextDue } from "../scheduleUtils.js";
 import { wouldLeaveZeroAdmins } from "../adminUtils.js";
 import { computeCommunityFundSplit, EFFECTIVE_CONTRIBUTION_SQL, COMMUNITY_FUND_ID } from "../communityFundSplit.js";
+import { computeLatePenalty } from "../latePenalty.js";
 import { isSubscriptionActive } from "../subscriptionUtils.js";
 import { maybeRecordFundContributions } from "../fundCrediting.js";
 import { sendPush } from "../push.js";
@@ -205,7 +206,7 @@ export default function registerAdminRoutes(router) {
     const entriesResult = await env.DB.prepare(
       `SELECT p.id, u.display_name as memberName, p.amount, p.note, p.recorded_at as recordedAt,
               p.confirmed_at as confirmedAt, p.confirmed_by as confirmedBy,
-              p.community_fund_amount as communityFundAmount, p.status,
+              p.community_fund_amount as communityFundAmount, p.late_penalty_amount as latePenaltyAmount, p.status,
               p.rejected_at as rejectedAt, p.rejected_by as rejectedBy, p.rejection_reason as rejectionReason
        FROM payments p JOIN users u ON u.id = p.user_id
        WHERE p.schedule_row_id = ? AND p.group_id = ? AND p.voided_at IS NULL
@@ -274,26 +275,40 @@ export default function registerAdminRoutes(router) {
     const admin = await requireAdmin(request, env);
     const owned = await env.DB.prepare(
       `SELECT p.id, p.amount, p.confirmed_at as confirmedAt, p.schedule_row_id as scheduleRowId,
-              p.user_id as userId, u.display_name as displayName, p.status
+              p.user_id as userId, u.display_name as displayName, p.status, p.recorded_at as recordedAt
        FROM payments p JOIN users u ON u.id = p.user_id WHERE p.id = ? AND u.group_id = ?`
     ).bind(params.id, admin.groupId).first();
     if (!owned) throw new HttpError(404, "Payment not found in your group.");
     if (owned.confirmedAt) return json({ ok: true }, 200, cors); // already confirmed — no-op
 
-    const group = await env.DB.prepare(`SELECT community_fund_deduction, subscription_expires_at FROM groups WHERE id = ?`)
-      .bind(admin.groupId).first();
+    const group = await env.DB.prepare(
+      `SELECT community_fund_deduction, late_penalty_amount, subscription_expires_at, recipient_exempt, schedule_json FROM groups WHERE id = ?`
+    ).bind(admin.groupId).first();
     // Defense in depth: PUT /api/schedule already refuses to SET a
     // deduction rate on a free-tier group, but a subscription can also
     // EXPIRE after one was set — this makes sure a lapsed group's
     // payments stop splitting the moment it drops to free tier, not
-    // just at the point someone tries to raise the rate again.
-    const deductionRate = isSubscriptionActive(group?.subscription_expires_at) ? (group?.community_fund_deduction || 0) : 0;
+    // just at the point someone tries to raise the rate again. Same
+    // premium gate applies to the late penalty, same reason.
+    const active = isSubscriptionActive(group?.subscription_expires_at);
+    const deductionRate = active ? (group?.community_fund_deduction || 0) : 0;
     const { fundAmount } = computeCommunityFundSplit(owned.amount, deductionRate);
+
+    const schedule = JSON.parse(group?.schedule_json || "[]");
+    const row = schedule.find((r) => r.id === owned.scheduleRowId);
+    const penaltyAmount = active && row
+      ? computeLatePenalty({
+          recordedAt: owned.recordedAt,
+          dueDate: row.date,
+          isRecipient: isRecipientHelper(row, owned.displayName, !!group.recipient_exempt),
+          penaltyAmount: group?.late_penalty_amount || 0,
+        })
+      : 0;
 
     const stmts = [
       env.DB.prepare(
-        `UPDATE payments SET confirmed_at = datetime('now'), confirmed_by = ?, community_fund_amount = ? WHERE id = ?`
-      ).bind(admin.name, fundAmount, params.id),
+        `UPDATE payments SET confirmed_at = datetime('now'), confirmed_by = ?, community_fund_amount = ?, late_penalty_amount = ? WHERE id = ?`
+      ).bind(admin.name, fundAmount, penaltyAmount, params.id),
     ];
     if (fundAmount > 0) {
       stmts.push(
@@ -301,6 +316,14 @@ export default function registerAdminRoutes(router) {
           `INSERT INTO fund_contributions (id, group_id, user_id, display_name, schedule_row_id, fund_id, amount, payment_id)
            VALUES (?,?,?,?,?,?,?,?)`
         ).bind(uid(), admin.groupId, owned.userId, owned.displayName, owned.scheduleRowId, COMMUNITY_FUND_ID, fundAmount, params.id)
+      );
+    }
+    if (penaltyAmount > 0) {
+      stmts.push(
+        env.DB.prepare(
+          `INSERT INTO late_penalties (id, group_id, user_id, display_name, schedule_row_id, payment_id, amount)
+           VALUES (?,?,?,?,?,?,?)`
+        ).bind(uid(), admin.groupId, owned.userId, owned.displayName, owned.scheduleRowId, params.id, penaltyAmount)
       );
     }
     await env.DB.batch(stmts);
@@ -332,9 +355,11 @@ export default function registerAdminRoutes(router) {
   // against the same date, and only this one's credits should go). That
   // now includes a pending payment's named-fund threshold credit too,
   // since confirm's fundCrediting.js call (above) tags it with the same
-  // payment_id. If the payment was 'pending', clearing confirmed_at also
-  // drops it straight back to counting zero (effectiveContribution), same
-  // as it did before it was ever confirmed.
+  // payment_id. Also reverses any late penalty the same way (migration
+  // 016) — resets late_penalty_amount and removes the matching
+  // late_penalties row. If the payment was 'pending', clearing
+  // confirmed_at also drops it straight back to counting zero
+  // (effectiveContribution), same as it did before it was ever confirmed.
   router.post("/api/admin/payments/:id/unconfirm", async ({ request, env, params, cors }) => {
     const admin = await requireAdmin(request, env);
     const owned = await env.DB.prepare(
@@ -344,9 +369,10 @@ export default function registerAdminRoutes(router) {
 
     await env.DB.batch([
       env.DB.prepare(
-        `UPDATE payments SET confirmed_at = NULL, confirmed_by = NULL, community_fund_amount = 0 WHERE id = ?`
+        `UPDATE payments SET confirmed_at = NULL, confirmed_by = NULL, community_fund_amount = 0, late_penalty_amount = 0 WHERE id = ?`
       ).bind(params.id),
       env.DB.prepare(`DELETE FROM fund_contributions WHERE payment_id = ?`).bind(params.id),
+      env.DB.prepare(`DELETE FROM late_penalties WHERE payment_id = ?`).bind(params.id),
     ]);
     return json({ ok: true }, 200, cors);
   });

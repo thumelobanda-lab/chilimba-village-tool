@@ -57,3 +57,33 @@ export function computeCommunityFundSplit(paymentAmount, deductionRate) {
   const fundAmount = Math.max(0, Math.min(rate, amount));
   return { fundAmount, remainder: amount - fundAmount };
 }
+
+// Mirrors worker/src/latePenalty.js's isPaymentLate/computeLatePenalty —
+// see that module's comments for the full reasoning (lateness judged by
+// when the payment was actually logged, not when an admin confirms it;
+// calendar-day string comparison to avoid a local-vs-UTC Date parsing
+// mismatch between a full timestamp and a date-only value). Used by
+// src/lib/api/reconciliation.js's mock confirmPayment so mock mode
+// applies the same rule the real backend does.
+function calendarDayOf(dateStr) {
+  if (!dateStr) return null;
+  const isoMatch = /^\d{4}-\d{2}-\d{2}/.exec(dateStr);
+  if (isoMatch) return isoMatch[0];
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return null;
+  const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, "0"), day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+export function isPaymentLate(recordedAt, dueDate) {
+  const recordedDay = calendarDayOf(recordedAt);
+  const dueDay = calendarDayOf(dueDate);
+  if (!recordedDay || !dueDay) return false;
+  return recordedDay > dueDay;
+}
+
+export function computeLatePenalty({ recordedAt, dueDate, isRecipient, penaltyAmount }) {
+  const amount = Number(penaltyAmount) || 0;
+  if (amount <= 0 || isRecipient) return 0;
+  return isPaymentLate(recordedAt, dueDate) ? amount : 0;
+}

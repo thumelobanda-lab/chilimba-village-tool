@@ -11,6 +11,7 @@ import {
   isCycleNearingCompletion,
   greeting,
   myOutstandingLoanTotal,
+  buildPayoutAvatarRow,
 } from "./dashboardMath.js";
 
 describe("computeCycleProgress", () => {
@@ -360,5 +361,68 @@ describe("myOutstandingLoanTotal", () => {
 
   it("never returns negative even if balance is stored as negative", () => {
     expect(myOutstandingLoanTotal([{ borrowerName: "X", amount: 100, balance: -50 }], "X")).toBe(0);
+  });
+});
+
+describe("buildPayoutAvatarRow", () => {
+  const timeline = [
+    { id: "d1", date: "2026-06-01", payees: ["Alice"], status: "past" },
+    { id: "d2", date: "2026-06-15", payees: ["Bob"], status: "past" },
+    { id: "d3", date: "2026-06-29", payees: ["Carol"], status: "past" },
+    { id: "d4", date: "2026-07-13", payees: ["Dorothy"], status: "next" },
+    { id: "d5", date: "2026-07-27", payees: ["Elizabeth"], status: "future" },
+    { id: "d6", date: "2026-08-10", payees: ["Fridah"], status: "future" },
+    { id: "d7", date: "2026-08-24", payees: ["Grace"], status: "future" },
+  ];
+
+  it("returns empty for an empty timeline", () => {
+    expect(buildPayoutAvatarRow([], "Alice")).toEqual([]);
+  });
+
+  it("shows the last 2 received, next, and next 2 upcoming by default (5 total)", () => {
+    const rows = buildPayoutAvatarRow(timeline, "Someone Else");
+    expect(rows.map((r) => r.name)).toEqual(["Bob", "Carol", "Dorothy", "Elizabeth", "Fridah"]);
+    expect(rows.map((r) => r.status)).toEqual(["received", "received", "next", "upcoming", "upcoming"]);
+  });
+
+  it("flags the signed-in member when they fall naturally within the shown window", () => {
+    const rows = buildPayoutAvatarRow(timeline, "Dorothy");
+    const dorothy = rows.find((r) => r.name === "Dorothy");
+    expect(dorothy.isCurrentUser).toBe(true);
+    expect(rows.filter((r) => r.isCurrentUser)).toHaveLength(1);
+  });
+
+  it("still includes the signed-in member even if their turn is beyond the top of the upcoming slice", () => {
+    const rows = buildPayoutAvatarRow(timeline, "Grace");
+    expect(rows.map((r) => r.name)).toContain("Grace");
+    const grace = rows.find((r) => r.name === "Grace");
+    expect(grace.status).toBe("upcoming");
+    expect(grace.isCurrentUser).toBe(true);
+    // still shows the natural window too, just with Grace appended
+    expect(rows.map((r) => r.name)).toEqual(["Bob", "Carol", "Dorothy", "Elizabeth", "Fridah", "Grace"]);
+  });
+
+  it("deduplicates a member who receives more than one payout across the schedule", () => {
+    const repeatTimeline = [
+      { id: "d1", date: "2026-06-01", payees: ["Alice"], status: "past" },
+      { id: "d2", date: "2026-06-15", payees: ["Alice"], status: "past" },
+      { id: "d3", date: "2026-06-29", payees: ["Bob"], status: "next" },
+    ];
+    const rows = buildPayoutAvatarRow(repeatTimeline, "Someone Else");
+    expect(rows.filter((r) => r.name === "Alice")).toHaveLength(1);
+  });
+
+  it("respects custom counts", () => {
+    const rows = buildPayoutAvatarRow(timeline, "Someone Else", { lastReceivedCount: 1, upcomingCount: 1 });
+    expect(rows.map((r) => r.name)).toEqual(["Carol", "Dorothy"]);
+  });
+
+  it("handles a schedule with no past dates yet (nothing received)", () => {
+    const futureOnly = [
+      { id: "d1", date: "2026-07-13", payees: ["Dorothy"], status: "next" },
+      { id: "d2", date: "2026-07-27", payees: ["Elizabeth"], status: "future" },
+    ];
+    const rows = buildPayoutAvatarRow(futureOnly, "Someone Else");
+    expect(rows.map((r) => r.status)).toEqual(["next", "upcoming"]);
   });
 });

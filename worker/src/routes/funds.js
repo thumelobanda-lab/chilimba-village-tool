@@ -24,6 +24,18 @@ export default function registerFundsRoutes(router) {
     ).bind(user.groupId).all();
     const balanceByFund = Object.fromEntries((balances.results || []).map((b) => [b.fundId, b.balance]));
 
+    // Late penalties (migration 016) always land in the community fund,
+    // but live in their own table (see that migration's comment for
+    // why) — fold the total in here so the fund's balance/available
+    // figures include them, same as any regular split credit would.
+    const penaltyTotalRow = await env.DB.prepare(
+      `SELECT COALESCE(SUM(amount), 0) as total FROM late_penalties WHERE group_id = ?`
+    ).bind(user.groupId).first();
+    const latePenaltyTotal = penaltyTotalRow.total || 0;
+    if (latePenaltyTotal > 0) {
+      balanceByFund[COMMUNITY_FUND_ID] = (balanceByFund[COMMUNITY_FUND_ID] || 0) + latePenaltyTotal;
+    }
+
     // The community-fund split (see communityFundSplit.js) has no entry
     // in funds_json — it's a single implicit fund tied to the group's
     // community_fund_deduction setting, not one of the admin's own named
@@ -31,7 +43,8 @@ export default function registerFundsRoutes(router) {
     // Dashboard's fund total automatically, same as any named fund.
     // Included whenever a deduction rate is configured, OR — even if the
     // rate's since been zeroed out — whenever there's already credited
-    // history, so past balance never silently disappears from view.
+    // history (a split OR a penalty), so past balance never silently
+    // disappears from view.
     const communityFundDeduction = Number(config?.community_fund_deduction) || 0;
     const hasCommunityFundHistory = balanceByFund[COMMUNITY_FUND_ID] !== undefined;
     const funds = communityFundDeduction > 0 || hasCommunityFundHistory
@@ -76,12 +89,27 @@ export default function registerFundsRoutes(router) {
       `SELECT id, display_name as displayName, schedule_row_id as scheduleRowId, fund_id as fundId, amount, recorded_at as recordedAt
        FROM fund_contributions WHERE group_id = ? ORDER BY recorded_at DESC LIMIT 50`
     ).bind(user.groupId).all();
-    const feed = (feedRows.results || []).map((r) => ({
-      ...r,
-      fundName: funds.find((f) => f.id === r.fundId)?.name || r.fundId,
-      scheduleDate: scheduleById[r.scheduleRowId]?.date || "",
-      scheduleGroup: scheduleById[r.scheduleRowId]?.group || "",
-    }));
+    // Late penalties (migration 016) get their own feed rows, tagged
+    // kind: "penalty" — Community.jsx renders these with distinct
+    // wording ("K20 late penalty — added to Group Savings Fund") rather
+    // than folding them into the regular contribution line, so a penalty
+    // is never mistaken for an ordinary settlement.
+    const penaltyRows = await env.DB.prepare(
+      `SELECT id, display_name as displayName, schedule_row_id as scheduleRowId, amount, recorded_at as recordedAt
+       FROM late_penalties WHERE group_id = ? ORDER BY recorded_at DESC LIMIT 50`
+    ).bind(user.groupId).all();
+    const feed = [
+      ...(feedRows.results || []).map((r) => ({ ...r, kind: "contribution" })),
+      ...(penaltyRows.results || []).map((r) => ({ ...r, kind: "penalty", fundId: COMMUNITY_FUND_ID })),
+    ]
+      .sort((a, b) => new Date(b.recordedAt) - new Date(a.recordedAt))
+      .slice(0, 50)
+      .map((r) => ({
+        ...r,
+        fundName: funds.find((f) => f.id === r.fundId)?.name || r.fundId,
+        scheduleDate: scheduleById[r.scheduleRowId]?.date || "",
+        scheduleGroup: scheduleById[r.scheduleRowId]?.group || "",
+      }));
 
     const loanRows = await env.DB.prepare(
       `SELECT id, fund_id as fundId, borrower_name as borrowerName, amount, notes, status,

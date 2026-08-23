@@ -20,6 +20,7 @@ export default function registerScheduleRoutes(router) {
       funds: JSON.parse(row.funds_json || "[]"),
       paymentMethods: JSON.parse(row.payment_info_json || "[]"),
       communityFundDeduction: row.community_fund_deduction || 0,
+      latePenaltyAmount: row.late_penalty_amount || 0,
     }, 200, cors);
   });
 
@@ -28,29 +29,38 @@ export default function registerScheduleRoutes(router) {
     const body = await request.json();
     const communityFundDeduction = Number(body.communityFundDeduction) || 0;
     if (communityFundDeduction < 0) throw new HttpError(400, "Community fund deduction can't be negative.");
+    const latePenaltyAmount = Number(body.latePenaltyAmount) || 0;
+    if (latePenaltyAmount < 0) throw new HttpError(400, "Late payment penalty can't be negative.");
 
-    const group = await env.DB.prepare(`SELECT subscription_expires_at, community_fund_deduction FROM groups WHERE id = ?`)
-      .bind(admin.groupId).first();
+    const group = await env.DB.prepare(
+      `SELECT subscription_expires_at, community_fund_deduction, late_penalty_amount FROM groups WHERE id = ?`
+    ).bind(admin.groupId).first();
     const currentDeduction = group?.community_fund_deduction || 0;
-    // Automatic community-fund splitting is premium-only — checked
-    // server-side, not just left hidden/disabled in GroupSetup.jsx, so a
-    // free-tier group can't enable it by calling this route directly.
-    // Only blocks actually RAISING the rate, not every save that happens
-    // to still carry the same (or a lower/unchanged) value forward —
-    // otherwise a group that lapses from premium back to free would find
-    // ALL of Group Setup refuses to save anything at all, blocked by a
-    // stale field the UI doesn't even let them touch anymore (see
-    // GroupSetup.jsx, which disables this input on free tier but the
-    // draft object still round-trips the config's existing value).
-    if (communityFundDeduction > currentDeduction && !isSubscriptionActive(group?.subscription_expires_at)) {
+    const currentPenalty = group?.late_penalty_amount || 0;
+    // Automatic community-fund splitting (and the late penalty that
+    // feeds the same fund) are premium-only — checked server-side, not
+    // just left hidden/disabled in GroupSetup.jsx, so a free-tier group
+    // can't enable either by calling this route directly. Only blocks
+    // actually RAISING the rate, not every save that happens to still
+    // carry the same (or a lower/unchanged) value forward — otherwise a
+    // group that lapses from premium back to free would find ALL of
+    // Group Setup refuses to save anything at all, blocked by a stale
+    // field the UI doesn't even let them touch anymore (see
+    // GroupSetup.jsx, which disables these inputs on free tier but the
+    // draft object still round-trips the config's existing values).
+    const subscriptionActive = isSubscriptionActive(group?.subscription_expires_at);
+    if (communityFundDeduction > currentDeduction && !subscriptionActive) {
       throw new HttpError(402, "Automatic community fund splitting is a premium feature — activate your group's subscription first.");
     }
+    if (latePenaltyAmount > currentPenalty && !subscriptionActive) {
+      throw new HttpError(402, "A late payment penalty is a premium feature — activate your group's subscription first.");
+    }
     await env.DB.prepare(
-      `UPDATE groups SET group_name=?, cycle_name=?, recipient_exempt=?, schedule_json=?, funds_json=?, payment_info_json=?, community_fund_deduction=?, updated_at=datetime('now'), updated_by=? WHERE id=?`
+      `UPDATE groups SET group_name=?, cycle_name=?, recipient_exempt=?, schedule_json=?, funds_json=?, payment_info_json=?, community_fund_deduction=?, late_penalty_amount=?, updated_at=datetime('now'), updated_by=? WHERE id=?`
     ).bind(
       body.groupName, body.cycleName, body.recipientExempt ? 1 : 0,
       JSON.stringify(body.schedule), JSON.stringify(body.funds || []),
-      JSON.stringify(body.paymentMethods || []), communityFundDeduction, admin.name, admin.groupId
+      JSON.stringify(body.paymentMethods || []), communityFundDeduction, latePenaltyAmount, admin.name, admin.groupId
     ).run();
     return json({ ok: true }, 200, cors);
   });

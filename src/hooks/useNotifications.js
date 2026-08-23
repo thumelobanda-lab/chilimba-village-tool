@@ -38,7 +38,7 @@ function addDismissed(session, id) {
  * forever, not "everything as of now" — simpler to reason about, and
  * nothing is ever silently marked read without the member seeing it.
  */
-export function useNotifications(session, payments, nextDue) {
+export function useNotifications(session, payments, nextDue, premiumActive) {
   const { data: ownerData, refresh: refreshOwner } = useApiData(
     session ? getMyMessages : () => Promise.resolve(null),
     [session?.token]
@@ -93,7 +93,7 @@ export function useNotifications(session, payments, nextDue) {
         kind: "payment",
         text: p.rejectedAt
           ? `Your ${money(p.amount)} payment wasn't confirmed${p.rejectionReason ? `: ${p.rejectionReason}` : "."}`
-          : `Your ${money(p.amount)} payment was confirmed.`,
+          : `Your ${money(p.amount)} payment was confirmed.${premiumActive ? " Receipt ready in My Payment History." : ""}`,
         at: p.rejectedAt || p.confirmedAt,
         dismiss: () => {
           addDismissed(session, id);
@@ -120,7 +120,7 @@ export function useNotifications(session, payments, nextDue) {
 
     return out.sort((a, b) => (parseServerTimestamp(b.at) || 0) - (parseServerTimestamp(a.at) || 0));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session, ownerData, noticesData, payments, nextDue, dismissTick]);
+  }, [session, ownerData, noticesData, payments, nextDue, dismissTick, premiumActive]);
 
   return { items, unreadCount: items.length };
 }

@@ -1,5 +1,39 @@
 import { describe, it, expect } from "vitest";
-import { crossedDueThreshold, fundsStillToCredit, computeCommunityFundSplit } from "./fundUtils.js";
+import { crossedDueThreshold, fundsStillToCredit, computeCommunityFundSplit, isPaymentLate, computeLatePenalty } from "./fundUtils.js";
+
+describe("isPaymentLate", () => {
+  it("is not late when recorded on the due date itself", () => {
+    expect(isPaymentLate("2026-06-20T22:45:00.000Z", "2026-06-20")).toBe(false);
+  });
+
+  it("is late when recorded the day after the due date", () => {
+    expect(isPaymentLate("2026-06-21T00:05:00.000Z", "2026-06-20")).toBe(true);
+  });
+
+  it("handles a freeform due-date string, not just ISO", () => {
+    expect(isPaymentLate("2026-06-22T09:00:00.000Z", "20 Jun 2026")).toBe(true);
+  });
+});
+
+describe("computeLatePenalty", () => {
+  it("returns the configured amount when late", () => {
+    expect(
+      computeLatePenalty({ recordedAt: "2026-07-01T00:00:00.000Z", dueDate: "2026-06-20", isRecipient: false, penaltyAmount: 20 })
+    ).toBe(20);
+  });
+
+  it("returns 0 when on time", () => {
+    expect(
+      computeLatePenalty({ recordedAt: "2026-06-19T00:00:00.000Z", dueDate: "2026-06-20", isRecipient: false, penaltyAmount: 20 })
+    ).toBe(0);
+  });
+
+  it("never penalizes a recipient's own payout-date row", () => {
+    expect(
+      computeLatePenalty({ recordedAt: "2026-07-01T00:00:00.000Z", dueDate: "2026-06-20", isRecipient: true, penaltyAmount: 20 })
+    ).toBe(0);
+  });
+});
 
 describe("crossedDueThreshold", () => {
   it("returns true the moment a payment pushes cumulative paid to exactly the due amount", () => {

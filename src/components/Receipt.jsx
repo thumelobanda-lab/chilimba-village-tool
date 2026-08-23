@@ -53,11 +53,11 @@ function drawReceipt(canvas, data) {
 
   ctx.textAlign = "center";
   ctx.fillStyle = "#FFFFFF";
-  ctx.font = "700 46px system-ui, sans-serif";
-  ctx.fillText("🧾 Payment Receipt", w / 2, 90);
-  ctx.font = "500 26px system-ui, sans-serif";
+  ctx.font = "700 42px system-ui, sans-serif";
+  ctx.fillText(data.groupName, w / 2, 90);
+  ctx.font = "600 24px system-ui, sans-serif";
   ctx.fillStyle = "rgba(255,255,255,0.82)";
-  ctx.fillText(data.groupName, w / 2, 140);
+  ctx.fillText("🧾 Payment Receipt", w / 2, 140);
 
   // Rows: label left, value right, divider beneath (rows computed above,
   // before sizing the canvas)

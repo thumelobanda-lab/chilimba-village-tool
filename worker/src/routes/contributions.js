@@ -10,7 +10,7 @@ export default function registerContributionsRoutes(router) {
       `SELECT id, schedule_row_id as scheduleRowId, amount, note, recorded_by as recordedBy,
               recorded_at as recordedAt, voided_at as voidedAt, void_reason as voidReason,
               confirmed_at as confirmedAt, confirmed_by as confirmedBy,
-              community_fund_amount as communityFundAmount, status,
+              community_fund_amount as communityFundAmount, late_penalty_amount as latePenaltyAmount, status,
               rejected_at as rejectedAt, rejected_by as rejectedBy, rejection_reason as rejectionReason
        FROM payments WHERE user_id = ? ORDER BY recorded_at ASC`
     ).bind(user.id).all();

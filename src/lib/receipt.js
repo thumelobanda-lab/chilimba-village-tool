@@ -74,8 +74,7 @@ export function buildReceiptMessage(data) {
   const datePaid = data.datePaid ? new Date(data.datePaid).toLocaleDateString() : "—";
   const payoutLine = data.dueGroup ? `${data.dueDate} (${data.dueGroup})` : data.dueDate || "—";
   return (
-    `OpenBook — Payment Receipt 🧾\n\n` +
-    `Group: ${data.groupName}\n` +
+    `${data.groupName} — Payment Receipt 🧾\n\n` +
     (data.cycleName ? `Round: ${data.cycleName}\n` : "") +
     `Member: ${data.memberName}\n` +
     `Amount paid: K${data.amount.toLocaleString()}\n` +

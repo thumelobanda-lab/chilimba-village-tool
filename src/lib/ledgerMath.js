@@ -45,7 +45,7 @@ export function effectiveContribution(payment) {
  * @param {string} params.sessionName - the signed-in member's display name
  * @param {boolean} params.recipientExempt - whether recipients pay K0 on their own date
  * @returns {object} totals — due, paid, balance, net, suggestedRate, remainingCount,
- *   rowsComputed (per-date breakdown), suggestedTotal
+ *   rowsComputed (per-date breakdown), suggestedTotal, orphanedEntries (see below)
  */
 export function computeLedgerTotals({ schedule, ledger, sessionName, recipientExempt }) {
   let due = 0;
@@ -54,6 +54,7 @@ export function computeLedgerTotals({ schedule, ledger, sessionName, recipientEx
   const payoutAmount = Number(ledger?.payoutInfo?.amount || 0);
   const dueOverrides = ledger?.dueOverrides || {};
   const payments = ledger?.payments || [];
+  const scheduleIds = new Set(schedule.map((row) => row.id));
 
   const pass1 = schedule.map((row) => {
     const overridden = dueOverrides[row.id] !== undefined;
@@ -78,6 +79,21 @@ export function computeLedgerTotals({ schedule, ledger, sessionName, recipientEx
     };
   });
 
+  // A payment logged against a date that's since been removed from the
+  // schedule (GroupSetup's "remove row" has no guard against this) used
+  // to just vanish here — filtered out of every row, never rendered
+  // anywhere, its amount silently missing from `paid`/`balance` even
+  // though the member genuinely paid it and it was never voided. Money
+  // never just disappears in this app (the whole point of an append-only
+  // ledger), so these still count toward `paid`, and are surfaced
+  // separately (LedgerTable.jsx renders orphanedEntries in their own
+  // section, dated by recordedAt since there's no schedule row left to
+  // carry a due date) rather than requiring a `due` counterpart they no
+  // longer have one of.
+  const orphanedEntries = payments.filter((p) => !p.voidedAt && !scheduleIds.has(p.scheduleRowId));
+  const orphanedPaid = orphanedEntries.reduce((sum, p) => sum + effectiveContribution(p), 0);
+  paid += orphanedPaid;
+
   const remainingCount = pass1.filter((r) => r.balance > 0).length;
   const net = payoutAmount - paid;
   const suggestedRate = remainingCount > 0 ? Math.max(net, 0) / remainingCount : 0;
@@ -95,6 +111,7 @@ export function computeLedgerTotals({ schedule, ledger, sessionName, recipientEx
     suggestedRate,
     remainingCount,
     rowsComputed,
+    orphanedEntries,
     suggestedTotal: rowsComputed.reduce((sum, r) => sum + r.suggested, 0),
   };
 }

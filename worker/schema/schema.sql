@@ -44,6 +44,11 @@ CREATE TABLE IF NOT EXISTS groups (
                                              -- a PREMIUM-only feature (see
                                              -- subscriptionUtils.js) — rejected by
                                              -- PUT /api/schedule on a free-tier group
+  late_penalty_amount REAL NOT NULL DEFAULT 0, -- fixed K amount added to the
+                                             -- community fund when a payment is
+                                             -- confirmed after its due date (migration
+                                             -- 016, see late_penalties below) — same
+                                             -- premium gating as community_fund_deduction
   subscription_expires_at TEXT,             -- NULL until a platform owner CONFIRMS a
                                              -- real payment (see group_subscriptions'
                                              -- pending/confirmed/rejected workflow,
@@ -163,10 +168,36 @@ CREATE TABLE IF NOT EXISTS payments (
                                       -- rejected (see migration 009)
   rejected_at TEXT,
   rejected_by TEXT,
-  rejection_reason TEXT
+  rejection_reason TEXT,
+  late_penalty_amount REAL NOT NULL DEFAULT 0 -- frozen at confirm time if this
+                                      -- payment was logged after its due date
+                                      -- and the group has a penalty configured
+                                      -- (migration 016) — 0 until then, reset
+                                      -- to 0 again if unconfirmed, mirroring
+                                      -- community_fund_amount above
 );
 CREATE INDEX IF NOT EXISTS idx_payments_user ON payments(user_id);
 CREATE INDEX IF NOT EXISTS idx_payments_group ON payments(group_id);
+
+-- One row per confirmed payment that was actually penalized (migration
+-- 016) — a dedicated table rather than another fund_contributions row,
+-- since fund_contributions' UNIQUE(user_id, schedule_row_id, fund_id,
+-- payment_id) is already occupied by that same payment's community-fund-
+-- split credit. Append-only, reversed by DELETE on unconfirm (same as
+-- fund_contributions rows are for the split) — the amount itself is also
+-- frozen on payments.late_penalty_amount for quick display without a join.
+CREATE TABLE IF NOT EXISTS late_penalties (
+  id TEXT PRIMARY KEY,
+  group_id TEXT NOT NULL REFERENCES groups(id),
+  user_id TEXT NOT NULL REFERENCES users(id),
+  display_name TEXT NOT NULL,
+  schedule_row_id TEXT NOT NULL,
+  payment_id TEXT NOT NULL REFERENCES payments(id),
+  amount REAL NOT NULL,
+  recorded_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(payment_id)
+);
+CREATE INDEX IF NOT EXISTS idx_late_penalties_group ON late_penalties(group_id, recorded_at);
 
 CREATE TABLE IF NOT EXISTS payouts (
   user_id TEXT PRIMARY KEY REFERENCES users(id),

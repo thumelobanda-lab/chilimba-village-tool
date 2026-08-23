@@ -227,3 +227,84 @@ export function myOutstandingLoanTotal(loans, name) {
     .filter((l) => (l.borrowerName || "").trim().toLowerCase() === target)
     .reduce((sum, l) => sum + Math.max(0, Number(l.balance ?? l.amount) || 0), 0);
 }
+
+/**
+ * The compact "where the rotation is right now" avatar strip: the last
+ * couple of members who already received their payout this schedule,
+ * then the next few coming up — always including the signed-in member
+ * even if their own turn is further out than the top of the "upcoming"
+ * slice, since the whole point is "so they can immediately spot
+ * themselves" regardless of group size.
+ *
+ * Takes buildCycleTimeline's already-sorted, already-tagged output
+ * (Dashboard.jsx computes that once for the timeline strip already) and
+ * flattens it to one entry per member per date — a date can have up to
+ * 3 payees, so this isn't a 1:1 map over rows.
+ *
+ * @param {Array<object>} timelineRows - output of buildCycleTimeline,
+ *   each row {..., payees: string[], status: 'past'|'next'|'future'}
+ * @param {string} currentMemberName
+ * @param {{lastReceivedCount?: number, upcomingCount?: number}} [opts]
+ * @returns {Array<{name: string, status: 'received'|'next'|'upcoming', date: string, isCurrentUser: boolean}>}
+ */
+export function buildPayoutAvatarRow(timelineRows, currentMemberName, opts = {}) {
+  const { lastReceivedCount = 2, upcomingCount = 3 } = opts;
+  if (!timelineRows || timelineRows.length === 0) return [];
+
+  const flat = [];
+  for (const row of timelineRows) {
+    for (const name of row.payees || []) {
+      flat.push({ name, date: row.date, rowStatus: row.status });
+    }
+  }
+
+  const pastEntries = flat.filter((e) => e.rowStatus === "past");
+  const upcomingEntries = flat.filter((e) => e.rowStatus !== "past");
+
+  // Scan backward through past entries for the most recent unique
+  // names, then restore chronological order for display.
+  const received = [];
+  const seenReceived = new Set();
+  for (let i = pastEntries.length - 1; i >= 0 && received.length < lastReceivedCount; i--) {
+    const e = pastEntries[i];
+    const key = e.name.trim().toLowerCase();
+    if (seenReceived.has(key)) continue;
+    seenReceived.add(key);
+    received.unshift(e);
+  }
+
+  const upcoming = [];
+  const seenUpcoming = new Set();
+  for (const e of upcomingEntries) {
+    const key = e.name.trim().toLowerCase();
+    if (seenUpcoming.has(key) || seenReceived.has(key)) continue;
+    seenUpcoming.add(key);
+    upcoming.push(e);
+    if (upcoming.length >= upcomingCount) break;
+  }
+
+  const rows = [
+    ...received.map((e) => ({ name: e.name, status: "received", date: e.date })),
+    ...upcoming.map((e) => ({ name: e.name, status: e.rowStatus === "next" ? "next" : "upcoming", date: e.date })),
+  ];
+
+  if (currentMemberName) {
+    const key = currentMemberName.trim().toLowerCase();
+    const alreadyShown = rows.some((r) => r.name.trim().toLowerCase() === key);
+    if (!alreadyShown) {
+      const own = flat.find((e) => e.name.trim().toLowerCase() === key);
+      if (own) {
+        rows.push({
+          name: own.name,
+          status: own.rowStatus === "past" ? "received" : own.rowStatus === "next" ? "next" : "upcoming",
+          date: own.date,
+        });
+      }
+    }
+  }
+
+  return rows.map((r) => ({
+    ...r,
+    isCurrentUser: !!currentMemberName && r.name.trim().toLowerCase() === currentMemberName.trim().toLowerCase(),
+  }));
+}

@@ -222,6 +222,48 @@ describe("computeLedgerTotals", () => {
     expect(row.paid).toBe(1000);
     expect(row.balance).toBe(200); // due 1200 - effective paid 1000
   });
+
+  it("still counts a payment logged against a since-removed schedule date toward paid, not silently dropping it", () => {
+    const totals = computeLedgerTotals({
+      schedule: baseSchedule, // no "d-removed" row here — it's gone from the schedule
+      ledger: ledger({
+        payments: [
+          { id: "p1", scheduleRowId: "d-removed", amount: 900, voidedAt: null, recordedAt: "2026-05-01T00:00:00Z" },
+          { id: "p2", scheduleRowId: "d1", amount: 1200, voidedAt: null },
+        ],
+      }),
+      sessionName: "Someone Else",
+      recipientExempt: true,
+    });
+    expect(totals.paid).toBe(900 + 1200);
+    expect(totals.orphanedEntries).toHaveLength(1);
+    expect(totals.orphanedEntries[0].id).toBe("p1");
+  });
+
+  it("excludes a voided entry from orphanedEntries — a voided payment never counts toward anything", () => {
+    const totals = computeLedgerTotals({
+      schedule: baseSchedule,
+      ledger: ledger({
+        payments: [
+          { id: "p1", scheduleRowId: "d-removed", amount: 900, voidedAt: "2026-05-02T00:00:00Z" },
+        ],
+      }),
+      sessionName: "Someone Else",
+      recipientExempt: true,
+    });
+    expect(totals.paid).toBe(0);
+    expect(totals.orphanedEntries).toHaveLength(0);
+  });
+
+  it("returns no orphaned entries when every payment matches a current schedule row", () => {
+    const totals = computeLedgerTotals({
+      schedule: baseSchedule,
+      ledger: ledger({ payments: [{ id: "p1", scheduleRowId: "d1", amount: 1200, voidedAt: null }] }),
+      sessionName: "Someone Else",
+      recipientExempt: true,
+    });
+    expect(totals.orphanedEntries).toEqual([]);
+  });
 });
 
 describe("effectiveContribution", () => {

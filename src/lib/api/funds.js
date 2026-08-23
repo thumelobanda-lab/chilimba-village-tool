@@ -24,11 +24,19 @@ export async function getGroupFunds() {
     const loans = lsGet(groupScopedKey(session, "fund-loans"), []);
     const repayments = lsGet(groupScopedKey(session, "fund-loan-repayments"), []);
     const edits = lsGet(groupScopedKey(session, "fund-loan-edits"), []);
+    const latePenalties = lsGet(groupScopedKey(session, "late-penalties"), []);
 
     const balanceByFund = {};
     contributions.forEach((c) => {
       balanceByFund[c.fundId] = (balanceByFund[c.fundId] || 0) + c.amount;
     });
+    // Late penalties always land in the community fund — see
+    // worker/src/routes/funds.js's mirror of this for why they're kept
+    // in their own feed instead of another fund-contributions entry.
+    const latePenaltyTotal = latePenalties.reduce((s, p) => s + p.amount, 0);
+    if (latePenaltyTotal > 0) {
+      balanceByFund[COMMUNITY_FUND_ID] = (balanceByFund[COMMUNITY_FUND_ID] || 0) + latePenaltyTotal;
+    }
 
     // Mirrors the Worker's funds route: synthesize the implicit
     // community fund whenever a deduction rate is configured, or —
@@ -60,7 +68,10 @@ export async function getGroupFunds() {
       return { ...f, balance, outstandingLoans, available: f.loanable ? balance - outstandingLoans : balance };
     });
 
-    const feed = [...contributions]
+    const feed = [
+      ...contributions.map((c) => ({ ...c, kind: "contribution" })),
+      ...latePenalties.map((p) => ({ ...p, kind: "penalty", fundId: COMMUNITY_FUND_ID })),
+    ]
       .sort((a, b) => new Date(b.recordedAt) - new Date(a.recordedAt))
       .slice(0, 50)
       .map((c) => ({

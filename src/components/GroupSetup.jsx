@@ -131,6 +131,9 @@ export default function GroupSetup({ config, onSaved, session, premiumActive }) 
       if (Number(toSave.communityFundDeduction) < 0) {
         throw new Error("Community fund deduction can't be negative.");
       }
+      if (Number(toSave.latePenaltyAmount) < 0) {
+        throw new Error("Late payment penalty can't be negative.");
+      }
       await saveSchedule(toSave);
       onSaved(toSave);
       setStatus("Saved");
@@ -275,6 +278,24 @@ export default function GroupSetup({ config, onSaved, session, premiumActive }) 
             disabled={!premiumActive}
             value={draft.communityFundDeduction || 0}
             onChange={(e) => setDraft({ ...draft, communityFundDeduction: Number(e.target.value) || 0 })}
+          />
+        </label>
+
+        <h3 className="panel-subtitle">Late Payment Penalty</h3>
+        <p className="muted tiny" style={{ marginBottom: 10 }}>
+          A fixed amount added to the Group Savings Fund when a payment is confirmed after its
+          due date — a separate line item from the payment split above, logged and visible to
+          everyone in the Community tab. Set to K0 to turn it off. Never applies to a recipient's
+          own payout-date row.
+        </p>
+        <label className="field" style={{ maxWidth: 220, marginBottom: 16 }}>
+          Penalty for a late payment (K)
+          <input
+            type="number"
+            min={0}
+            disabled={!premiumActive}
+            value={draft.latePenaltyAmount || 0}
+            onChange={(e) => setDraft({ ...draft, latePenaltyAmount: Number(e.target.value) || 0 })}
           />
         </label>
 

@@ -34,6 +34,11 @@ export async function saveSchedule(schedule) {
     if (nextDeduction > currentDeduction && !subscriptionActiveFor(session)) {
       throw new Error("Automatic community fund splitting is a premium feature — activate your group's subscription first.");
     }
+    const currentPenalty = Number(current?.latePenaltyAmount) || 0;
+    const nextPenalty = Number(schedule.latePenaltyAmount) || 0;
+    if (nextPenalty > currentPenalty && !subscriptionActiveFor(session)) {
+      throw new Error("A late payment penalty is a premium feature — activate your group's subscription first.");
+    }
     lsSet(groupScopedKey(session, "group"), schedule);
     return { ok: true };
   }

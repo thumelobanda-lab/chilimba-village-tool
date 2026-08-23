@@ -1,29 +1,39 @@
-/* Theme: "Loyalty Blue" + Gold — a rich, trustworthy blue as the primary
-   brand color (header, primary buttons, progress-ring base state),
-   replacing the earlier deep-green "prosperity" palette; warm gold stays
-   exactly as it was, still reserved for meaningful moments only
-   (progress-ring glow, confirmations, milestones, the admin badge —
-   never a default/neutral UI color). Warm ivory background and deep
-   charcoal text both carried over unchanged. --green/--pending/--red are
-   status colors, deliberately distinct hues from the brand pair above so
-   "this succeeded" reads differently from "this is gold-branded" at a
-   glance. --accent-dark is the darker gradient stop used alongside
-   --accent in the header/hero gradients (an actual color, not derivable
-   from --accent alone, since CSS can't darken a custom property inline). */
+/* Theme: "Open Book" — a deep charcoal-navy base instead of bright
+   ivory, warm off-white text (never stark white) so it reads like ink
+   on an old page rather than a generic dark-mode UI, and gold (kept
+   exactly where it always was — progress-ring glow, confirmations,
+   milestones, the admin badge, never a default/neutral color) pops
+   harder against the dark surface than it ever did on ivory. Loyalty
+   Blue stays the primary brand color, brightened slightly so it still
+   reads clearly against --panel. --surface-* are semantic tints for
+   hover/active/highlighted/warning backgrounds that used to be
+   hardcoded light hex values throughout this file — centralizing them
+   here is what makes the dark theme a --root swap instead of a
+   hundred-line hunt-and-replace every time it's touched again.
+   --accent-dark is the darker gradient stop used alongside --accent in
+   the header/hero gradients (an actual color, not derivable from
+   --accent alone, since CSS can't darken a custom property inline). */
 :root {
-  --ink: #2A2A28;
-  --ink-faint: #6E685F;
-  --line: #E6DFCF;
-  --bg: #FAF7F0;
-  --panel: #FFFDF8;
-  --accent: #1B4C8C;
-  --accent-light: #2E63AC;
-  --accent-dark: #0F2E5C;
-  --accent-2: #C9962E;
-  --accent-2-light: #D4A94A;
-  --red: #B5453A;
-  --green: #3A8B5C;
-  --pending: #E0A458;
+  --ink: #EDE6D6;
+  --ink-faint: #A79C89;
+  --line: #3A362F;
+  --bg: #14161B;
+  --panel: #1D2027;
+  --surface-2: #262A33;       /* highlighted/inset panels — history rows, cards */
+  --surface-hover: #2A2E38;   /* nav/switcher hover, neutral toggles */
+  --surface-active: #1E2E44;  /* active nav item — blue-tinted */
+  --surface-amber: #33291A;   /* pending/notice/warning banners */
+  --surface-danger: #3A2420;  /* flagged rows */
+  --surface-green: #1E3327;   /* green badges/tags on dark bg */
+  --surface-gold: #3D2F14;    /* gold badges/tags on dark bg */
+  --accent: #2E63AC;
+  --accent-light: #4F82C7;
+  --accent-dark: #16335E;
+  --accent-2: #D4A94A;
+  --accent-2-light: #E6C36B;
+  --red: #E0897C;
+  --green: #5CBA8B;
+  --pending: #E6B478;
   font-family: "Inter", "IBM Plex Sans", system-ui, sans-serif;
 }
 
@@ -100,8 +110,8 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   border-radius: 6px;
   cursor: pointer;
 }
-.nav-menu-item:hover { background: #EFEAE0; }
-.nav-menu-item-active { color: var(--accent); background: #E5EEF8; }
+.nav-menu-item:hover { background: var(--surface-hover); }
+.nav-menu-item-active { color: var(--accent); background: var(--surface-active); }
 .nav-menu-divider { border-top: 1px solid var(--line); margin: 6px 2px; }
 
 .back-link { display: inline-block; margin-bottom: 14px; }
@@ -159,8 +169,8 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   cursor: pointer;
   text-align: left;
 }
-.group-switcher-item:hover { background: #EFEAE0; }
-.group-switcher-item-active { background: #E5EEF8; cursor: default; }
+.group-switcher-item:hover { background: var(--surface-hover); }
+.group-switcher-item-active { background: var(--surface-active); cursor: default; }
 .group-switcher-item-info { min-width: 0; display: flex; flex-direction: column; gap: 2px; width: 100%; }
 .group-switcher-item-name {
   font-weight: 600;
@@ -189,7 +199,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   font-size: 0.88rem;
   text-align: left;
 }
-.group-switcher-add:hover { background: #EFEAE0; }
+.group-switcher-add:hover { background: var(--surface-hover); }
 
 .add-group-body { padding: 4px 2px 2px; }
 
@@ -255,11 +265,16 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   margin-top: 4px;
 }
 
+/* A soft page-like edge — a subtle warm inner highlight along the top,
+   like light catching the edge of a page, plus a gentle drop shadow so
+   panels read as stacked pages against the dark base rather than flat
+   boxes floating on a flat background. */
 .panel {
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 20px;
+  box-shadow: inset 0 1px 0 rgba(237, 230, 214, 0.04), 0 2px 10px rgba(0, 0, 0, 0.25);
 }
 
 .login-panel { max-width: 380px; margin: 40px auto; text-align: left; }
@@ -329,7 +344,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   font-size: 0.85rem;
   margin-bottom: 8px;
 }
-.badge-ok { background: #E1F0E7; color: var(--green); }
+.badge-ok { background: var(--surface-green); color: var(--green); }
 
 .error-text { color: var(--red); font-size: 0.8rem; margin-bottom: 10px; }
 
@@ -360,7 +375,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .tag {
   margin-left: 6px;
   font-size: 0.65rem;
-  background: #E1F0E7;
+  background: var(--surface-green);
   color: var(--green);
   padding: 2px 6px;
   border-radius: 10px;
@@ -397,7 +412,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .status-paid { color: var(--green); font-weight: 600; font-size: 0.85rem; }
 
 .setup-header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
-.badge-admin { background: #FBF0DC; color: #8A6A1C; }
+.badge-admin { background: var(--surface-gold); color: var(--accent-2-light); }
 
 /* Group Setup's collapsible sections — each expands independently so an
    admin sees the shape of the whole setup (via the summary text) without
@@ -414,7 +429,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   align-items: center;
   gap: 10px;
   padding: 12px 14px;
-  background: #F5F1E6;
+  background: var(--surface-2);
   border: none;
   cursor: pointer;
   text-align: left;
@@ -520,7 +535,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   .btn-confirmed { animation: none; }
 }
 
-.tag-rate { background: #FBF0DC; color: #8A6A1C; }
+.tag-rate { background: var(--surface-gold); color: var(--accent-2-light); }
 .due-edit { display: inline-flex; align-items: center; gap: 6px; }
 
 /* Owner-messaging template category tags (OwnerMessaging.jsx) — one
@@ -536,12 +551,12 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   font-weight: 600;
   white-space: nowrap;
 }
-.category-tag-fraud { background: #F7E4E1; color: #8C3226; }        /* Fraud Warning */
-.category-tag-warning { background: #F7E6D3; color: #8C5620; }      /* Spam/Abuse Notice */
-.category-tag-billing { background: #FBF0DC; color: #8A6A1C; }      /* Subscription Reminder */
-.category-tag-suspended { background: #F0DAD5; color: #7A2E22; }    /* Account Suspended */
-.category-tag-general { background: #EDEAE3; color: #55504A; }      /* General Announcement */
-.category-tag-review { background: #DEE8EA; color: #35505C; }       /* Payment Dispute/Investigation */
+.category-tag-fraud { background: #3D2320; color: #E8998C; }        /* Fraud Warning */
+.category-tag-warning { background: #3D2E17; color: #E6B478; }      /* Spam/Abuse Notice */
+.category-tag-billing { background: var(--surface-gold); color: var(--accent-2-light); }      /* Subscription Reminder */
+.category-tag-suspended { background: #3A2019; color: #E0897C; }    /* Account Suspended */
+.category-tag-general { background: var(--surface-hover); color: var(--ink-faint); }      /* General Announcement */
+.category-tag-review { background: #1B2E38; color: #8FB8C9; }       /* Payment Dispute/Investigation */
 
 .link-amount {
   background: none;
@@ -554,8 +569,18 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .entry-count { color: var(--ink-faint); font-size: 0.8em; }
 
 .history-row td { padding: 0; border-bottom: 1px solid var(--line); }
+/* Ruled-line texture — faint horizontal rules like notebook paper,
+   reinforcing "this is a written record" rather than a generic list.
+   Deliberately very low-contrast (a few % opacity) so it reads as
+   texture, not as extra visual noise competing with the actual entries. */
 .history-panel {
-  background: #F5F1E6;
+  background: var(--surface-2);
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent 30px,
+    rgba(237, 230, 214, 0.05) 31px
+  );
   padding: 10px 14px;
   border-left: 3px solid var(--accent);
 }
@@ -588,7 +613,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 
 .calc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
 .card {
-  background: #F5F1E6;
+  background: var(--surface-2);
   border: 1px solid var(--line);
   border-left: 4px solid var(--accent);
   padding: 12px 14px;
@@ -596,14 +621,14 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 }
 .card-warn { border-left-color: var(--red); }
 .card-highlight { border-left-color: var(--accent-2); }
-.card-highlight .card-value { color: #8A6A1C; }
+.card-highlight .card-value { color: var(--accent-2-light); }
 .card-label { font-size: 0.7rem; text-transform: uppercase; color: var(--ink-faint); letter-spacing: 0.03em; }
 .card-value { font-size: 1.3rem; font-weight: 700; margin-top: 4px; }
 .card-warn .card-value { color: var(--red); }
 
 /* Notice board — admin-to-members announcements at the top of the dashboard */
 .notice-board {
-  background: #FDF3E2;
+  background: var(--surface-amber);
   border: 1px solid var(--accent-2);
   border-radius: 6px;
   padding: 12px 16px;
@@ -672,7 +697,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 /* Payment destination cards — "Where to Pay" */
 .payment-methods-list { display: flex; flex-wrap: wrap; gap: 10px; }
 .payment-method-card {
-  background: #F5F1E6;
+  background: var(--surface-2);
   border: 1px solid var(--line);
   border-left: 4px solid var(--green);
   border-radius: 4px;
@@ -747,7 +772,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .terms-content ul { margin: 0 0 12px; padding-left: 20px; }
 .terms-content li { margin-bottom: 6px; }
 .terms-legal-warning {
-  background: #FBEFDD;
+  background: var(--surface-amber);
   border: 1px solid var(--pending);
   border-radius: 8px;
   padding: 10px 12px;
@@ -777,7 +802,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   padding: 14px 0;
   border: none;
   border-radius: 8px;
-  background: #EFEAE0;
+  background: var(--surface-hover);
   color: var(--ink);
   font-size: 1.3rem;
   font-weight: 700;
@@ -789,7 +814,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .calc-btn:active { transform: scale(0.94); }
 .calc-btn-op { background: var(--accent); color: white; }
 .calc-btn-equals { background: var(--accent-2); color: white; grid-row: span 1; }
-.calc-btn-fn { background: #EAE6DC; color: var(--ink-faint); }
+.calc-btn-fn { background: var(--surface-hover); color: var(--ink-faint); }
 .calc-btn-zero { grid-column: span 2; }
 
 /* Payment confirmation bulb — green once an admin has actually seen the
@@ -809,7 +834,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 /* Admin's "N pending confirmations" queue (Reconciliation.jsx) and the
    matching callout on the dashboard (Dashboard.jsx). */
 .pending-queue-banner {
-  background: #FBEFDD;
+  background: var(--surface-amber);
   border: 1px solid var(--pending);
   border-radius: 10px;
   padding: 10px 14px;
@@ -863,7 +888,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 }
 .walkthrough-nav { display: flex; gap: 8px; margin-left: auto; }
 
-.row-flagged { background: #FBE9E6; }
+.row-flagged { background: var(--surface-danger); }
 .input-flagged { border-color: var(--red) !important; }
 .error-text.tiny { font-size: 0.7rem; margin-top: 2px; }
 
@@ -943,6 +968,66 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   margin-top: 0;
 }
 .dashboard-hero-ring .progress-ring-percent { color: #FAF7F0; font-size: 0.62rem; }
+
+/* Payout avatar row — where the rotation actually is right now, right
+   under the ring: the last couple already paid, who's next, who's
+   coming up. Compact and horizontally scrollable rather than wrapping,
+   so a big group never turns this into a block of its own. */
+.payout-avatar-block { margin-bottom: 14px; }
+.payout-avatar-row {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 2px 2px 6px;
+  -webkit-overflow-scrolling: touch;
+}
+.payout-avatar {
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: #FAF7F0;
+  background: var(--accent-dark);
+  border: 2px solid var(--line);
+  transition: transform 0.15s ease;
+}
+.payout-avatar-received { border-color: var(--green); }
+.payout-avatar-next {
+  border-color: var(--accent-2);
+  box-shadow: 0 0 0 2px rgba(201, 150, 46, 0.25);
+}
+.payout-avatar-upcoming { border-style: dashed; border-color: #9AA0A6; }
+/* The signed-in member — larger and gold-glowing so they're
+   unmistakable no matter which status ring they otherwise have. */
+.payout-avatar-you {
+  width: 42px;
+  height: 42px;
+  font-size: 0.74rem;
+  box-shadow: 0 0 0 3px rgba(201, 150, 46, 0.35);
+}
+.payout-avatar-legend {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 0.66rem;
+  color: var(--ink-faint);
+}
+.payout-avatar-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+.payout-avatar-dot-received { background: var(--green); }
+.payout-avatar-dot-next { background: var(--accent-2); }
+.payout-avatar-dot-upcoming { background: transparent; border: 1px dashed #9AA0A6; }
 
 .dashboard-grid {
   display: grid;
@@ -1028,7 +1113,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   font-variant-numeric: tabular-nums;
 }
 .loan-alert-banner {
-  background: #FBEFDD;
+  background: var(--surface-amber);
   border: 1px solid var(--pending);
   border-radius: 10px;
   padding: 10px 14px;
@@ -1114,7 +1199,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.cycle-node-next .cycle-node-payee { color: #8A6A1C; }
+.cycle-node-next .cycle-node-payee { color: var(--accent-2-light); }
 
 /* Upcoming — the next few group-wide payout dates, so there's always
    something relevant even between the member's own due dates. */
@@ -1222,7 +1307,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  background: #FDF3E2;
+  background: var(--surface-amber);
   border: 1px solid var(--accent-2);
   border-radius: 8px;
   padding: 10px 14px;
@@ -1298,7 +1383,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .auth-mode-toggle {
   display: flex;
   gap: 4px;
-  background: #F1ECE0;
+  background: var(--surface-hover);
   border-radius: 8px;
   padding: 4px;
   margin-bottom: 16px;

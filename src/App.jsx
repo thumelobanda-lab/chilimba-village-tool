@@ -86,7 +86,7 @@ export default function App() {
     ledger.dueOverrides || {},
     paidByRowId
   );
-  const notifications = useNotifications(session, ledger.payments, nextDue);
+  const notifications = useNotifications(session, ledger.payments, nextDue, subscription.status?.active);
 
   const [tab, setTab] = useState("home");
   const [showCalculator, setShowCalculator] = useState(false);
@@ -357,14 +357,19 @@ export default function App() {
                   A read-only summary of your own contribution totals — not the calculator
                   (that's the 🧮 icon in the header).
                 </p>
-                <div className="calc-grid">
-                  <Card label="What You Should Have Paid So Far" value={money(totals.due)} />
-                  <Card label="What You've Paid So Far" value={money(totals.paid)} />
-                  <Card label="What You Still Owe" value={money(totals.balance)} warn={totals.balance > 0} />
-                  <Card label="Your Turn's Payout" value={money(ledger.payoutInfo?.amount)} highlight />
-                  <Card label="Balance After Payout" value={money(totals.net)} warn={totals.net > 0} />
-                  <Card
-                    label="Suggested Amount per Remaining Date"
+                <div className="vital-primary">
+                  <div className="vital-card-label">What You Still Owe</div>
+                  <div className={"vital-primary-value" + (totals.balance > 0 ? " vital-card-value-warn" : " vital-card-value-ok")}>
+                    {money(totals.balance)}
+                  </div>
+                </div>
+                <div className="vital-secondary-row" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))" }}>
+                  <MiniStat label="Should Have Paid So Far" value={money(totals.due)} />
+                  <MiniStat label="Paid So Far" value={money(totals.paid)} />
+                  <MiniStat label="Your Turn's Payout" value={money(ledger.payoutInfo?.amount)} />
+                  <MiniStat label="Balance After Payout" value={money(totals.net)} warn={totals.net > 0} />
+                  <MiniStat
+                    label="Suggested per Remaining Date"
                     value={totals.remainingCount > 0 ? money(totals.suggestedRate) : "—"}
                   />
                 </div>
@@ -429,12 +434,11 @@ export default function App() {
   );
 }
 
-function Card({ label, value, warn, highlight }) {
-  const modifier = warn ? " card-warn" : highlight ? " card-highlight" : "";
+function MiniStat({ label, value, warn }) {
   return (
-    <div className={"card" + modifier}>
-      <div className="card-label">{label}</div>
-      <div className="card-value">{value}</div>
+    <div className="vital-secondary">
+      <div className="vital-card-label">{label}</div>
+      <div className={"vital-secondary-value" + (warn ? " vital-card-value-warn" : "")}>{value}</div>
     </div>
   );
 }

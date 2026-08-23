@@ -64,6 +64,15 @@ export default function LedgerTable({
         </tfoot>
       </table>
 
+      {totals.orphanedEntries && totals.orphanedEntries.length > 0 && (
+        <OrphanedEntries
+          entries={totals.orphanedEntries}
+          allRows={rowsComputed}
+          onVoidPayment={onVoidPayment}
+          onEditPayment={onEditPayment}
+        />
+      )}
+
       {receiptFor && (
         <Receipt
           payment={receiptFor.payment}
@@ -262,6 +271,11 @@ function RowWithHistory({ row, allRows, isRecipient, onAddPayment, onVoidPayment
                         {money(e.amount - e.communityFundAmount)} to contribution
                       </div>
                     )}
+                    {!e.voidedAt && e.confirmedAt && e.latePenaltyAmount > 0 && (
+                      <div className="muted tiny split-breakdown">
+                        ⏱ {money(e.latePenaltyAmount)} late penalty — added to Group Savings Fund
+                      </div>
+                    )}
                     {!e.voidedAt && e.note && (
                       <div className="muted tiny">Note: {e.note}</div>
                     )}
@@ -305,6 +319,84 @@ function RowWithHistory({ row, allRows, isRecipient, onAddPayment, onVoidPayment
         </tr>
       )}
     </>
+  );
+}
+
+// A payment logged against a date that's since been removed from the
+// schedule (see computeLedgerTotals in ledgerMath.js) — still counted
+// toward `paid`, but with no row left to nest under, so it gets its own
+// small section, dated by when it was actually logged since there's no
+// due date left to show it against. "Move to a date" is the fix: pick a
+// real current schedule date and it re-joins the ledger table properly.
+function OrphanedEntries({ entries, allRows, onVoidPayment, onEditPayment }) {
+  const [editingId, setEditingId] = useState(null);
+  const [amountDraft, setAmountDraft] = useState("");
+  const [dateDraft, setDateDraft] = useState(allRows[0]?.id || "");
+  const [busy, setBusy] = useState(false);
+
+  const startEdit = (entry) => {
+    setAmountDraft(entry.amount);
+    setDateDraft(allRows[0]?.id || "");
+    setEditingId(entry.id);
+  };
+
+  const saveEdit = async (entry) => {
+    if (!amountDraft || Number(amountDraft) <= 0 || !dateDraft) return;
+    setBusy(true);
+    try {
+      await onEditPayment(entry.id, dateDraft, amountDraft);
+      setEditingId(null);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="panel" style={{ marginTop: 14 }}>
+      <h3 className="panel-subtitle">Payments logged for a removed date</h3>
+      <p className="muted tiny" style={{ marginBottom: 10 }}>
+        These still count toward what you've paid — the payout date they were logged against
+        was later removed from the schedule. Move each one to a real date to fully resolve it.
+      </p>
+      {entries.map((e) => (
+        <div key={e.id} className="history-entry-wrap">
+          <div className="history-entry">
+            {editingId === e.id ? (
+              <span className="due-edit">
+                <input
+                  type="number"
+                  className="cell-input"
+                  value={amountDraft}
+                  onChange={(ev) => setAmountDraft(ev.target.value)}
+                  autoFocus
+                />
+                {allRows.length > 0 && (
+                  <select className="cell-input" value={dateDraft} onChange={(ev) => setDateDraft(ev.target.value)}>
+                    {allRows.map((r) => (
+                      <option key={r.id} value={r.id}>{r.date}</option>
+                    ))}
+                  </select>
+                )}
+                <button className="btn-link" disabled={busy} onClick={() => saveEdit(e)}>
+                  {busy ? "saving…" : "save"}
+                </button>
+                <button className="btn-link" disabled={busy} onClick={() => setEditingId(null)}>cancel</button>
+              </span>
+            ) : (
+              <button className="link-amount" onClick={() => startEdit(e)} title="Move this entry to a current date">
+                {money(e.amount)}
+              </button>
+            )}
+            <span className="muted tiny">
+              Logged {new Date(e.recordedAt).toLocaleDateString()} · {e.recordedBy}
+            </span>
+            {editingId !== e.id && (
+              <button className="btn-link" onClick={() => onVoidPayment(e.id)}>void</button>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }
 
