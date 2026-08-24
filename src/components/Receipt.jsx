@@ -39,16 +39,17 @@ function drawReceipt(canvas, data) {
   canvas.height = h;
   const ctx = canvas.getContext("2d");
 
-  ctx.fillStyle = "#FAF7F0";
+  ctx.fillStyle = "#FFFBF3";
   ctx.fillRect(0, 0, w, h);
 
-  // Header band — same deep-green/gold palette as the invite card
+  // Header band — same terracotta/clay + gold palette as the invite card
+  // (hardcoded, not var(--accent) etc., since canvas can't read CSS vars)
   const band = ctx.createLinearGradient(0, 0, w, 0);
-  band.addColorStop(0, "#0F4C3A");
-  band.addColorStop(1, "#0A3729");
+  band.addColorStop(0, "#C96A4E");
+  band.addColorStop(1, "#B5563C");
   ctx.fillStyle = band;
   ctx.fillRect(0, 0, w, 190);
-  ctx.fillStyle = "#C9962E";
+  ctx.fillStyle = "#D4A94A";
   ctx.fillRect(0, 190, w, 8);
 
   ctx.textAlign = "center";
@@ -65,16 +66,16 @@ function drawReceipt(canvas, data) {
   const left = 60, right = w - 60;
   rows.forEach(([label, value]) => {
     ctx.textAlign = "left";
-    ctx.fillStyle = "#6E685F";
+    ctx.fillStyle = "#8A6F5C";
     ctx.font = "600 20px system-ui, sans-serif";
     ctx.fillText(label.toUpperCase(), left, y);
 
     ctx.textAlign = "right";
-    ctx.fillStyle = "#2A2A28";
+    ctx.fillStyle = "#4A3428";
     ctx.font = "700 30px system-ui, sans-serif";
     ctx.fillText(String(value), right, y + 34);
 
-    ctx.strokeStyle = "#E6DFCF";
+    ctx.strokeStyle = "#E4D3BC";
     ctx.beginPath();
     ctx.moveTo(left, y + 56);
     ctx.lineTo(right, y + 56);
@@ -86,14 +87,14 @@ function drawReceipt(canvas, data) {
   // Reference number — the single most important thing on the receipt,
   // same visual treatment InviteCard gives the group code
   ctx.textAlign = "center";
-  ctx.fillStyle = "#6E685F";
+  ctx.fillStyle = "#8A6F5C";
   ctx.font = "600 22px system-ui, sans-serif";
   ctx.fillText("REFERENCE NUMBER", w / 2, h - 170);
-  ctx.fillStyle = "#0F4C3A";
+  ctx.fillStyle = "#B5563C";
   ctx.font = "700 48px 'IBM Plex Mono', monospace";
   ctx.fillText(data.referenceNumber, w / 2, h - 110);
 
-  ctx.fillStyle = "#3A8B5C";
+  ctx.fillStyle = "#6B8552";
   ctx.font = "600 22px system-ui, sans-serif";
   ctx.fillText("✓ Confirmed by a group leader", w / 2, h - 55);
 }

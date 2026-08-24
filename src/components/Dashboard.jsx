@@ -38,8 +38,10 @@ function formatDate(dateISO) {
 /**
  * The home screen — deliberately a 3-second glance, not a wall of cards.
  * Above the fold: greeting + ring, the ONE number that's actually
- * actionable (what you still owe), a compact secondary row (next due
- * date + fund total), a slim loan alert if one applies, and quick-action
+ * front and center — what you've contributed this round, framed as
+ * progress rather than a deficit, with what's still owed demoted to a
+ * smaller sub-label underneath — a compact secondary row (next due date
+ * + fund total), a slim loan alert if one applies, and quick-action
  * icons. Everything else this screen used to show inline — the full
  * paid-so-far breakdown, the cycle timeline, Group Pulse, and the full
  * upcoming-dates lists — is one tap away behind "See full breakdown",
@@ -111,6 +113,9 @@ export default function Dashboard({
   const upcomingCount = upcomingRows.length + myNextPayments.length;
   const payoutAvatarRows = buildPayoutAvatarRow(timelineRows, session?.name);
   const myStreak = computeMemberStreak(totals.rowsComputed);
+  // Positive-reframe: lead with contribution progress, not the deficit.
+  // due 0 (no schedule yet, or fully recipient-exempt) reads as "done".
+  const contributionPercent = totals.due > 0 ? Math.max(0, Math.min(100, (totals.paid / totals.due) * 100)) : 100;
 
   return (
     <>
@@ -169,9 +174,13 @@ export default function Dashboard({
         tabIndex={onOpenLedger ? 0 : undefined}
         title={onOpenLedger ? "Go to My Payment History" : undefined}
       >
-        <div className="vital-card-label">What You Still Owe</div>
-        <div className={"vital-primary-value" + (totals.balance > 0 ? " vital-card-value-warn" : " vital-card-value-ok")}>
-          {money(balanceDisplay)}
+        <div className="vital-card-label">You've Contributed This Round</div>
+        <div className="vital-primary-value vital-card-value-ok">{money(paidDisplay)}</div>
+        <div className="vital-progress-track">
+          <div className="vital-progress-fill" style={{ width: `${contributionPercent}%` }} />
+        </div>
+        <div className={"vital-primary-sub" + (totals.balance > 0 ? " vital-card-value-warn" : " vital-card-value-ok")}>
+          {totals.balance > 0 ? `${money(balanceDisplay)} still owed` : "All caught up 🎉"}
         </div>
       </div>
 

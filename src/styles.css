@@ -1,39 +1,54 @@
-/* Theme: "Open Book" — a deep charcoal-navy base instead of bright
-   ivory, warm off-white text (never stark white) so it reads like ink
-   on an old page rather than a generic dark-mode UI, and gold (kept
-   exactly where it always was — progress-ring glow, confirmations,
-   milestones, the admin badge, never a default/neutral color) pops
-   harder against the dark surface than it ever did on ivory. Loyalty
-   Blue stays the primary brand color, brightened slightly so it still
-   reads clearly against --panel. --surface-* are semantic tints for
-   hover/active/highlighted/warning backgrounds that used to be
-   hardcoded light hex values throughout this file — centralizing them
-   here is what makes the dark theme a --root swap instead of a
-   hundred-line hunt-and-replace every time it's touched again.
-   --accent-dark is the darker gradient stop used alongside --accent in
-   the header/hero gradients (an actual color, not derivable from
-   --accent alone, since CSS can't darken a custom property inline). */
+/* Theme: "Open Book" — a warm cream/parchment base instead of the
+   earlier charcoal-navy, deep warm-brown ink (never flat black) so it
+   reads like handwriting on parchment rather than a corporate fintech
+   screen. Terracotta/clay replaces Loyalty Blue as the primary brand
+   color — #C96A4E for interactive elements (buttons, links, active
+   borders), #B5563C (--accent-dark) for emphasis text/icons and the
+   darker gradient stop. Gold (--accent-2) is untouched — still reserved
+   for the progress ring, confirmations, milestones, the admin badge,
+   never a default/neutral color. --rose is a dusty-rose highlight used
+   sparingly (one or two gentle-emphasis spots, e.g. a hover glow) —
+   never a dominant color. --tan is the warm dashed/muted tone for
+   "not yet" states (e.g. an upcoming payout avatar) that used to be a
+   cool gray. --surface-* are semantic tints for hover/active/
+   highlighted/warning backgrounds — centralizing them here is what
+   makes the whole palette a --root swap instead of a hundred-line
+   hunt-and-replace every time it's touched again. --accent-dark is the
+   darker gradient stop used alongside --accent in the header/hero
+   gradients (an actual color, not derivable from --accent alone, since
+   CSS can't darken a custom property inline). */
 :root {
-  --ink: #EDE6D6;
-  --ink-faint: #A79C89;
-  --line: #3A362F;
-  --bg: #14161B;
-  --panel: #1D2027;
-  --surface-2: #262A33;       /* highlighted/inset panels — history rows, cards */
-  --surface-hover: #2A2E38;   /* nav/switcher hover, neutral toggles */
-  --surface-active: #1E2E44;  /* active nav item — blue-tinted */
-  --surface-amber: #33291A;   /* pending/notice/warning banners */
-  --surface-danger: #3A2420;  /* flagged rows */
-  --surface-green: #1E3327;   /* green badges/tags on dark bg */
-  --surface-gold: #3D2F14;    /* gold badges/tags on dark bg */
-  --accent: #2E63AC;
-  --accent-light: #4F82C7;
-  --accent-dark: #16335E;
+  --ink: #4A3428;
+  --ink-faint: #8A6F5C;
+  --line: #E4D3BC;
+  --bg: #FBF3E7;
+  --panel: #FFFBF3;
+  --surface-2: #F5E8D6;       /* highlighted/inset panels — history rows, cards */
+  --surface-hover: #F0E0C8;   /* nav/switcher hover, neutral toggles */
+  --surface-active: #F6DCC9;  /* active nav item — terracotta-tinted */
+  --surface-amber: #FBEBCB;   /* pending/notice/warning banners */
+  --surface-danger: #FBE1D9;  /* flagged rows */
+  --surface-green: #E9EEDF;   /* green badges/tags on light bg */
+  --surface-gold: #FBF0D2;    /* gold badges/tags on light bg */
+  --accent: #C96A4E;
+  --accent-light: #DB8567;
+  --accent-dark: #B5563C;
   --accent-2: #D4A94A;
   --accent-2-light: #E6C36B;
+  --rose: #C88B7D;
+  --tan: #C3A47C;
   --red: #E0897C;
-  --green: #5CBA8B;
+  --green: #8FA876;
   --pending: #E6B478;
+  /* An almost-imperceptible fiber mottling for card surfaces (.panel,
+     .vital-card, .vital-primary) — three off-center, low-opacity radial
+     gradients rather than a repeating pattern, so it reads as paper
+     grain, not a printed texture. Deliberately this faint (~2%): it
+     should only be noticeable if you go looking for it. */
+  --paper-grain:
+    radial-gradient(circle at 18% 22%, rgba(74, 52, 40, 0.025) 0, transparent 45%),
+    radial-gradient(circle at 78% 60%, rgba(74, 52, 40, 0.02) 0, transparent 50%),
+    radial-gradient(circle at 40% 88%, rgba(181, 86, 60, 0.018) 0, transparent 42%);
   font-family: "Inter", "IBM Plex Sans", system-ui, sans-serif;
 }
 
@@ -43,6 +58,11 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 
 .app-shell { min-height: 100vh; display: flex; flex-direction: column; }
 
+/* The double gold hairline below (a solid rule plus a second, offset
+   one via box-shadow) echoes the headband trim at the top of a bound
+   book's spine — a small, easy-to-miss detail rather than a literal
+   book illustration, but it's the one place in the whole app that
+   nods at "book" instead of just "ledger". */
 .app-header {
   background: linear-gradient(135deg, var(--accent), var(--accent-dark));
   color: white;
@@ -52,7 +72,8 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
-  border-bottom: 3px solid var(--accent-2);
+  border-bottom: 2px solid var(--accent-2);
+  box-shadow: 0 5px 0 -3px var(--accent-dark);
 }
 .brand { font-weight: 700; font-size: 1.1rem; }
 .header-right { display: flex; align-items: center; gap: 10px; }
@@ -82,7 +103,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   color: var(--ink);
   font-weight: 600;
   font-size: 0.9rem;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
 }
 .nav-menu-panel {
@@ -93,7 +114,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   min-width: 220px;
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 10px;
   box-shadow: 0 8px 24px rgba(0,0,0,0.12);
   padding: 6px;
   display: flex;
@@ -107,7 +128,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   color: var(--ink);
   font-size: 0.9rem;
   font-weight: 600;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
 }
 .nav-menu-item:hover { background: var(--surface-hover); }
@@ -140,7 +161,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   min-width: 260px;
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 10px;
   box-shadow: 0 8px 24px rgba(0,0,0,0.12);
   padding: 6px;
   display: flex;
@@ -165,7 +186,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   padding: 8px 10px;
   border: none;
   background: none;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
   text-align: left;
 }
@@ -214,7 +235,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   min-width: 16px;
   height: 16px;
   padding: 0 3px;
-  border-radius: 8px;
+  border-radius: 10px;
   background: var(--red);
   color: white;
   font-size: 0.62rem;
@@ -233,7 +254,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   overflow-y: auto;
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 10px;
   box-shadow: 0 8px 24px rgba(0,0,0,0.12);
   padding: 6px;
   display: flex;
@@ -251,7 +272,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   display: flex;
   gap: 8px;
   padding: 8px 10px;
-  border-radius: 6px;
+  border-radius: 8px;
 }
 .notification-item + .notification-item { border-top: 1px solid var(--line); }
 .notification-item-icon { flex-shrink: 0; font-size: 0.95rem; }
@@ -267,14 +288,15 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 
 /* A soft page-like edge — a subtle warm inner highlight along the top,
    like light catching the edge of a page, plus a gentle drop shadow so
-   panels read as stacked pages against the dark base rather than flat
-   boxes floating on a flat background. */
+   panels read as stacked pages against the parchment base rather than
+   flat boxes floating on a flat background. */
 .panel {
   background: var(--panel);
+  background-image: var(--paper-grain);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 20px;
-  box-shadow: inset 0 1px 0 rgba(237, 230, 214, 0.04), 0 2px 10px rgba(0, 0, 0, 0.25);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 2px 10px rgba(74, 52, 40, 0.08);
 }
 
 .login-panel { max-width: 380px; margin: 40px auto; text-align: left; }
@@ -305,7 +327,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   width: 100%;
   padding: 8px 10px;
   border: 1px solid var(--line);
-  border-radius: 4px;
+  border-radius: 6px;
   font-size: 0.95rem;
   color: var(--ink);
   background: var(--panel);
@@ -319,7 +341,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   color: white;
   border: none;
   padding: 10px 16px;
-  border-radius: 6px;
+  border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
   width: 100%;
@@ -331,7 +353,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   border: 1px solid rgba(255,255,255,0.5);
   color: white;
   padding: 6px 12px;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
   font-size: 0.8rem;
 }
@@ -339,7 +361,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .badge {
   display: inline-block;
   padding: 6px 12px;
-  border-radius: 20px;
+  border-radius: 22px;
   font-weight: 700;
   font-size: 0.85rem;
   margin-bottom: 8px;
@@ -378,7 +400,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   background: var(--surface-green);
   color: var(--green);
   padding: 2px 6px;
-  border-radius: 10px;
+  border-radius: 12px;
 }
 
 .cell-input {
@@ -386,7 +408,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   text-align: right;
   padding: 4px 6px;
   border: 1px solid var(--line);
-  border-radius: 4px;
+  border-radius: 6px;
   color: var(--ink);
 }
 
@@ -396,7 +418,20 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .summary-table tr.neg td { color: var(--red); font-weight: 700; }
 .summary-table tr.pos td { color: var(--green); font-weight: 700; }
 
-.feed-list { display: flex; flex-direction: column; gap: 2px; }
+/* Same faint ruled-paper texture as .history-panel — the community
+   fund's activity feed and loan list are just as much a "written
+   record" as a personal payment history, so they get the same cue. */
+.feed-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent 30px,
+    rgba(74, 52, 40, 0.06) 31px
+  );
+}
 .feed-item {
   display: flex;
   flex-wrap: wrap;
@@ -419,7 +454,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
    scrolling past every table to find the one thing they came to change. */
 .setup-section {
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 10px;
   margin-bottom: 10px;
   overflow: hidden;
 }
@@ -451,7 +486,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .setup-section-chevron-open { transform: rotate(90deg); }
 .setup-section-body { padding: 16px 14px; border-top: 1px solid var(--line); }
 .checkbox-field { flex-direction: row; align-items: center; gap: 8px; font-size: 0.85rem; }
-.cell-input-text { width: 100px; padding: 4px 6px; border: 1px solid var(--line); border-radius: 4px; }
+.cell-input-text { width: 100px; padding: 4px 6px; border: 1px solid var(--line); border-radius: 6px; }
 .cell-input-text.wide { width: 160px; }
 
 /* Below this width, the schedule/funds/payment-method tables were
@@ -471,7 +506,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   }
   .grid-table tr {
     border: 1px solid var(--line);
-    border-radius: 8px;
+    border-radius: 10px;
     margin-bottom: 10px;
     padding: 10px;
   }
@@ -509,7 +544,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   border: 1px solid var(--line);
   color: var(--ink);
   padding: 8px 14px;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
   font-weight: 600;
   font-size: 0.85rem;
@@ -546,17 +581,17 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .category-tag {
   display: inline-block;
   padding: 3px 9px;
-  border-radius: 12px;
+  border-radius: 14px;
   font-size: 0.75rem;
   font-weight: 600;
   white-space: nowrap;
 }
-.category-tag-fraud { background: #3D2320; color: #E8998C; }        /* Fraud Warning */
-.category-tag-warning { background: #3D2E17; color: #E6B478; }      /* Spam/Abuse Notice */
-.category-tag-billing { background: var(--surface-gold); color: var(--accent-2-light); }      /* Subscription Reminder */
-.category-tag-suspended { background: #3A2019; color: #E0897C; }    /* Account Suspended */
-.category-tag-general { background: var(--surface-hover); color: var(--ink-faint); }      /* General Announcement */
-.category-tag-review { background: #1B2E38; color: #8FB8C9; }       /* Payment Dispute/Investigation */
+.category-tag-fraud { background: var(--surface-danger); color: #A6382A; }   /* Fraud Warning */
+.category-tag-warning { background: var(--surface-amber); color: #8A5A1E; }  /* Spam/Abuse Notice */
+.category-tag-billing { background: var(--surface-gold); color: #8A6023; }   /* Subscription Reminder */
+.category-tag-suspended { background: #F6DED8; color: #8C4A3D; }             /* Account Suspended */
+.category-tag-general { background: var(--surface-hover); color: var(--ink-faint); }  /* General Announcement */
+.category-tag-review { background: #E7EAEF; color: #4C5A6B; }                /* Payment Dispute/Investigation */
 
 .link-amount {
   background: none;
@@ -579,7 +614,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
     to bottom,
     transparent,
     transparent 30px,
-    rgba(237, 230, 214, 0.05) 31px
+    rgba(74, 52, 40, 0.06) 31px
   );
   padding: 10px 14px;
   border-left: 3px solid var(--accent);
@@ -617,7 +652,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   border: 1px solid var(--line);
   border-left: 4px solid var(--accent);
   padding: 12px 14px;
-  border-radius: 4px;
+  border-radius: 6px;
 }
 .card-warn { border-left-color: var(--red); }
 .card-highlight { border-left-color: var(--accent-2); }
@@ -630,7 +665,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .notice-board {
   background: var(--surface-amber);
   border: 1px solid var(--accent-2);
-  border-radius: 6px;
+  border-radius: 8px;
   padding: 12px 16px;
   margin-bottom: 16px;
 }
@@ -646,7 +681,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   flex: 1;
   padding: 8px 10px;
   border: 1px solid var(--line);
-  border-radius: 4px;
+  border-radius: 6px;
   font-size: 0.9rem;
 }
 
@@ -661,7 +696,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .platform-message-banner {
   background: linear-gradient(135deg, var(--accent), var(--accent-dark));
   border: 1px solid var(--accent-2);
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 14px 16px;
   color: white;
 }
@@ -686,7 +721,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   color: var(--ink);
   border: none;
   padding: 6px 14px;
-  border-radius: 6px;
+  border-radius: 8px;
   font-weight: 700;
   font-size: 0.8rem;
   cursor: pointer;
@@ -700,7 +735,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   background: var(--surface-2);
   border: 1px solid var(--line);
   border-left: 4px solid var(--green);
-  border-radius: 4px;
+  border-radius: 6px;
   padding: 10px 14px;
   min-width: 180px;
   flex: 1 1 200px;
@@ -733,14 +768,14 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 }
 .calc-modal {
   background: var(--panel);
-  border-radius: 12px 12px 0 0;
+  border-radius: 14px 14px 0 0;
   width: 100%;
   max-width: 360px;
   padding: 20px;
   box-shadow: 0 -4px 24px rgba(0,0,0,0.2);
 }
 @media (min-width: 480px) {
-  .calc-modal { border-radius: 12px; }
+  .calc-modal { border-radius: 14px; }
 }
 .calc-modal-header {
   display: flex;
@@ -774,7 +809,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .terms-legal-warning {
   background: var(--surface-amber);
   border: 1px solid var(--pending);
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 10px 12px;
   font-size: 0.85rem;
   color: var(--ink);
@@ -787,7 +822,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   font-size: 1.8rem;
   text-align: right;
   padding: 14px 12px;
-  border-radius: 6px;
+  border-radius: 8px;
   margin-bottom: 10px;
   overflow-x: auto;
   white-space: nowrap;
@@ -801,7 +836,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   min-height: 56px;
   padding: 14px 0;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   background: var(--surface-hover);
   color: var(--ink);
   font-size: 1.3rem;
@@ -863,7 +898,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   padding: 8px 12px;
   background: var(--bg);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 10px;
   font-size: 0.85rem;
   color: var(--ink);
 }
@@ -877,7 +912,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   font-size: 0.68rem;
   font-weight: 700;
   padding: 2px 8px;
-  border-radius: 10px;
+  border-radius: 12px;
   text-transform: uppercase;
   letter-spacing: 0.02em;
 }
@@ -890,7 +925,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .pending-queue-banner {
   background: var(--surface-amber);
   border: 1px solid var(--pending);
-  border-radius: 10px;
+  border-radius: 12px;
   padding: 10px 14px;
   margin-bottom: 16px;
   cursor: pointer;
@@ -909,7 +944,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
    for the card itself since it needs progress dots and multi-step nav. */
 .walkthrough-modal {
   background: var(--panel);
-  border-radius: 12px 12px 0 0;
+  border-radius: 14px 14px 0 0;
   width: 100%;
   max-width: 380px;
   padding: 24px 22px 18px;
@@ -917,7 +952,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   text-align: center;
 }
 @media (min-width: 480px) {
-  .walkthrough-modal { border-radius: 12px; }
+  .walkthrough-modal { border-radius: 14px; }
 }
 .walkthrough-dots {
   display: flex;
@@ -931,7 +966,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   border-radius: 50%;
   background: var(--line);
 }
-.walkthrough-dot-active { background: var(--accent-2); width: 18px; border-radius: 4px; }
+.walkthrough-dot-active { background: var(--accent-2); width: 18px; border-radius: 6px; }
 .walkthrough-emoji { font-size: 2.4rem; margin-bottom: 8px; }
 .walkthrough-title { font-size: 1.15rem; font-weight: 700; color: var(--ink); margin: 0 0 10px; }
 .walkthrough-body { font-size: 0.92rem; color: var(--ink-faint); line-height: 1.5; margin: 0 0 20px; }
@@ -951,7 +986,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   width: 100%;
   max-width: 320px;
   aspect-ratio: 1 / 1;
-  border-radius: 12px;
+  border-radius: 14px;
   box-shadow: 0 4px 16px rgba(0,0,0,0.15);
 }
 .invite-card-actions {
@@ -973,7 +1008,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
    prop) rather than a small, easy-to-miss corner widget. */
 .dashboard-hero {
   background: linear-gradient(135deg, var(--accent), var(--accent-dark));
-  border-radius: 10px;
+  border-radius: 12px;
   padding: 12px 16px;
   margin-bottom: 14px;
   display: flex;
@@ -1055,7 +1090,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   border-color: var(--accent-2);
   box-shadow: 0 0 0 2px rgba(201, 150, 46, 0.25);
 }
-.payout-avatar-upcoming { border-style: dashed; border-color: #9AA0A6; }
+.payout-avatar-upcoming { border-style: dashed; border-color: var(--tan); }
 /* The signed-in member — larger and gold-glowing so they're
    unmistakable no matter which status ring they otherwise have. */
 .payout-avatar-you {
@@ -1081,7 +1116,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 }
 .payout-avatar-dot-received { background: var(--green); }
 .payout-avatar-dot-next { background: var(--accent-2); }
-.payout-avatar-dot-upcoming { background: transparent; border: 1px dashed #9AA0A6; }
+.payout-avatar-dot-upcoming { background: transparent; border: 1px dashed var(--tan); }
 
 .dashboard-grid {
   display: grid;
@@ -1090,9 +1125,10 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 }
 .vital-card {
   background: var(--panel);
+  background-image: var(--paper-grain);
   border: 1px solid var(--line);
   border-top: 3px solid var(--accent);
-  border-radius: 10px;
+  border-radius: 12px;
   padding: 18px 20px;
 }
 /* A loan is a genuinely different kind of obligation from the regular
@@ -1106,7 +1142,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 }
 .vital-card-clickable:hover, .vital-card-clickable:focus-visible {
   border-color: var(--accent);
-  box-shadow: 0 4px 14px rgba(27, 76, 140, 0.18);
+  box-shadow: 0 4px 14px rgba(200, 139, 125, 0.3);
   transform: translateY(-1px);
 }
 .vital-card-label {
@@ -1127,25 +1163,48 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .vital-card-value-warn { color: var(--red); }
 .vital-card-value-ok { color: var(--green); }
 
-/* Declutter pass — the one number that's actually actionable ("What You
-   Still Owe") gets a big, unmissable card of its own; everything else
-   that used to sit beside it as an equal-weight card is either a small
-   compact stat (next date, fund total) or moved behind "See full
-   breakdown" (.dashboard-more-toggle / .dashboard-more-section below). */
+/* Declutter pass — the one number that's actually front-and-center is a
+   positive-reframe of contribution progress ("You've Contributed This
+   Round"), not the deficit — everything else that used to sit beside it
+   as an equal-weight card is either a small compact stat (next date,
+   fund total) or moved behind "See full breakdown"
+   (.dashboard-more-toggle / .dashboard-more-section below). */
 .vital-primary {
   background: var(--panel);
+  background-image: var(--paper-grain);
   border: 1px solid var(--line);
   border-top: 4px solid var(--accent);
-  border-radius: 12px;
+  border-radius: 14px;
   padding: 16px 18px;
 }
 .vital-primary-value {
   font-size: 2.6rem;
   font-weight: 800;
-  color: var(--ink);
+  /* No color here — every caller always pairs this with
+     .vital-card-value-ok/-warn, and those need to win. A same-specificity
+     color here would clobber them since this rule sits later in the
+     cascade (see .vital-card-value-ok/-warn above). */
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.01em;
   line-height: 1.1;
+}
+.vital-progress-track {
+  height: 8px;
+  border-radius: 6px;
+  background: var(--line);
+  margin: 10px 0 8px;
+  overflow: hidden;
+}
+.vital-progress-fill {
+  height: 100%;
+  background: var(--green);
+  border-radius: 6px;
+  transition: width 0.4s ease;
+}
+.vital-primary-sub {
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--ink-faint);
 }
 .vital-secondary-row {
   display: grid;
@@ -1156,7 +1215,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .vital-secondary {
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 6px 8px;
 }
 .vital-secondary .vital-card-label { margin-bottom: 2px; font-size: 0.62rem; }
@@ -1169,7 +1228,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .loan-alert-banner {
   background: var(--surface-amber);
   border: 1px solid var(--pending);
-  border-radius: 10px;
+  border-radius: 12px;
   padding: 10px 14px;
   margin-top: 10px;
   font-size: 0.88rem;
@@ -1181,7 +1240,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   text-align: center;
   background: none;
   border: 1px dashed var(--line);
-  border-radius: 10px;
+  border-radius: 12px;
   padding: 10px;
   margin-top: 14px;
   color: var(--accent);
@@ -1265,7 +1324,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   gap: 12px;
   padding: 10px 12px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 10px;
   background: var(--bg);
 }
 .upcoming-item-date {
@@ -1273,7 +1332,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   text-align: center;
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: 8px;
   padding: 6px 4px;
 }
 .upcoming-item-day { font-weight: 700; color: var(--ink); font-size: 0.86rem; }
@@ -1312,7 +1371,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   gap: 2px;
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: 12px;
   padding: 6px 4px;
   cursor: pointer;
   transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
@@ -1348,7 +1407,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   padding: 8px 12px;
   background: var(--bg);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 10px;
   font-size: 0.82rem;
   color: var(--ink);
 }
@@ -1363,7 +1422,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   gap: 10px;
   background: var(--surface-amber);
   border: 1px solid var(--accent-2);
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 10px 14px;
   margin-bottom: 14px;
   font-size: 0.88rem;
@@ -1418,7 +1477,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   max-width: 280px;
   margin: 0 auto;
   aspect-ratio: 3 / 4;
-  border-radius: 12px;
+  border-radius: 14px;
   box-shadow: 0 4px 16px rgba(0,0,0,0.15);
 }
 .receipt-link {
@@ -1438,7 +1497,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   display: flex;
   gap: 4px;
   background: var(--surface-hover);
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 4px;
   margin-bottom: 16px;
 }
@@ -1447,7 +1506,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   padding: 8px 12px;
   border: none;
   background: transparent;
-  border-radius: 6px;
+  border-radius: 8px;
   font-weight: 600;
   font-size: 0.85rem;
   color: var(--ink-faint);

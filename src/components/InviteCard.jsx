@@ -14,15 +14,17 @@ function drawCard(canvas, content) {
   const ctx = canvas.getContext("2d");
   const w = CARD_WIDTH, h = CARD_HEIGHT;
 
-  // Background gradient — matches the app's deep-green/gold palette
+  // Background gradient — matches the app's warm terracotta/clay palette
+  // (--accent/--accent-dark in styles.css; hardcoded here since a canvas
+  // 2D context can't read CSS custom properties).
   const bg = ctx.createLinearGradient(0, 0, w, h);
-  bg.addColorStop(0, "#0F4C3A");
-  bg.addColorStop(1, "#0A3729");
+  bg.addColorStop(0, "#C96A4E");
+  bg.addColorStop(1, "#B5563C");
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, w, h);
 
   // Gold accent stripe, top and bottom — echoes the in-app header
-  ctx.fillStyle = "#C9962E";
+  ctx.fillStyle = "#D4A94A";
   ctx.fillRect(0, 0, w, 14);
   ctx.fillRect(0, h - 14, w, 14);
 
@@ -50,7 +52,7 @@ function drawCard(canvas, content) {
 
   // Group code — the single most important thing on the card, given
   // maximum visual weight
-  ctx.fillStyle = "#C9962E";
+  ctx.fillStyle = "#D4A94A";
   ctx.font = "600 28px system-ui, sans-serif";
   ctx.fillText(content.codeLabel, w / 2, 680);
   ctx.fillStyle = "#FFFFFF";
@@ -63,7 +65,7 @@ function drawCard(canvas, content) {
   wrapText(ctx, content.tagline, w / 2, 880, w - 200, 40);
 
   // URL
-  ctx.fillStyle = "#C9962E";
+  ctx.fillStyle = "#D4A94A";
   ctx.font = "600 28px system-ui, sans-serif";
   ctx.fillText(content.url.replace(/^https?:\/\//, ""), w / 2, 990);
 }
