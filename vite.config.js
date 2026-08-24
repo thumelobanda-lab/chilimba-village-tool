@@ -10,6 +10,12 @@ export default defineConfig({
       srcDir: "src",
       filename: "sw.js",
       registerType: "autoUpdate",
+      // The plugin's own auto-injected registration script is a bare
+      // `navigator.serviceWorker.register(...)` with no update handling
+      // at all — registered explicitly in main.jsx instead, paired with
+      // a reload-on-update listener (see sw.js's skipWaiting/clientsClaim
+      // comment for why that pairing matters).
+      injectRegister: false,
       includeAssets: ["favicon.svg"],
       manifest: {
         name: "OpenBook",
