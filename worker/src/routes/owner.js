@@ -279,6 +279,10 @@ export default function registerOwnerRoutes(router) {
       if (!target) throw new HttpError(404, "That person wasn't found in that group.");
       recipients = [target];
     } else {
+      // Safe to splice directly: roleFilter only ever resolves to one of these
+      // two hardcoded literals, never the raw body.targetType value itself. If
+      // this grows more branches, keep it that way — never interpolate the
+      // client-supplied string directly into the SQL text.
       const roleFilter = body.targetType === "group_admins" ? ` AND role = 'admin'` : "";
       const result = await env.DB.prepare(
         `SELECT id, display_name as displayName, phone FROM users WHERE group_id = ? AND active = 1${roleFilter}`
