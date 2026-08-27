@@ -20,6 +20,26 @@ VAPID_PUBLIC_KEY = "BFnLvWRoyJYy4LCgJgX2dRHieZVeENfTecORl7-8UaL0_2RXtnAJ82vZcEsW
 # is UTC (06:00 UTC ≈ 08:00 CAT).
 crons = ["0 6 * * *"]
 
+# Staging: a fully separate Worker + D1 database that Cloudflare Pages
+# preview builds (branch `staging`) talk to, so testing a change can
+# never write to a real group's ledger. Deploy with:
+#   cd worker && npx wrangler deploy --env staging
+# ALLOWED_ORIGIN is the stable branch-alias URL Cloudflare Pages gives
+# the `staging` branch (as opposed to the per-commit hash URL, which
+# changes every deploy and can't be put in a static allowlist).
+[env.staging]
+name = "chilimba-worker-staging"
+
+[env.staging.vars]
+ALLOWED_ORIGIN = "https://staging.chilimba-circle.pages.dev"
+VAPID_SUBJECT = "mailto:admin@example.com"
+VAPID_PUBLIC_KEY = "BHADhlX_-bRYZQ-H8yqICfupLxkR-XoZEqYYh3CbSnvaKxX-vy55-DBTbiRQ45OdTrM0tRNvCv6rK-wWKjpbW80"
+
+[[env.staging.d1_databases]]
+binding = "DB"
+database_name = "chilimba-db-staging"
+database_id = "b3be8e46-3899-4c3e-a915-8a8c14b010f6"
+
 # Set real secrets with, e.g.:
 #   npx wrangler secret put VAPID_PRIVATE_KEY
 #   npx wrangler secret put SMS_API_KEY

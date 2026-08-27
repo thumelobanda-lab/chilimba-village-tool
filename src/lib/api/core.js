@@ -3,8 +3,15 @@
  *
  * MOCK_MODE = true  -> everything is stored in the browser (localStorage)
  * MOCK_MODE = false -> calls hit your real Cloudflare Worker (see /worker)
+ *
+ * Driven by VITE_MOCK_MODE so it can vary per Cloudflare Pages
+ * environment (Production / Preview) without touching this file —
+ * previously a deploy script patched this line in place with sed,
+ * which doesn't work once builds run from a Git push instead of a
+ * local script. Unset (plain `npm run dev`, no .env) defaults to mock
+ * mode so a fresh clone works with no backend.
  */
-export const MOCK_MODE = false;
+export const MOCK_MODE = import.meta.env.VITE_MOCK_MODE !== "false";
 export const API_BASE = import.meta.env.VITE_API_BASE || "https://your-worker.your-subdomain.workers.dev";
 
 export function lsGet(key, fallback) {

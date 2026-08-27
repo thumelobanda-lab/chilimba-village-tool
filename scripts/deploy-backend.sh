@@ -3,6 +3,13 @@
 # applies the schema, generates and sets VAPID push keys, and deploys
 # the Worker. Run from the project root: ./scripts/deploy-backend.sh
 #
+# The frontend (Cloudflare Pages) is no longer deployed by a script —
+# it's Git-connected and builds automatically on push (see CLAUDE.md
+# "Deployment"). This script only provisions/redeploys the production
+# Worker + D1. For the staging Worker + D1 that Pages preview builds
+# talk to, run the same wrangler commands with `--env staging` instead
+# (see the [env.staging] block in worker/wrangler.toml).
+#
 # You'll still hit a couple of unavoidable interactive prompts (the
 # Cloudflare login opens a browser tab), but everything else — copying
 # IDs and keys into config files, running wrangler secret put — is
@@ -69,4 +76,9 @@ echo "Next: set your mobile money / SMS keys when you have accounts for them:"
 echo "  cd worker && npx wrangler secret put MOMO_API_KEY"
 echo "  cd worker && npx wrangler secret put SMS_API_KEY"
 echo
-echo "Then run: ./scripts/deploy-frontend.sh"
+echo "Then paste these into the Cloudflare Pages dashboard for the"
+echo "chilimba-circle project (Settings > Environment variables, under"
+echo "the Production environment):"
+echo "  VITE_API_BASE=${WORKER_URL:-<check output above>}"
+echo "  VITE_VAPID_PUBLIC_KEY=${VAPID_PUBLIC:-<check output above>}"
+echo "  VITE_MOCK_MODE=false"
