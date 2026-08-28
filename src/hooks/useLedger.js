@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { isRecipient as isRecipientHelper } from "../lib/scheduleUtils.js";
 import { computeLedgerTotals } from "../lib/ledgerMath.js";
 import {
@@ -24,11 +24,30 @@ const emptyLedger = () => ({ payments: [], payoutInfo: { amount: 0, date: "" }, 
  */
 export function useLedger(session, config) {
   const [ledger, setLedger] = useState(emptyLedger());
+  // See useGroupConfig.js's identical guard for why: tells a same-session
+  // retry (safe to leave state alone on failure) apart from a brand new
+  // session (must reset first, so a failed offline-with-nothing-cached
+  // load never leaves the PREVIOUS member's ledger showing).
+  const loadedFor = useRef(null);
 
   const reload = useCallback(async () => {
-    if (!session) return;
-    const l = await getMyLedger();
-    setLedger(l);
+    if (!session) {
+      loadedFor.current = null;
+      return;
+    }
+    const key = `${session.groupSlug}:${session.name}`;
+    if (loadedFor.current !== key) {
+      loadedFor.current = key;
+      setLedger(emptyLedger());
+    }
+    try {
+      const l = await getMyLedger();
+      setLedger(l);
+    } catch {
+      // Offline with nothing cached for this member yet — same reasoning
+      // as useGroupConfig.js: leave state as-is for a same-session retry,
+      // and we've already reset above if this was a new session.
+    }
   }, [session]);
 
   useEffect(() => {
@@ -106,5 +125,6 @@ export function useLedger(session, config) {
     updatePayout,
     applyFlatRate,
     clearMyData,
+    reload,
   };
 }

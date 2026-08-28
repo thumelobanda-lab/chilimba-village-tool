@@ -180,3 +180,20 @@ export function generateScheduleDates(frequency, startDateISO, count) {
   }
   return dates.map(toISODateString);
 }
+
+/**
+ * The cycle's actual end date — the latest date in the schedule, once
+ * it has real rows. Not a projection: once dates exist, this is simply
+ * the fact of when the rotation is set to finish, shown on the
+ * dashboard, Group Setup, and the roster (see GroupSetup.jsx's own
+ * live projectedEndDate for the "before it's generated yet" estimate
+ * this complements).
+ *
+ * @param {Array<{date: string}>} schedule
+ * @returns {string|null} "YYYY-MM-DD", or null if there's no schedule yet
+ */
+export function cycleEndDate(schedule) {
+  const valid = (schedule || []).filter((r) => !isNaN(new Date(r.date).getTime()));
+  if (valid.length === 0) return null;
+  return valid.reduce((latest, r) => (new Date(r.date) > new Date(latest) ? r.date : latest), valid[0].date);
+}

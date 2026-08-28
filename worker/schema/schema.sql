@@ -49,6 +49,12 @@ CREATE TABLE IF NOT EXISTS groups (
                                              -- confirmed after its due date (migration
                                              -- 016, see late_penalties below) — same
                                              -- premium gating as community_fund_deduction
+  payment_interval TEXT NOT NULL DEFAULT 'biweekly', -- a SCHEDULE_FREQUENCIES key
+                                             -- (src/lib/scheduleUtils.js) — the cadence
+                                             -- Group Setup's "Generate Payout Dates"
+                                             -- tool last used, persisted so it survives
+                                             -- logout (migration 017) and feeds the
+                                             -- anticipated cycle-end projection
   subscription_expires_at TEXT,             -- NULL until a platform owner CONFIRMS a
                                              -- real payment (see group_subscriptions'
                                              -- pending/confirmed/rejected workflow,

@@ -251,6 +251,11 @@ function RowWithHistory({ row, allRows, isRecipient, onAddPayment, onVoidPayment
                       <span className="muted tiny">
                         {new Date(e.recordedAt).toLocaleDateString()} · {e.recordedBy}
                       </span>
+                      {e.pendingSync && (
+                        <span className="pending-sync-tag" title="Saved on this device — will upload once you're back online">
+                          waiting to sync
+                        </span>
+                      )}
                       {e.voidedAt ? (
                         <span className="muted tiny">voided</span>
                       ) : (
@@ -400,13 +405,17 @@ function OrphanedEntries({ entries, allRows, onVoidPayment, onEditPayment }) {
   );
 }
 
-// Three visible states for a non-voided entry's bulb: green once an admin
-// has confirmed it, amber while it's still a pending, member-submitted
-// entry awaiting review (see addPayment in contributions.js), red if it
-// was rejected. Anything else (status null — logged before the pending
-// flow existed) reads as the original grey "not yet confirmed" — still
-// counts fully, just unverified.
+// Four visible states for a non-voided entry's bulb: still on this
+// device and hasn't even reached the server yet (offline write queue —
+// see offlineQueue.js), green once an admin has confirmed it, amber
+// while it's a pending, member-submitted entry awaiting review (see
+// addPayment in contributions.js), red if it was rejected. Anything else
+// (status null — logged before the pending flow existed) reads as the
+// original grey "not yet confirmed" — still counts fully, just
+// unverified. pendingSync takes priority over every other state since
+// none of the others are even meaningful until the server has the entry.
 function bulbClass(entry) {
+  if (entry.pendingSync) return "confirm-bulb-syncing";
   if (entry.confirmedAt) return "confirm-bulb-on";
   if (entry.rejectedAt) return "confirm-bulb-rejected";
   if (entry.status === "pending") return "confirm-bulb-pending";
@@ -414,6 +423,7 @@ function bulbClass(entry) {
 }
 
 function bulbTitle(entry) {
+  if (entry.pendingSync) return "Saved on this device — will upload once you're back online";
   if (entry.confirmedAt) return `Confirmed by a group leader (${entry.confirmedBy})`;
   if (entry.rejectedAt) return `Not confirmed by ${entry.rejectedBy}${entry.rejectionReason ? `: ${entry.rejectionReason}` : ""}`;
   if (entry.status === "pending") return "Pending — awaiting group leader review";

@@ -21,6 +21,7 @@ export default function registerScheduleRoutes(router) {
       paymentMethods: JSON.parse(row.payment_info_json || "[]"),
       communityFundDeduction: row.community_fund_deduction || 0,
       latePenaltyAmount: row.late_penalty_amount || 0,
+      paymentInterval: row.payment_interval || "biweekly",
     }, 200, cors);
   });
 
@@ -56,11 +57,12 @@ export default function registerScheduleRoutes(router) {
       throw new HttpError(402, "A late payment penalty is a premium feature — activate your group's subscription first.");
     }
     await env.DB.prepare(
-      `UPDATE groups SET group_name=?, cycle_name=?, recipient_exempt=?, schedule_json=?, funds_json=?, payment_info_json=?, community_fund_deduction=?, late_penalty_amount=?, updated_at=datetime('now'), updated_by=? WHERE id=?`
+      `UPDATE groups SET group_name=?, cycle_name=?, recipient_exempt=?, schedule_json=?, funds_json=?, payment_info_json=?, community_fund_deduction=?, late_penalty_amount=?, payment_interval=?, updated_at=datetime('now'), updated_by=? WHERE id=?`
     ).bind(
       body.groupName, body.cycleName, body.recipientExempt ? 1 : 0,
       JSON.stringify(body.schedule), JSON.stringify(body.funds || []),
-      JSON.stringify(body.paymentMethods || []), communityFundDeduction, latePenaltyAmount, admin.name, admin.groupId
+      JSON.stringify(body.paymentMethods || []), communityFundDeduction, latePenaltyAmount,
+      body.paymentInterval || "biweekly", admin.name, admin.groupId
     ).run();
     return json({ ok: true }, 200, cors);
   });

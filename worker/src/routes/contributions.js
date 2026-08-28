@@ -39,14 +39,25 @@ export default function registerContributionsRoutes(router) {
   // rejects it (/api/admin/payments/:id/reject). Nothing here needs to
   // check "before/after" thresholds the way the old insert-time crediting
   // did, since a pending entry can never cross one by definition.
+  //
+  // Accepts an optional client-supplied `id` (src/lib/api/contributions.js's
+  // addPayment always generates one) and uses INSERT OR IGNORE instead of
+  // a plain INSERT — this is what makes the offline write queue's replay
+  // safe (see core.js's flushOutbox): a payment logged while offline is
+  // queued locally under its own id and POSTed here once connectivity
+  // returns; if that request's response is ever lost and the client
+  // retries the exact same body, this is a no-op instead of a duplicate
+  // row, rather than relying on the client to somehow know whether the
+  // first attempt actually landed. Falls back to generating one
+  // server-side for any older/other client that doesn't send one.
   router.post("/api/contributions/payments", async ({ request, env, cors }) => {
     const user = await requireSession(request, env);
     const body = await request.json();
     if (!body.amount || Number(body.amount) <= 0) throw new HttpError(400, "Amount must be greater than zero.");
-    const id = uid();
+    const id = body.id || uid();
 
     await env.DB.prepare(
-      `INSERT INTO payments (id, group_id, user_id, schedule_row_id, amount, note, recorded_by, status)
+      `INSERT OR IGNORE INTO payments (id, group_id, user_id, schedule_row_id, amount, note, recorded_by, status)
        VALUES (?,?,?,?,?,?,?,'pending')`
     ).bind(id, user.groupId, user.id, body.scheduleRowId, Number(body.amount), body.note || "", user.name).run();
 

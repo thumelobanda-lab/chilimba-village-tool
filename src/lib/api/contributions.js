@@ -1,4 +1,5 @@
-import { MOCK_MODE, lsGet, lsSet, uid, realFetch, currentSession, groupScopedKey } from "./core.js";
+import { MOCK_MODE, lsGet, lsSet, uid, realFetch, currentSession, groupScopedKey, loadOutbox } from "./core.js";
+import { overlayPendingLedgerWrites } from "../offlineQueue.js";
 
 const emptyLedger = () => ({ payments: [], payoutInfo: { amount: 0, date: "" }, dueOverrides: {} });
 
@@ -26,7 +27,18 @@ export async function getMyLedger() {
     const l = lsGet(ledgerKeyFor(session), emptyLedger());
     return { ...emptyLedger(), ...l };
   }
-  return realFetch("/api/contributions/me");
+  const result = await realFetch("/api/contributions/me");
+  // Overlays any of THIS member's payment/void writes still sitting in
+  // the offline outbox (see core.js's realFetch/flushOutbox) — whether
+  // `result` came back live or from the offline read-cache — so a
+  // payment logged while offline shows up immediately, tagged
+  // pendingSync, rather than only appearing once it's actually synced.
+  const outbox = loadOutbox(session).filter(
+    (item) =>
+      item.path === "/api/contributions/payments" ||
+      /^\/api\/contributions\/payments\/.+\/void$/.test(item.path)
+  );
+  return outbox.length ? overlayPendingLedgerWrites(result, outbox) : result;
 }
 
 // Sets (or clears, with amount = null) this member's own agreed amount for

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { getPayees, payeesLabel, isRecipient, resolveDue, findNextDue, myNextDueDates, generateScheduleDates } from "./scheduleUtils.js";
+import { getPayees, payeesLabel, isRecipient, resolveDue, findNextDue, myNextDueDates, generateScheduleDates, cycleEndDate } from "./scheduleUtils.js";
 
 describe("getPayees", () => {
   it("reads a payees array directly", () => {
@@ -264,5 +264,30 @@ describe("generateScheduleDates", () => {
 
   it("generates exactly one date when count is 1", () => {
     expect(generateScheduleDates("monthly", "2026-06-01", 1)).toEqual(["2026-06-01"]);
+  });
+});
+
+describe("cycleEndDate", () => {
+  it("returns the latest date regardless of row order", () => {
+    const schedule = [
+      { date: "2026-03-01" },
+      { date: "2026-06-01" },
+      { date: "2026-01-01" },
+    ];
+    expect(cycleEndDate(schedule)).toBe("2026-06-01");
+  });
+
+  it("returns null for an empty schedule", () => {
+    expect(cycleEndDate([])).toBeNull();
+    expect(cycleEndDate(undefined)).toBeNull();
+  });
+
+  it("ignores rows with an unparseable date", () => {
+    const schedule = [{ date: "2026-01-01" }, { date: "" }, { date: "not-a-date" }];
+    expect(cycleEndDate(schedule)).toBe("2026-01-01");
+  });
+
+  it("returns null when every row has an unparseable date", () => {
+    expect(cycleEndDate([{ date: "" }, { date: "nope" }])).toBeNull();
   });
 });
