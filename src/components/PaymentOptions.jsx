@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { saveSchedule } from "../lib/api.js";
 import PaymentMethodsEditor from "./PaymentMethodsEditor.jsx";
+import Toast from "./Toast.jsx";
 
 /**
  * A dedicated, easy-to-find home for "how do I actually pay" — members
@@ -90,8 +91,8 @@ export default function PaymentOptions({ session, config, onSaved }) {
         <button className="btn-primary" style={{ width: "auto" }} disabled={busy} onClick={save}>
           {busy ? "Saving…" : "Save Payment Options"}
         </button>
-        <span className="muted small" aria-live="polite">{status}</span>
       </div>
+      <Toast message={status} />
     </div>
   );
 }

@@ -14,12 +14,12 @@ function drawCard(canvas, content) {
   const ctx = canvas.getContext("2d");
   const w = CARD_WIDTH, h = CARD_HEIGHT;
 
-  // Background gradient — matches the app's warm terracotta/clay palette
-  // (--accent/--accent-dark in styles.css; hardcoded here since a canvas
-  // 2D context can't read CSS custom properties).
+  // Background gradient — matches the app's Deep Onyx palette (--panel/
+  // --bg in styles.css; hardcoded here since a canvas 2D context can't
+  // read CSS custom properties).
   const bg = ctx.createLinearGradient(0, 0, w, h);
-  bg.addColorStop(0, "#C96A4E");
-  bg.addColorStop(1, "#B5563C");
+  bg.addColorStop(0, "#0E262D");
+  bg.addColorStop(1, "#07191E");
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, w, h);
 

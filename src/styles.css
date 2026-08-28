@@ -1,54 +1,60 @@
-/* Theme: "Open Book" — a warm cream/parchment base instead of the
-   earlier charcoal-navy, deep warm-brown ink (never flat black) so it
-   reads like handwriting on parchment rather than a corporate fintech
-   screen. Terracotta/clay replaces Loyalty Blue as the primary brand
-   color — #C96A4E for interactive elements (buttons, links, active
-   borders), #B5563C (--accent-dark) for emphasis text/icons and the
-   darker gradient stop. Gold (--accent-2) is untouched — still reserved
-   for the progress ring, confirmations, milestones, the admin badge,
-   never a default/neutral color. --rose is a dusty-rose highlight used
-   sparingly (one or two gentle-emphasis spots, e.g. a hover glow) —
-   never a dominant color. --tan is the warm dashed/muted tone for
-   "not yet" states (e.g. an upcoming payout avatar) that used to be a
-   cool gray. --surface-* are semantic tints for hover/active/
-   highlighted/warning backgrounds — centralizing them here is what
-   makes the whole palette a --root swap instead of a hundred-line
-   hunt-and-replace every time it's touched again. --accent-dark is the
-   darker gradient stop used alongside --accent in the header/hero
-   gradients (an actual color, not derivable from --accent alone, since
-   CSS can't darken a custom property inline). */
+/* Theme: "Open Book" (dark) — Deep Onyx replaces cream/parchment as the
+   60% dominant background, across the page, panels, and chrome alike
+   (the header/hero gradients below are onyx now too, not a brand-color
+   band — see .app-header/.dashboard-hero/.platform-message-banner).
+   Gold (#D4A94A, --accent == --accent-2, deliberately the same value —
+   the spec calls for one gold, not two) is the 30% secondary: buttons,
+   links, active borders, the progress ring, milestones. --highlight
+   (#02F5A1, true Spring Green) is the reserved 10% accent — used only
+   for the dashboard's one primary figure (.vital-primary-value.vital-
+   card-value-ok and its own .vital-progress-fill), nowhere else. This
+   is distinct from --green: --green is the pre-existing semantic
+   "positive/ok/paid/on-time" status color used in ~15 places across the
+   app (ledger, streaks, avatars, owner lifecycle badges) — recoloring
+   *that* to the vivid highlight would spread it across every icon/badge
+   in the app, which is exactly what the highlight is supposed to avoid,
+   so it stays a calmer sage instead. --red/--pending/--rose/--tan keep
+   their original values — already medium-light dusty tones that read
+   fine as text on a dark surface, no change needed. --surface-* are
+   dark-tinted equivalents of the old light pastel tints (still a
+   --root swap away from a hunt-and-replace); a handful of consumers
+   that paired a *fill* with hardcoded white/dark text (buttons, badge
+   chips, canvas exports) needed their text flipped too since the fill
+   direction reversed — see the comments at each of those rules. */
 :root {
-  --ink: #4A3428;
-  --ink-faint: #8A6F5C;
-  --line: #E4D3BC;
-  --bg: #FBF3E7;
-  --panel: #FFFBF3;
-  --surface-2: #F5E8D6;       /* highlighted/inset panels — history rows, cards */
-  --surface-hover: #F0E0C8;   /* nav/switcher hover, neutral toggles */
-  --surface-active: #F6DCC9;  /* active nav item — terracotta-tinted */
-  --surface-amber: #FBEBCB;   /* pending/notice/warning banners */
-  --surface-danger: #FBE1D9;  /* flagged rows */
-  --surface-green: #E9EEDF;   /* green badges/tags on light bg */
-  --surface-gold: #FBF0D2;    /* gold badges/tags on light bg */
-  --accent: #C96A4E;
-  --accent-light: #DB8567;
-  --accent-dark: #B5563C;
+  --ink: #F2EFE6;
+  --ink-faint: #9FB3B8;
+  --line: #1B3540;
+  --bg: #07191E;
+  --panel: #0E262D;
+  --surface-2: #12262C;       /* highlighted/inset panels — history rows, cards */
+  --surface-hover: #15303A;   /* nav/switcher hover, neutral toggles */
+  --surface-active: #241F0E;  /* active nav item — gold-tinted */
+  --surface-amber: #2E230F;   /* pending/notice/warning banners */
+  --surface-danger: #2C1714;  /* flagged rows */
+  --surface-green: #12271F;   /* green badges/tags */
+  --surface-gold: #2A230F;    /* gold badges/tags */
+  --accent: #D4A94A;
+  --accent-light: #E6C36B;
+  --accent-dark: #5C4816;
   --accent-2: #D4A94A;
   --accent-2-light: #E6C36B;
   --rose: #C88B7D;
   --tan: #C3A47C;
   --red: #E0897C;
-  --green: #8FA876;
+  --green: #5FBF8F;
   --pending: #E6B478;
+  --highlight: #02F5A1;
   /* An almost-imperceptible fiber mottling for card surfaces (.panel,
      .vital-card, .vital-primary) — three off-center, low-opacity radial
      gradients rather than a repeating pattern, so it reads as paper
      grain, not a printed texture. Deliberately this faint (~2%): it
-     should only be noticeable if you go looking for it. */
+     should only be noticeable if you go looking for it. Light-on-dark
+     now (was dark-on-light) so it stays visible against the onyx panel. */
   --paper-grain:
-    radial-gradient(circle at 18% 22%, rgba(74, 52, 40, 0.025) 0, transparent 45%),
-    radial-gradient(circle at 78% 60%, rgba(74, 52, 40, 0.02) 0, transparent 50%),
-    radial-gradient(circle at 40% 88%, rgba(181, 86, 60, 0.018) 0, transparent 42%);
+    radial-gradient(circle at 18% 22%, rgba(242, 239, 230, 0.025) 0, transparent 45%),
+    radial-gradient(circle at 78% 60%, rgba(242, 239, 230, 0.02) 0, transparent 50%),
+    radial-gradient(circle at 40% 88%, rgba(212, 169, 74, 0.02) 0, transparent 42%);
   font-family: "Inter", "IBM Plex Sans", system-ui, sans-serif;
 }
 
@@ -64,8 +70,8 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
    book illustration, but it's the one place in the whole app that
    nods at "book" instead of just "ledger". */
 .app-header {
-  background: linear-gradient(135deg, var(--accent), var(--accent-dark));
-  color: white;
+  background: linear-gradient(135deg, var(--panel), var(--bg));
+  color: var(--ink);
   padding: 14px 20px;
   display: flex;
   justify-content: space-between;
@@ -77,6 +83,27 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 }
 .brand { font-weight: 700; font-size: 1.1rem; }
 .header-right { display: flex; align-items: center; gap: 10px; }
+
+/* The one honest offline/sync status line (OfflineBanner.jsx, driven by
+   useOfflineSync.js) — full-width under the header, on every screen, not
+   just the dashboard, since it can be true during login too. Amber while
+   actually offline (needs-attention, same language as
+   .pending-queue-banner); a calmer green once back online and just
+   finishing the flush, since nothing needs the member's attention at
+   that point, just a moment's notice that it happened. */
+.offline-banner {
+  background: var(--surface-amber);
+  color: var(--ink);
+  border-bottom: 1px solid var(--pending);
+  padding: 8px 20px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-align: center;
+}
+.offline-banner-syncing {
+  background: var(--surface-green);
+  border-bottom-color: var(--green);
+}
 
 .dashboard-greeting {
   font-size: 1.15rem;
@@ -296,7 +323,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   border: 1px solid var(--line);
   border-radius: 10px;
   padding: 20px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 2px 10px rgba(74, 52, 40, 0.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 2px 10px rgba(43, 46, 44, 0.08);
 }
 
 .login-panel { max-width: 380px; margin: 40px auto; text-align: left; }
@@ -338,7 +365,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 
 .btn-primary {
   background: var(--accent);
-  color: white;
+  color: var(--bg); /* dark text on the gold fill — --ink is light now */
   border: none;
   padding: 10px 16px;
   border-radius: 8px;
@@ -429,7 +456,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
     to bottom,
     transparent,
     transparent 30px,
-    rgba(74, 52, 40, 0.06) 31px
+    rgba(43, 46, 44, 0.06) 31px
   );
 }
 .feed-item {
@@ -586,12 +613,12 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   font-weight: 600;
   white-space: nowrap;
 }
-.category-tag-fraud { background: var(--surface-danger); color: #A6382A; }   /* Fraud Warning */
-.category-tag-warning { background: var(--surface-amber); color: #8A5A1E; }  /* Spam/Abuse Notice */
-.category-tag-billing { background: var(--surface-gold); color: #8A6023; }   /* Subscription Reminder */
-.category-tag-suspended { background: #F6DED8; color: #8C4A3D; }             /* Account Suspended */
-.category-tag-general { background: var(--surface-hover); color: var(--ink-faint); }  /* General Announcement */
-.category-tag-review { background: #E7EAEF; color: #4C5A6B; }                /* Payment Dispute/Investigation */
+.category-tag-fraud { background: var(--surface-danger); color: var(--red); }        /* Fraud Warning */
+.category-tag-warning { background: var(--surface-amber); color: var(--pending); }   /* Spam/Abuse Notice */
+.category-tag-billing { background: var(--surface-gold); color: var(--accent-2-light); } /* Subscription Reminder */
+.category-tag-suspended { background: #2C1714; color: var(--red); }                  /* Account Suspended */
+.category-tag-general { background: var(--surface-hover); color: var(--ink-faint); } /* General Announcement */
+.category-tag-review { background: #16202C; color: #93A9C4; }                        /* Payment Dispute/Investigation */
 
 .link-amount {
   background: none;
@@ -614,7 +641,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
     to bottom,
     transparent,
     transparent 30px,
-    rgba(74, 52, 40, 0.06) 31px
+    rgba(43, 46, 44, 0.06) 31px
   );
   padding: 10px 14px;
   border-left: 3px solid var(--accent);
@@ -671,7 +698,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 }
 .notice-item {
   padding: 6px 0;
-  border-bottom: 1px dashed rgba(201, 150, 46, 0.35);
+  border-bottom: 1px dashed rgba(212, 169, 74, 0.35);
 }
 .notice-item:last-of-type { border-bottom: none; }
 .notice-message { font-size: 0.92rem; color: var(--ink); font-weight: 500; }
@@ -694,11 +721,11 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
    persistent history. */
 .platform-message-stack { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
 .platform-message-banner {
-  background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+  background: linear-gradient(135deg, var(--panel), var(--bg));
   border: 1px solid var(--accent-2);
   border-radius: 10px;
   padding: 14px 16px;
-  color: white;
+  color: var(--ink);
 }
 .platform-message-badge {
   font-size: 0.7rem;
@@ -718,7 +745,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 }
 .platform-message-dismiss {
   background: var(--accent-2);
-  color: var(--ink);
+  color: var(--bg); /* dark text on the gold fill — --ink is light now */
   border: none;
   padding: 6px 14px;
   border-radius: 8px;
@@ -816,7 +843,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   margin-bottom: 10px;
 }
 .calc-display {
-  background: var(--ink);
+  background: var(--bg); /* screen stays darkest-onyx regardless of --ink's polarity */
   color: white;
   font-family: "IBM Plex Mono", monospace;
   font-size: 1.8rem;
@@ -847,8 +874,8 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   transition: transform 0.05s ease;
 }
 .calc-btn:active { transform: scale(0.94); }
-.calc-btn-op { background: var(--accent); color: white; }
-.calc-btn-equals { background: var(--accent-2); color: white; grid-row: span 1; }
+.calc-btn-op { background: var(--accent); color: var(--bg); }
+.calc-btn-equals { background: var(--accent-2); color: var(--bg); grid-row: span 1; }
 .calc-btn-fn { background: var(--surface-hover); color: var(--ink-faint); }
 .calc-btn-zero { grid-column: span 2; }
 
@@ -864,6 +891,22 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .confirm-bulb-off { color: var(--line); }
 .confirm-bulb-pending { color: var(--pending); }
 .confirm-bulb-rejected { color: var(--red); }
+/* Hasn't even reached the server yet (offline write queue — see
+   offlineQueue.js/core.js's realFetch) — deliberately a different color
+   from confirm-bulb-pending (amber, "logged, awaiting admin review") so
+   the two kinds of "pending" are never visually confused: this one means
+   "still on this device," that one means "the group leader hasn't
+   looked at it yet." */
+.confirm-bulb-syncing { color: var(--rose); }
+.pending-sync-tag {
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: var(--red);
+  background: #2C1714;
+  border-radius: 8px;
+  padding: 1px 6px;
+  margin-left: 4px;
+}
 .rejected-reason { color: var(--red); }
 
 /* Streak Dots — a member's own on-time payment history, one dot per
@@ -892,7 +935,8 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .streak-dot-row-inline .streak-dot { font-size: 0.65rem; }
 
 /* Group Reliability Score (GRS) — a single group-wide percentage, one
-   slim strip, same "not a card" restraint as Group Pulse. */
+   slim strip, same "not a card" restraint as Group Pulse. Gold/red
+   only, no green — see GroupReliabilityScore.jsx. */
 .grs-strip {
   margin-bottom: 16px;
   padding: 8px 12px;
@@ -902,9 +946,25 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   font-size: 0.85rem;
   color: var(--ink);
 }
-.grs-good { color: var(--green); font-weight: 700; }
 .grs-ok { color: var(--pending); font-weight: 700; }
 .grs-low { color: var(--red); font-weight: 700; }
+
+/* Compact GRS pill for the dashboard hero (GRSBadge.jsx) — same pastel-
+   on-dark-gradient pattern already proven by .tag in this same hero
+   (the member/admin role tag next to the greeting). Gold/red only, no
+   green variant — GRSBadge.jsx folds the "good" tone into "ok" so this
+   pill never competes with the theme's single green highlight. */
+.grs-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  vertical-align: middle;
+}
+.grs-badge-ok { background: var(--surface-gold); color: var(--pending); }
+.grs-badge-low { background: var(--surface-danger); color: var(--red); }
 
 /* Owner Groups Health lifecycle badge — New/Active/At Risk, same
    pill shape as the other status tags in this file. */
@@ -1007,7 +1067,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
    moments (see .dashboard-hero-ring below and ProgressRing.jsx's `glow`
    prop) rather than a small, easy-to-miss corner widget. */
 .dashboard-hero {
-  background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+  background: linear-gradient(135deg, var(--panel), var(--bg));
   border-radius: 12px;
   padding: 12px 16px;
   margin-bottom: 14px;
@@ -1051,7 +1111,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
    (48-56px, sits right next to the greeting, not a dedicated card) —
    the halo padding shrinks to match rather than dwarfing the ring. */
 .dashboard-hero-ring .progress-ring-wrap {
-  background: radial-gradient(circle, rgba(201, 150, 46, 0.32), transparent 70%);
+  background: radial-gradient(circle, rgba(212, 169, 74, 0.32), transparent 70%);
   border-radius: 50%;
   padding: 3px;
   margin-top: 0;
@@ -1088,7 +1148,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .payout-avatar-received { border-color: var(--green); }
 .payout-avatar-next {
   border-color: var(--accent-2);
-  box-shadow: 0 0 0 2px rgba(201, 150, 46, 0.25);
+  box-shadow: 0 0 0 2px rgba(212, 169, 74, 0.25);
 }
 .payout-avatar-upcoming { border-style: dashed; border-color: var(--tan); }
 /* The signed-in member — larger and gold-glowing so they're
@@ -1097,7 +1157,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   width: 42px;
   height: 42px;
   font-size: 0.74rem;
-  box-shadow: 0 0 0 3px rgba(201, 150, 46, 0.35);
+  box-shadow: 0 0 0 3px rgba(212, 169, 74, 0.35);
 }
 .payout-avatar-legend {
   display: flex;
@@ -1162,6 +1222,11 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 }
 .vital-card-value-warn { color: var(--red); }
 .vital-card-value-ok { color: var(--green); }
+/* The one reserved use of --highlight (Spring Green) in the whole app —
+   compound selector so it beats the plain .vital-card-value-ok rule
+   above by specificity, without touching that rule's calmer --green for
+   every other "OK" indicator (ledger paid amounts, streak dots, etc). */
+.vital-primary-value.vital-card-value-ok { color: var(--highlight); }
 
 /* Declutter pass — the one number that's actually front-and-center is a
    positive-reframe of contribution progress ("You've Contributed This
@@ -1197,7 +1262,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 }
 .vital-progress-fill {
   height: 100%;
-  background: var(--green);
+  background: var(--highlight); /* same highlight unit as the number above it */
   border-radius: 6px;
   transition: width 0.4s ease;
 }
@@ -1294,10 +1359,11 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   color: white;
   background: var(--line);
 }
-.cycle-node-past .cycle-node-dot { background: var(--accent); }
+.cycle-node-past .cycle-node-dot { background: var(--accent); color: var(--bg); }
 .cycle-node-next .cycle-node-dot {
   background: var(--accent-2);
-  box-shadow: 0 0 0 3px rgba(201, 150, 46, 0.22);
+  color: var(--bg);
+  box-shadow: 0 0 0 3px rgba(212, 169, 74, 0.22);
 }
 .cycle-node-future .cycle-node-dot { background: var(--panel); border: 2px solid var(--line); }
 .cycle-node-date { font-size: 0.68rem; color: var(--ink-faint); margin-top: 4px; }
@@ -1383,7 +1449,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 }
 .quick-action-btn:hover:not(:disabled) .quick-action-label,
 .quick-action-btn:focus-visible:not(:disabled) .quick-action-label {
-  color: #FAF7F0;
+  color: var(--bg); /* dark text on the gold hover fill */
 }
 .quick-action-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 .quick-action-icon { font-size: 1.2rem; }
@@ -1455,7 +1521,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 }
 
 .progress-ring-glow .progress-ring-arc {
-  filter: drop-shadow(0 0 6px rgba(201, 150, 46, 0.65));
+  filter: drop-shadow(0 0 6px rgba(212, 169, 74, 0.65));
 }
 @media (prefers-reduced-motion: no-preference) {
   .progress-ring-glow .progress-ring-arc {
@@ -1463,8 +1529,8 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   }
 }
 @keyframes progress-ring-pulse {
-  0%, 100% { filter: drop-shadow(0 0 4px rgba(201, 150, 46, 0.5)); }
-  50% { filter: drop-shadow(0 0 10px rgba(201, 150, 46, 0.9)); }
+  0%, 100% { filter: drop-shadow(0 0 4px rgba(212, 169, 74, 0.5)); }
+  50% { filter: drop-shadow(0 0 10px rgba(212, 169, 74, 0.9)); }
 }
 
 /* Payment receipt — modal reuses .calc-modal-backdrop/.calc-modal (see
@@ -1489,6 +1555,89 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   text-decoration: underline;
   cursor: pointer;
   padding: 0;
+}
+
+/* "Your Book's Story" (BookStory.jsx) — a full rotation completing is
+   the single biggest celebration moment this app has, so it's the one
+   place a gold glow around the whole modal (not just a ring or a badge)
+   is warranted. Reuses .calc-modal-backdrop/.calc-modal for the overlay
+   shell, same as the receipt/calculator modals. */
+.book-story-modal {
+  max-width: 400px;
+  border: 1px solid var(--accent-2);
+  box-shadow: 0 -4px 24px rgba(0,0,0,0.2), 0 0 32px rgba(212, 169, 74, 0.35);
+}
+.book-story-hero {
+  text-align: center;
+  padding: 6px 0 14px;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+.book-story-hero.book-story-revealed { opacity: 1; transform: translateY(0); }
+.book-story-group-name { font-size: 1.3rem; font-weight: 800; color: var(--ink); }
+.book-story-cycle-name { color: var(--accent-2); font-weight: 600; font-size: 0.86rem; margin-top: 2px; }
+
+.book-story-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.book-story-stat {
+  background: var(--surface-gold);
+  border: 1px solid var(--accent-2);
+  border-radius: 12px;
+  padding: 14px 10px;
+  text-align: center;
+  opacity: 0;
+  transform: translateY(10px) scale(0.97);
+  transition: opacity 0.45s ease, transform 0.45s ease;
+}
+.book-story-stats.book-story-revealed .book-story-stat {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+.book-story-stat-value {
+  font-size: 1.7rem;
+  font-weight: 800;
+  color: var(--accent-2-light); /* light gold text — surface-gold/panel are dark now */
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+.book-story-stat-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  margin-top: 4px;
+}
+.book-story-closing {
+  text-align: center;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--accent-2-light); /* light gold text — surface-gold/panel are dark now */
+  margin: 0 0 18px;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.5s ease 0.45s, transform 0.5s ease 0.45s;
+}
+.book-story-closing.book-story-revealed { opacity: 1; transform: translateY(0); }
+@media (prefers-reduced-motion: reduce) {
+  .book-story-hero, .book-story-stat, .book-story-closing {
+    transition: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+.book-story-share { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.book-story-canvas {
+  width: 100%;
+  max-width: 260px;
+  aspect-ratio: 1 / 1;
+  border-radius: 14px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
 }
 
 /* Sign up / Sign in mode toggle atop the login form — one shared form
@@ -1516,5 +1665,32 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   background: var(--panel);
   color: var(--accent);
   box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+}
+
+/* Save-confirmation toast (Toast.jsx) — floats bottom-center above
+   everything else, brief and self-dismissing (each caller owns its own
+   timeout, same ~1.5s convention already used across the app). */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  background: var(--panel);
+  border: 1px solid var(--accent-2);
+  color: var(--ink);
+  padding: 10px 18px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.35);
+  z-index: 200;
+  animation: toast-in 0.2s ease;
+}
+@keyframes toast-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .toast { animation: none; }
 }
 

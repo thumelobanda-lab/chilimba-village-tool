@@ -1,4 +1,5 @@
 import React from "react";
+import { grsTone } from "../lib/reliability.js";
 
 /**
  * The group-wide reliability score (GRS) — a single percentage, visible
@@ -8,6 +9,10 @@ import React from "react";
  * whatever GET /api/dashboard/pulse returns under its `grs` key:
  * {score: number|null, sampleSize: number} — null means not enough
  * payment history yet to produce a meaningful score.
+ *
+ * Gold/red only, no green — matches GRSBadge.jsx's dashboard pill so
+ * the two GRS displays agree; grsTone()'s "good" band is folded into
+ * "ok" (gold) here too, "low" stays red.
  */
 export default function GroupReliabilityScore({ grs }) {
   if (!grs) return null;
@@ -20,7 +25,7 @@ export default function GroupReliabilityScore({ grs }) {
     );
   }
 
-  const tone = grs.score >= 80 ? "grs-good" : grs.score >= 50 ? "grs-ok" : "grs-low";
+  const tone = `grs-${grsTone(grs.score) === "low" ? "low" : "ok"}`;
 
   return (
     <div className="grs-strip">

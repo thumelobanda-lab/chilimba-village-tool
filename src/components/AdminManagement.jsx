@@ -1,8 +1,16 @@
 import React, { useState } from "react";
 import { getGroupMembers, promoteMember, demoteMember, removeMember, resetMemberPin } from "../lib/api.js";
 import { useApiData } from "../lib/useApiData.js";
+import { cycleEndDate } from "../lib/scheduleUtils.js";
+import Toast from "./Toast.jsx";
 
 const money = (n) => "K" + (Number(n) || 0).toLocaleString("en-ZM", { maximumFractionDigits: 0 });
+
+function formatDate(dateISO) {
+  const d = new Date(dateISO + "T00:00:00");
+  if (isNaN(d.getTime())) return dateISO;
+  return d.toLocaleDateString("en-ZM", { day: "numeric", month: "short", year: "numeric" });
+}
 
 // There's no push/badge/notification anywhere else when someone joins —
 // this tag, plus the roster now sorting newest-first (see the ORDER BY
@@ -15,8 +23,9 @@ function isNewMember(joinedAt) {
   return Date.now() - new Date(joinedAt).getTime() < NEW_MEMBER_WINDOW_MS;
 }
 
-export default function AdminManagement() {
+export default function AdminManagement({ schedule }) {
   const { data, error: loadError, loading, refresh } = useApiData(getGroupMembers, []);
+  const endDate = cycleEndDate(schedule);
   // Selectable, not free-text — picking straight from the real roster
   // rules out typos or promoting the wrong person entirely, rather than
   // just reducing the risk. Already-admin members are excluded since
@@ -90,6 +99,11 @@ export default function AdminManagement() {
   return (
     <div style={{ marginTop: 20 }}>
       <h3 className="panel-subtitle">Members & Group Leaders</h3>
+      {endDate && (
+        <p className="muted small" style={{ marginBottom: 4 }}>
+          📅 This round is on track to end <strong>{formatDate(endDate)}</strong>
+        </p>
+      )}
       <p className="muted tiny" style={{ marginBottom: 10 }}>
         Every active member, newest-joined first, tagged "new" for their first 48 hours so
         a fresh sign-up doesn't get missed — this is the only place that shows one. Any
@@ -194,8 +208,8 @@ export default function AdminManagement() {
             <button className="btn-ghost-dark" disabled={busy || !promoteName} onClick={handlePromote}>
               Promote
             </button>
-            <span className="muted small" aria-live="polite">{status}</span>
           </div>
+          <Toast message={status} />
 
           {actionError && <div className="error-text" role="alert" style={{ marginTop: 8 }}>{actionError}</div>}
         </>

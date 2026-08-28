@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { money } from "./LedgerTable.jsx";
 import { getGroupFunds, getGroupPulse, getPendingPayments } from "../lib/api.js";
 import { useApiData } from "../lib/useApiData.js";
-import { findNextDue, myNextDueDates, payeesLabel } from "../lib/scheduleUtils.js";
+import { findNextDue, myNextDueDates, payeesLabel, cycleEndDate } from "../lib/scheduleUtils.js";
 import {
   computeCycleProgress,
   daysUntil,
@@ -28,6 +28,7 @@ import MyNextPayments from "./MyNextPayments.jsx";
 import QuickActions from "./QuickActions.jsx";
 import PayoutAvatarRow from "./PayoutAvatarRow.jsx";
 import StreakDots from "./StreakDots.jsx";
+import GRSBadge from "./GRSBadge.jsx";
 
 function formatDate(dateISO) {
   const d = new Date(dateISO + "T00:00:00");
@@ -146,11 +147,13 @@ export default function Dashboard({
           </div>
           <p className="dashboard-hero-sub">
             {config.groupName ? `Here's where ${config.groupName} stands today.` : "Here's where things stand today."}
+            <GRSBadge grs={pulseData?.grs} />
           </p>
           {config.cycleName && (
             <div className="dashboard-hero-cycle">
               {config.cycleName}
               {cycle.total > 0 && ` · ${cycle.passed} of ${cycle.total} dates`}
+              {cycleEndDate(config.schedule) && ` · ends ${formatDate(cycleEndDate(config.schedule))}`}
             </div>
           )}
           {session?.role === "admin" && onOpenGroupSetup && (

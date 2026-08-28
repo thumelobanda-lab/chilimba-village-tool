@@ -32,3 +32,14 @@ export function computeGRS(rowsComputedByMember) {
   if (sampleSize < MIN_GRS_SAMPLE_SIZE) return { score: null, sampleSize };
   return { score: Math.round((creditSum / sampleSize) * 100), sampleSize };
 }
+
+/**
+ * Shared "good/ok/low" banding for a GRS percentage, so every place that
+ * color-codes a score (the Community tab strip, the dashboard hero badge)
+ * agrees on the same 80/50 cutoffs instead of each hardcoding its own.
+ * @param {number} score
+ * @returns {"good"|"ok"|"low"}
+ */
+export function grsTone(score) {
+  return score >= 80 ? "good" : score >= 50 ? "ok" : "low";
+}

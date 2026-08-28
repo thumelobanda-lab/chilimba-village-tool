@@ -1,10 +1,18 @@
 import React, { useState } from "react";
 import { saveSchedule } from "../lib/api.js";
-import { getPayees, generateScheduleDates, SCHEDULE_FREQUENCIES } from "../lib/scheduleUtils.js";
+import { getPayees, generateScheduleDates, cycleEndDate, SCHEDULE_FREQUENCIES } from "../lib/scheduleUtils.js";
+import { useMemberRoster } from "../hooks/useMemberRoster.js";
 import AdminManagement from "./AdminManagement.jsx";
 import CollapsibleSection from "./CollapsibleSection.jsx";
 import InviteCard from "./InviteCard.jsx";
 import PaymentMethodsEditor from "./PaymentMethodsEditor.jsx";
+import Toast from "./Toast.jsx";
+
+function formatDate(dateISO) {
+  const d = new Date(dateISO + "T00:00:00");
+  if (isNaN(d.getTime())) return dateISO;
+  return d.toLocaleDateString("en-ZM", { day: "numeric", month: "short", year: "numeric" });
+}
 
 export default function GroupSetup({ config, onSaved, session, premiumActive }) {
   const [draft, setDraft] = useState(() => {
@@ -38,11 +46,44 @@ export default function GroupSetup({ config, onSaved, session, premiumActive }) 
     });
   };
 
+  const { members: roster } = useMemberRoster();
+
   const [missingRecipientIds, setMissingRecipientIds] = useState([]);
-  const [genFrequency, setGenFrequency] = useState("biweekly");
-  const [genStartDate, setGenStartDate] = useState("");
+  // Frequency is a real, persisted group setting now (see paymentInterval
+  // in the saved draft below and useGroupConfig.js's EMPTY_CONFIG) — it
+  // survives logout instead of quietly resetting to "biweekly" every
+  // time this screen is reopened. Start date deliberately is NOT
+  // literally replayed the same way: re-generating from a stale old
+  // start date would overlap the dates already on the schedule instead
+  // of extending it, so it's smart-defaulted below to the day after the
+  // schedule's current last date instead — the one value where
+  // "remember exactly what I typed last time" would actually be a bug,
+  // not a convenience.
+  const [genFrequency, setGenFrequency] = useState(config.paymentInterval || "biweekly");
+  const [genStartDate, setGenStartDate] = useState(() => {
+    const lastDate = cycleEndDate(config.schedule);
+    if (!lastDate) return "";
+    const d = new Date(lastDate + "T00:00:00");
+    d.setDate(d.getDate() + 1);
+    return d.toISOString().slice(0, 10);
+  });
   const [genCount, setGenCount] = useState(10);
   const [genError, setGenError] = useState("");
+
+  const setFrequency = (value) => {
+    setGenFrequency(value);
+    setDraft((d) => ({ ...d, paymentInterval: value }));
+  };
+
+  // Live preview — the anticipated cycle-end date this generator would
+  // produce with its current inputs, before "Generate" is even clicked.
+  // Purely informational: one date per member is the common case this
+  // estimates for, but a date can have up to 3 recipients, so a group
+  // running multiple people per date will finish sooner than this shows.
+  const projectedDates = genStartDate && Number(genCount) > 0
+    ? generateScheduleDates(genFrequency, genStartDate, Number(genCount) || 0)
+    : [];
+  const projectedEndDate = projectedDates.at(-1) || null;
 
   const generateDates = () => {
     setGenError("");
@@ -185,7 +226,12 @@ export default function GroupSetup({ config, onSaved, session, premiumActive }) 
       <CollapsibleSection
         icon="📅"
         title="Payout Schedule"
-        summary={dateCount === 0 ? "No dates set up" : `${dateCount} date${dateCount === 1 ? "" : "s"}`}
+        summary={
+          dateCount === 0
+            ? "No dates set up"
+            : `${dateCount} date${dateCount === 1 ? "" : "s"}` +
+              (cycleEndDate(draft.schedule) ? ` · ends ${formatDate(cycleEndDate(draft.schedule))}` : "")
+        }
         defaultOpen
       >
         <h3 className="panel-subtitle">Generate Payout Dates</h3>
@@ -196,7 +242,7 @@ export default function GroupSetup({ config, onSaved, session, premiumActive }) 
         <div className="field-row" style={{ alignItems: "flex-end" }}>
           <label className="field">
             Frequency
-            <select value={genFrequency} onChange={(e) => setGenFrequency(e.target.value)}>
+            <select value={genFrequency} onChange={(e) => setFrequency(e.target.value)}>
               {Object.entries(SCHEDULE_FREQUENCIES).map(([key, spec]) => (
                 <option key={key} value={key}>{spec.label}</option>
               ))}
@@ -210,9 +256,25 @@ export default function GroupSetup({ config, onSaved, session, premiumActive }) 
             How many dates
             <input type="number" min={1} max={60} value={genCount} onChange={(e) => setGenCount(e.target.value)} />
           </label>
+          {roster.length > 0 && (
+            <button
+              type="button"
+              className="btn-link"
+              onClick={() => setGenCount(roster.length)}
+              title="One date per active member — a date with more than one recipient will need fewer than this"
+            >
+              Match {roster.length} member{roster.length === 1 ? "" : "s"}
+            </button>
+          )}
           <button className="btn-ghost-dark" onClick={generateDates}>Generate</button>
         </div>
         {genError && <div className="error-text" role="alert">{genError}</div>}
+        {projectedEndDate && (
+          <p className="muted small" style={{ marginTop: 6 }}>
+            📅 Anticipated cycle-end date: <strong>{formatDate(projectedEndDate)}</strong>{" "}
+            ({genCount} date{Number(genCount) === 1 ? "" : "s"}, {SCHEDULE_FREQUENCIES[genFrequency]?.label.toLowerCase()})
+          </p>
+        )}
 
         <div className="grid-wrap" style={{ marginTop: 16 }}>
           <table className="grid-table">
@@ -238,6 +300,7 @@ export default function GroupSetup({ config, onSaved, session, premiumActive }) 
                       value={r.payeesText}
                       onChange={(e) => editRow(r.id, "payeesText", e.target.value)}
                       placeholder="e.g. Doreen, Dorothy, Fridah"
+                      list="group-setup-roster"
                     />
                     {isMissing && <div className="error-text tiny">Needs a recipient</div>}
                   </td>
@@ -250,6 +313,9 @@ export default function GroupSetup({ config, onSaved, session, premiumActive }) 
           </table>
         </div>
         <button className="btn-ghost-dark" style={{ marginTop: 10 }} onClick={addRow}>+ Add date</button>
+        <datalist id="group-setup-roster">
+          {roster.map((m) => <option key={m.name} value={m.name} />)}
+        </datalist>
       </CollapsibleSection>
 
       <CollapsibleSection
@@ -363,15 +429,15 @@ export default function GroupSetup({ config, onSaved, session, premiumActive }) 
       </CollapsibleSection>
 
       <CollapsibleSection icon="👥" title="Members & Group Leaders" summary="Members, roles, next due dates">
-        <AdminManagement />
+        <AdminManagement schedule={draft.schedule} />
       </CollapsibleSection>
 
       {error && <div className="error-text" style={{ marginTop: 14 }}>{error}</div>}
 
       <div className="field-row" style={{ marginTop: 14 }}>
         <button className="btn-primary" style={{ width: "auto" }} onClick={save}>Save Group Settings</button>
-        <span className="muted small">{status}</span>
       </div>
+      <Toast message={status} />
 
       <p className="muted tiny" style={{ marginTop: 12 }}>
         Changes apply for every member's payment history.

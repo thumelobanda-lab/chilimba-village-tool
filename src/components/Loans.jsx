@@ -1,11 +1,18 @@
 import React, { useEffect, useState } from "react";
 import { issueLoan, repayLoan, editLoan, voidRepayment, getGroupFunds } from "../lib/api.js";
 import { useApiData } from "../lib/useApiData.js";
+import { useMemberRoster } from "../hooks/useMemberRoster.js";
+import Toast from "./Toast.jsx";
 
 const money = (n) => "K" + (Number(n) || 0).toLocaleString("en-ZM", { maximumFractionDigits: 0 });
 
 export default function Loans() {
   const { data, error: loadError, loading, refresh } = useApiData(getGroupFunds, []);
+  // Suggestions, not a hard-enforced select — a loan can legitimately go
+  // to someone outside the regular member roster (e.g. a relative
+  // covering a member's slot), so this autocompletes against real
+  // members without blocking a name that isn't one.
+  const { members: roster } = useMemberRoster();
   const [fundId, setFundId] = useState("");
   const [borrowerName, setBorrowerName] = useState("");
   const [amount, setAmount] = useState("");
@@ -138,7 +145,15 @@ export default function Loans() {
             </label>
             <label className="field">
               Borrower name
-              <input value={borrowerName} onChange={(e) => setBorrowerName(e.target.value)} placeholder="e.g. Fridah" />
+              <input
+                value={borrowerName}
+                onChange={(e) => setBorrowerName(e.target.value)}
+                placeholder="e.g. Fridah"
+                list="loan-borrower-roster"
+              />
+              <datalist id="loan-borrower-roster">
+                {roster.map((m) => <option key={m.name} value={m.name} />)}
+              </datalist>
             </label>
             <label className="field">
               Amount (K)
@@ -163,8 +178,8 @@ export default function Loans() {
             <button className="btn-primary" style={{ width: "auto" }} disabled={busy} onClick={submit}>
               {busy ? "Issuing…" : "Issue loan"}
             </button>
-            <span className="muted small">{status}</span>
           </div>
+          <Toast message={status} />
         </>
       ))}
 
@@ -226,6 +241,7 @@ export default function Loans() {
                               value={editDraft.borrowerName}
                               onChange={(e) => setEditDraft((d) => ({ ...d, borrowerName: e.target.value }))}
                               className="cell-input"
+                              list="loan-borrower-roster"
                             />
                             <input
                               type="number"

@@ -4,6 +4,7 @@ import {
   getReminderDateOverrides, setReminderDateOverride,
 } from "../lib/api.js";
 import { pushSupported, subscribeToPush, unsubscribeFromPush, getExistingSubscription } from "../lib/push.js";
+import Toast from "./Toast.jsx";
 
 const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || "";
 
@@ -145,8 +146,8 @@ export default function Reminders({ config, premiumActive }) {
         <button className="btn-primary" style={{ width: "auto" }} disabled={busy} onClick={save}>
           Save reminder settings
         </button>
-        <span className="muted small">{status}</span>
       </div>
+      <Toast message={status} />
 
       <p className="muted tiny" style={{ marginTop: 12 }}>
         Your phone number is only used to send these reminders and is stored separately from

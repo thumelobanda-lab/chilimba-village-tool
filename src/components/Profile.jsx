@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { updateProfile } from "../lib/api.js";
 import TermsModal from "./TermsModal.jsx";
+import Toast from "./Toast.jsx";
 
 // Self-service editing of the signed-in member's own account. Deliberately
 // scoped to just two things: a cosmetic display-name fix (spelling/
@@ -129,8 +130,8 @@ export default function Profile({ session, onRenamed, onLogout }) {
         <button className="btn-primary" style={{ width: "auto" }} disabled={busy} onClick={save}>
           {busy ? "Saving…" : "Save changes"}
         </button>
-        <span className="muted small">{status}</span>
       </div>
+      <Toast message={status} />
 
       <div className="privacy-row">
         <button className="btn-link" onClick={() => setShowTerms(true)}>Terms &amp; Conditions</button>

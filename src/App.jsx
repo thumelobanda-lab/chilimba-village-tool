@@ -18,18 +18,21 @@ import Dashboard from "./components/Dashboard.jsx";
 import PaymentInfo from "./components/PaymentInfo.jsx";
 import NoticeBoard from "./components/NoticeBoard.jsx";
 import PlatformMessageBanner from "./components/PlatformMessageBanner.jsx";
+import Toast from "./components/Toast.jsx";
 import PaymentOptions from "./components/PaymentOptions.jsx";
 import QuickCalculator from "./components/QuickCalculator.jsx";
 import Walkthrough, { hasSeenWalkthrough } from "./components/Walkthrough.jsx";
 import GroupSwitcher from "./components/GroupSwitcher.jsx";
 import AddGroupModal from "./components/AddGroupModal.jsx";
 import NotificationBell from "./components/NotificationBell.jsx";
+import OfflineBanner from "./components/OfflineBanner.jsx";
 import { useSession } from "./hooks/useSession.js";
 import { useGroupConfig } from "./hooks/useGroupConfig.js";
 import { useLedger } from "./hooks/useLedger.js";
 import { useOnboarding } from "./hooks/useOnboarding.js";
 import { useSubscription } from "./hooks/useSubscription.js";
 import { useNotifications } from "./hooks/useNotifications.js";
+import { useOfflineSync } from "./hooks/useOfflineSync.js";
 import { greeting } from "./lib/dashboardMath.js";
 import { findNextDue } from "./lib/scheduleUtils.js";
 
@@ -60,7 +63,7 @@ export default function App() {
     renameSession,
     refreshSession,
   } = useSession();
-  const { config, setConfig } = useGroupConfig(session);
+  const { config, setConfig, reload: reloadConfig } = useGroupConfig(session);
   const {
     ledger,
     totals,
@@ -72,7 +75,16 @@ export default function App() {
     updatePayout,
     applyFlatRate,
     clearMyData,
+    reload: reloadLedger,
   } = useLedger(session, config);
+  // Fires once the offline write outbox actually syncs something (see
+  // useOfflineSync.js) — re-fetches both from the server so the ledger's
+  // pendingSync overlay entries (getMyLedger in contributions.js) get
+  // replaced by the real, now-confirmed-delivered rows, and the schedule
+  // picks up anything an admin changed while this member was offline.
+  const { online, pending: pendingSyncCount, syncing } = useOfflineSync(async () => {
+    await Promise.all([reloadLedger(), reloadConfig()]);
+  });
   const onboarding = useOnboarding({ applyFlatRate });
   const subscription = useSubscription(session);
   // Cheap and pure — recomputed here (App.jsx) rather than lifted out of
@@ -93,6 +105,24 @@ export default function App() {
   const [showWalkthrough, setShowWalkthrough] = useState(false);
   const [sessionEndedNotice, setSessionEndedNotice] = useState(false);
   const [showAddGroup, setShowAddGroup] = useState(false);
+  const [payoutStatus, setPayoutStatus] = useState("");
+
+  // The Amount field commits on every keystroke (see updatePayout in
+  // useLedger.js — optimistic, no separate save button), so the toast
+  // only fires once the field is left, not per digit typed. The Date
+  // field is a native picker whose onChange only fires on a discrete
+  // selection, so it can toast immediately.
+  const updatePayoutAndConfirm = async (field, value) => {
+    await updatePayout(field, value);
+    if (field === "date") {
+      setPayoutStatus("Saved");
+      setTimeout(() => setPayoutStatus(""), 1500);
+    }
+  };
+  const confirmPayoutAmountSaved = () => {
+    setPayoutStatus("Saved");
+    setTimeout(() => setPayoutStatus(""), 1500);
+  };
 
   // Auto-opens once per account, the first time the dashboard is actually
   // reached (after login and onboarding) — a free-tier group reaches the
@@ -140,6 +170,19 @@ export default function App() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.token]);
+
+  // Land on the dashboard whenever the active group changes — covers
+  // every path that swaps `session` without unmounting App (a brand new
+  // signup, joining a group via AddGroupModal's onJoin={join}, switching
+  // to an already-remembered group), not just the very first login.
+  // Without this, `tab` state just carries over from whatever screen was
+  // open on the previous group, which can land on a tab that doesn't
+  // even make sense for the new account (e.g. an admin-only tab for a
+  // group where this member isn't an admin).
+  useEffect(() => {
+    if (session) setTab("home");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.groupSlug]);
 
   const handleLogin = async (groupSlug, identifier, pin) => {
     const user = await login(groupSlug, identifier, pin);
@@ -199,6 +242,8 @@ export default function App() {
           </div>
         )}
       </header>
+
+      <OfflineBanner online={online} pending={pendingSyncCount} syncing={syncing} />
 
       {showCalculator && <QuickCalculator onClose={() => setShowCalculator(false)} />}
       {showWalkthrough && (
@@ -306,6 +351,9 @@ export default function App() {
 
                 <div className="payout-block">
                   <h3 className="panel-subtitle">Your Turn's Payout</h3>
+                  <p className="muted small" style={{ marginTop: -4, marginBottom: 12 }}>
+                    Record here when this member receives their group payout for this round — not a regular contribution.
+                  </p>
                   <div className="field-row">
                     <label className="field">
                       Amount (K)
@@ -313,18 +361,19 @@ export default function App() {
                         type="number"
                         value={ledger.payoutInfo?.amount || 0}
                         onChange={(e) => updatePayout("amount", e.target.value)}
+                        onBlur={confirmPayoutAmountSaved}
                       />
                     </label>
                     <label className="field">
                       Date received
                       <input
-                        type="text"
-                        placeholder="e.g. 4 Jul 2026"
+                        type="date"
                         value={ledger.payoutInfo?.date || ""}
-                        onChange={(e) => updatePayout("date", e.target.value)}
+                        onChange={(e) => updatePayoutAndConfirm("date", e.target.value)}
                       />
                     </label>
                   </div>
+                  <Toast message={payoutStatus} />
 
                   <table className="summary-table">
                     <tbody>
