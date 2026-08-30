@@ -26,6 +26,9 @@ import GroupSwitcher from "./components/GroupSwitcher.jsx";
 import AddGroupModal from "./components/AddGroupModal.jsx";
 import NotificationBell from "./components/NotificationBell.jsx";
 import OfflineBanner from "./components/OfflineBanner.jsx";
+import MyReceipts from "./components/MyReceipts.jsx";
+import OwnerDashboard from "./components/owner/OwnerDashboard.jsx";
+import { currentOwnerSession, ownerLogin } from "./lib/api/owner.js";
 import { useSession } from "./hooks/useSession.js";
 import { useGroupConfig } from "./hooks/useGroupConfig.js";
 import { useLedger } from "./hooks/useLedger.js";
@@ -33,11 +36,16 @@ import { useOnboarding } from "./hooks/useOnboarding.js";
 import { useSubscription } from "./hooks/useSubscription.js";
 import { useNotifications } from "./hooks/useNotifications.js";
 import { useOfflineSync } from "./hooks/useOfflineSync.js";
+import { useReceipts } from "./hooks/useReceipts.js";
+import { useTheme } from "./hooks/useTheme.js";
+import { useApiData } from "./lib/useApiData.js";
 import { greeting } from "./lib/dashboardMath.js";
 import { findNextDue } from "./lib/scheduleUtils.js";
+import { getPendingPayments } from "./lib/api.js";
 
 const TABS = [
   { id: "ledger", label: "My Payment History" },
+  { id: "receipts", label: "My Receipts" },
   { id: "payment-options", label: "Payment Options" },
   { id: "summary", label: "Payment Summary" },
   { id: "reminders", label: "Reminders" },
@@ -51,6 +59,14 @@ const TABS = [
 ];
 
 export default function App() {
+  const { theme, toggleTheme } = useTheme();
+  // The platform owner is a structurally separate credential from a
+  // group session (see lib/api/owner.js) — its own localStorage key, its
+  // own backend auth. Kept as independent state here (rather than folded
+  // into useSession's group session) so OwnerDashboard's early return
+  // below stays a pure UI branch with no risk of one session type
+  // silently overwriting the other.
+  const [ownerSession, setOwnerSession] = useState(currentOwnerSession());
   const {
     session,
     myGroups,
@@ -99,6 +115,16 @@ export default function App() {
     paidByRowId
   );
   const notifications = useNotifications(session, ledger.payments, nextDue, subscription.status?.active);
+  const receipts = useReceipts(session, totals.rowsComputed);
+  // Admin-only pending-confirmation count, needed here (not just inside
+  // Dashboard.jsx's own copy) so the header's notification bell can carry
+  // the same urgency signal on every tab, not just Home — see
+  // NotificationBell.jsx's `urgent` prop.
+  const { data: pendingData } = useApiData(
+    session?.role === "admin" ? getPendingPayments : () => Promise.resolve(null),
+    [session?.role]
+  );
+  const pendingConfirmCount = pendingData?.pending?.length || 0;
 
   const [tab, setTab] = useState("home");
   const [showCalculator, setShowCalculator] = useState(false);
@@ -106,6 +132,11 @@ export default function App() {
   const [sessionEndedNotice, setSessionEndedNotice] = useState(false);
   const [showAddGroup, setShowAddGroup] = useState(false);
   const [payoutStatus, setPayoutStatus] = useState("");
+  // Set when "Log a Payment" is tapped from the dashboard CTA — tells
+  // LedgerTable which row to auto-expand, scroll to, and focus so a
+  // member never has to hunt for the right collapsed date entry
+  // themselves. Cleared once LedgerTable has consumed it.
+  const [focusPaymentRowId, setFocusPaymentRowId] = useState(null);
 
   // The Amount field commits on every keystroke (see updatePayout in
   // useLedger.js — optimistic, no separate save button), so the toast
@@ -200,6 +231,25 @@ export default function App() {
     logout();
   };
 
+  const handleOwnerLogin = async (email, password) => {
+    const owner = await ownerLogin(email, password);
+    setOwnerSession(owner);
+  };
+
+  const openLedgerToPay = () => {
+    if (nextDue) setFocusPaymentRowId(nextDue.row.id);
+    setTab("ledger");
+  };
+
+  // Receipts are marked seen the moment the member actually opens the
+  // list — not on confirmation, so the badge stays lit until they've
+  // genuinely looked, same "seen, not dismissed" semantics as everywhere
+  // else this app tracks per-member local state.
+  useEffect(() => {
+    if (tab === "receipts") receipts.markAllSeen();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab]);
+
   const handleFinishOnboarding = (rate) => {
     const nonRecipientIds = config.schedule.filter((r) => !isRecipientRow(r)).map((r) => r.id);
     return onboarding.finish(rate, nonRecipientIds);
@@ -209,6 +259,14 @@ export default function App() {
     if (!window.confirm("Delete all your saved contributions and subscription data? This can't be undone.")) return;
     await clearMyData();
   };
+
+  // Renders standalone, not nested inside this component's own app-shell
+  // below — OwnerDashboard already renders its own header/shell (same
+  // structural isolation the old separate OwnerApp.jsx tree had), it's
+  // just reached from the same login screen and component tree now.
+  if (ownerSession) {
+    return <OwnerDashboard session={ownerSession} onSignedOut={() => setOwnerSession(null)} />;
+  }
 
   return (
     <div className="app-shell">
@@ -230,7 +288,7 @@ export default function App() {
         </div>
         {session && (
           <div className="header-right">
-            <NotificationBell items={notifications.items} />
+            <NotificationBell items={notifications.items} urgent={pendingConfirmCount > 0} />
             <button
               className="btn-ghost calc-icon-btn"
               onClick={() => setShowCalculator(true)}
@@ -255,7 +313,12 @@ export default function App() {
 
       <main className="app-main">
         {!session ? (
-          <Login onLogin={handleLogin} onJoin={handleJoin} sessionEndedNotice={sessionEndedNotice} />
+          <Login
+            onLogin={handleLogin}
+            onJoin={handleJoin}
+            onOwnerLogin={handleOwnerLogin}
+            sessionEndedNotice={sessionEndedNotice}
+          />
         ) : onboarding.needsOnboarding ? (
           <Onboarding
             groupName={session.groupName}
@@ -277,10 +340,14 @@ export default function App() {
             )}
 
             <NavMenu
-              items={TABS.filter((t) => !t.adminOnly || session.role === "admin")}
+              items={TABS.filter((t) => !t.adminOnly || session.role === "admin").map((t) =>
+                t.id === "receipts" ? { ...t, badge: receipts.unseenCount } : t
+              )}
               activeId={tab}
               onSelect={setTab}
               onOpenWalkthrough={() => setShowWalkthrough(true)}
+              theme={theme}
+              onToggleTheme={toggleTheme}
             />
 
             {tab === "home" && (
@@ -308,6 +375,7 @@ export default function App() {
                   onOpenGroupSetup={session.role === "admin" ? () => setTab("setup") : undefined}
                   onOpenPaymentOptions={() => setTab("payment-options")}
                   onOpenCommunity={() => setTab("community")}
+                  onLogPayment={openLedgerToPay}
                 />
               </>
             )}
@@ -345,6 +413,8 @@ export default function App() {
                       groupName={config.groupName}
                       cycleName={config.cycleName}
                       premiumActive={subscription.status?.active}
+                      focusRowId={focusPaymentRowId}
+                      onFocusHandled={() => setFocusPaymentRowId(null)}
                     />
                   </>
                 )}
@@ -390,6 +460,20 @@ export default function App() {
                 <div className="privacy-row">
                   <button className="btn-link" onClick={handleDeleteData}>Delete my data</button>
                 </div>
+              </div>
+            )}
+
+            {tab === "receipts" && (
+              <div className="panel" role="tabpanel" id="panel-receipts" aria-labelledby="tab-receipts">
+                <h2 className="panel-title">My Receipts</h2>
+                <MyReceipts
+                  receipts={receipts.receipts}
+                  memberName={session.name}
+                  groupName={config.groupName}
+                  cycleName={config.cycleName}
+                  premiumActive={subscription.status?.active}
+                  onUpgrade={() => setTab("subscription")}
+                />
               </div>
             )}
 

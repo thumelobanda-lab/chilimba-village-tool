@@ -1,4 +1,4 @@
-# Cloudflare Pages SPA fallback — without this, navigating straight to
-# /owner (or reloading on it) 404s at the edge instead of ever reaching
-# main.jsx's path check, since there's no actual /owner file on disk.
+# Cloudflare Pages SPA fallback — keeps any deep link or reload landing
+# on index.html at the edge rather than 404ing, even though the app is a
+# single route today (no client-side pathname routing).
 /*    /index.html   200

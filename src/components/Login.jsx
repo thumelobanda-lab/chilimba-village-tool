@@ -14,9 +14,9 @@ function getInviteSlugFromUrl() {
   return new URLSearchParams(window.location.search).get("join") || "";
 }
 
-export default function Login({ onLogin, onJoin, sessionEndedNotice }) {
+export default function Login({ onLogin, onJoin, onOwnerLogin, sessionEndedNotice }) {
   const [inviteSlug] = useState(getInviteSlugFromUrl);
-  const [mode, setMode] = useState(inviteSlug ? "join" : "signin"); // "join" | "signin"
+  const [mode, setMode] = useState(inviteSlug ? "join" : "signin"); // "join" | "signin" | "owner"
   const [groupSlug, setGroupSlug] = useState(
     () => inviteSlug || localStorage.getItem(LAST_GROUP_KEY) || ""
   );
@@ -28,6 +28,11 @@ export default function Login({ onLogin, onJoin, sessionEndedNotice }) {
   const [phone, setPhone] = useState("");
   const [signinIdentifier, setSigninIdentifier] = useState("");
   const [pin, setPin] = useState("");
+  // Owner sign-in is a structurally different credential (real email +
+  // password, not a group code + PIN) — see onOwnerLogin below — so it
+  // gets its own fields rather than being squeezed into groupSlug/pin.
+  const [ownerEmail, setOwnerEmail] = useState("");
+  const [ownerPassword, setOwnerPassword] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   // Only sign-up needs this — signing in isn't "a new member/admin
@@ -49,7 +54,10 @@ export default function Login({ onLogin, onJoin, sessionEndedNotice }) {
   }, []);
 
   const isJoin = mode === "join";
-  const canSubmit = isJoin
+  const isOwner = mode === "owner";
+  const canSubmit = isOwner
+    ? !!(ownerEmail.trim() && ownerPassword)
+    : isJoin
     ? !!(groupSlug.trim() && joinName.trim() && phone.trim() && termsAccepted)
     : !!(groupSlug.trim() && signinIdentifier.trim());
 
@@ -58,6 +66,10 @@ export default function Login({ onLogin, onJoin, sessionEndedNotice }) {
     if (!canSubmit || busy) return;
     setBusy(true);
     try {
+      if (isOwner) {
+        await onOwnerLogin(ownerEmail.trim(), ownerPassword);
+        return;
+      }
       if (isJoin) {
         await onJoin(groupSlug.trim(), joinName.trim(), phone.trim(), pin, termsAccepted);
       } else {
@@ -65,7 +77,7 @@ export default function Login({ onLogin, onJoin, sessionEndedNotice }) {
       }
       localStorage.setItem(LAST_GROUP_KEY, groupSlug.trim().toLowerCase());
     } catch (e) {
-      setError(e.message || (isJoin ? "Could not join." : "Could not sign in."));
+      setError(e.message || (isOwner ? "Could not sign in." : isJoin ? "Could not join." : "Could not sign in."));
     } finally {
       setBusy(false);
     }
@@ -83,7 +95,7 @@ export default function Login({ onLogin, onJoin, sessionEndedNotice }) {
           continue with your current access.
         </div>
       )}
-      <div className="auth-mode-toggle" role="tablist" aria-label="Sign up or sign in">
+      <div className="auth-mode-toggle" role="tablist" aria-label="Sign up, sign in, or owner sign-in">
         <button
           role="tab"
           aria-selected={isJoin}
@@ -95,12 +107,21 @@ export default function Login({ onLogin, onJoin, sessionEndedNotice }) {
         </button>
         <button
           role="tab"
-          aria-selected={!isJoin}
-          className={"auth-mode-tab" + (!isJoin ? " auth-mode-tab-active" : "")}
+          aria-selected={!isJoin && !isOwner}
+          className={"auth-mode-tab" + (!isJoin && !isOwner ? " auth-mode-tab-active" : "")}
           onClick={() => setMode("signin")}
           disabled={busy}
         >
           Sign in
+        </button>
+        <button
+          role="tab"
+          aria-selected={isOwner}
+          className={"auth-mode-tab" + (isOwner ? " auth-mode-tab-active" : "")}
+          onClick={() => setMode("owner")}
+          disabled={busy}
+        >
+          Owner
         </button>
       </div>
 
@@ -112,6 +133,14 @@ export default function Login({ onLogin, onJoin, sessionEndedNotice }) {
             phone number, and set a PIN.
           </p>
         </>
+      ) : isOwner ? (
+        <>
+          <h2 className="panel-title">Owner sign in</h2>
+          <p className="muted small" style={{ marginBottom: 14 }}>
+            Not a group login — this is a separate, higher-privilege platform account.
+            There's no self-service way to create one — see scripts/create-owner.sh.
+          </p>
+        </>
       ) : (
         <>
           <h2 className="panel-title">Welcome back — Sign in</h2>
@@ -121,73 +150,103 @@ export default function Login({ onLogin, onJoin, sessionEndedNotice }) {
         </>
       )}
 
-      <label className="field">
-        Group code
-        <input
-          value={groupSlug}
-          onChange={(e) => setGroupSlug(e.target.value)}
-          onKeyDown={onEnter}
-          placeholder="e.g. hillcrest"
-          autoComplete="organization"
-          autoFocus
-          disabled={busy}
-        />
-      </label>
-
-      {isJoin ? (
+      {isOwner ? (
         <>
           <label className="field">
-            Full name
+            Email
             <input
-              value={joinName}
-              onChange={(e) => setJoinName(e.target.value)}
+              type="email"
+              value={ownerEmail}
+              onChange={(e) => setOwnerEmail(e.target.value)}
               onKeyDown={onEnter}
-              placeholder="e.g. Harriet Banda"
-              autoComplete="name"
+              autoComplete="username"
+              autoFocus
               disabled={busy}
             />
           </label>
           <label className="field">
-            Phone number
+            Password
             <input
-              type="tel"
-              inputMode="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              type="password"
+              value={ownerPassword}
+              onChange={(e) => setOwnerPassword(e.target.value)}
               onKeyDown={onEnter}
-              placeholder="e.g. 097 123 4567"
-              autoComplete="tel"
+              autoComplete="current-password"
               disabled={busy}
             />
           </label>
         </>
       ) : (
-        <label className="field">
-          Name or phone number
-          <input
-            value={signinIdentifier}
-            onChange={(e) => setSigninIdentifier(e.target.value)}
-            onKeyDown={onEnter}
-            placeholder="e.g. Harriet or 097 123 4567"
-            autoComplete="username"
-            disabled={busy}
-          />
-        </label>
-      )}
+        <>
+          <label className="field">
+            Group code
+            <input
+              value={groupSlug}
+              onChange={(e) => setGroupSlug(e.target.value)}
+              onKeyDown={onEnter}
+              placeholder="e.g. hillcrest"
+              autoComplete="organization"
+              autoFocus
+              disabled={busy}
+            />
+          </label>
 
-      <label className="field">
-        PIN (4+ digits)
-        <input
-          type="password"
-          inputMode="numeric"
-          value={pin}
-          onChange={(e) => setPin(e.target.value)}
-          onKeyDown={onEnter}
-          placeholder="••••"
-          autoComplete={isJoin ? "new-password" : "current-password"}
-          disabled={busy}
-        />
-      </label>
+          {isJoin ? (
+            <>
+              <label className="field">
+                Full name
+                <input
+                  value={joinName}
+                  onChange={(e) => setJoinName(e.target.value)}
+                  onKeyDown={onEnter}
+                  placeholder="e.g. Harriet Banda"
+                  autoComplete="name"
+                  disabled={busy}
+                />
+              </label>
+              <label className="field">
+                Phone number
+                <input
+                  type="tel"
+                  inputMode="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  onKeyDown={onEnter}
+                  placeholder="e.g. 097 123 4567"
+                  autoComplete="tel"
+                  disabled={busy}
+                />
+              </label>
+            </>
+          ) : (
+            <label className="field">
+              Name or phone number
+              <input
+                value={signinIdentifier}
+                onChange={(e) => setSigninIdentifier(e.target.value)}
+                onKeyDown={onEnter}
+                placeholder="e.g. Harriet or 097 123 4567"
+                autoComplete="username"
+                disabled={busy}
+              />
+            </label>
+          )}
+
+          <label className="field">
+            PIN (4+ digits)
+            <input
+              type="password"
+              inputMode="numeric"
+              value={pin}
+              onChange={(e) => setPin(e.target.value)}
+              onKeyDown={onEnter}
+              placeholder="••••"
+              autoComplete={isJoin ? "new-password" : "current-password"}
+              disabled={busy}
+            />
+          </label>
+        </>
+      )}
       {isJoin && (
         <label className="checkbox-field" style={{ marginBottom: 14 }}>
           <input
@@ -205,12 +264,17 @@ export default function Login({ onLogin, onJoin, sessionEndedNotice }) {
 
       {error && <div className="error-text" role="alert" aria-live="assertive">{error}</div>}
       <button className="btn-primary" disabled={!canSubmit || busy} onClick={submit}>
-        {busy ? "Checking…" : isJoin ? "Join group" : "Continue"}
+        {busy ? "Checking…" : isOwner ? "Sign in" : isJoin ? "Join group" : "Continue"}
       </button>
 
       {showTerms && <TermsModal onClose={() => setShowTerms(false)} />}
 
-      {isJoin ? (
+      {isOwner ? (
+        <p className="muted tiny">
+          Your password is never stored or sent in plain text — only a one-way hash of it
+          is checked.
+        </p>
+      ) : isJoin ? (
         <p className="muted tiny">
           Your phone number is kept private — it's never shown to other members — and
           lets you sign in with it later, plus enables a PIN-reset option down the road,
