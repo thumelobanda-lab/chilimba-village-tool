@@ -19,10 +19,19 @@
    *that* to the vivid highlight would spread it everywhere, which is
    exactly what the highlight is supposed to avoid.
 
-   A few elements are deliberately NOT part of this swap — the app
-   header, the dashboard hero, and the platform-owner message banner stay
-   permanently dark "chrome" in both themes (this was already true before
-   light mode existed — see the --chrome- and --on-accent-2 variables below).
+   The app header, dashboard hero, platform-owner message banner, and
+   calculator screen ("chrome" — see --chrome-bg-1/--chrome-bg-2 below)
+   used to be hardcoded to one fixed dark-onyx gradient in both themes.
+   That's gone: --chrome-bg-1/2 are now themed like everything else —
+   light gets the terracotta --accent/--accent-dark gradient this app
+   used before Onyx existed, dark gets a deep-emerald gradient pulled
+   from its own --surface-green/--bg rather than the old blue-leaning
+   onyx (#0E262D/#07191E measured out at hue ~193°, i.e. actually blue,
+   not the near-black "onyx" the name implied). --chrome-accent is the
+   new per-theme gold-on-chrome text color this requires (see below) —
+   plain --accent-2-light isn't reliably AA on the lighter, mid-tone
+   --accent end of light mode's gradient (3.6:1), so light mode gets its
+   own paler gold tuned for that pairing instead.
    Gold (--accent-2/--accent-2-light) *was* the same value in both themes
    on purpose, so self-contained badges/pills wouldn't need theme-specific
    tuning — the dark-theme brightness pass below deliberately broke that
@@ -79,21 +88,22 @@
     radial-gradient(circle at 40% 88%, rgba(181, 86, 60, 0.018) 0, transparent 42%);
   font-family: "Inter", "IBM Plex Sans", system-ui, sans-serif;
 
-  /* Permanently-dark "chrome" — the app header, dashboard hero, platform
-     message banner, and calculator screen stay this same dark onyx in
-     BOTH themes (this was already true before light mode existed; these
-     values are just what --panel/--bg/--accent-dark used to resolve to
-     when dark was the only theme). Invariant, not overridden by
-     [data-theme="dark"] below — the whole point is that they don't move
-     when the rest of the app's theme does. */
-  --chrome-bg-1: #0E262D;
-  --chrome-bg-2: #07191E;
+  /* "Chrome" — the app header, dashboard hero, platform message banner,
+     and calculator screen. Themed now (see the block comment above):
+     light mode's gradient is the terracotta --accent pair, same as every
+     other accent fill in this theme. --chrome-ink/--chrome-ink-faint
+     (near-white) stay invariant — both this gradient and dark theme's
+     stay dark enough for white text (6.1:1+ on every stop, checked). */
+  --chrome-bg-1: var(--accent);
+  --chrome-bg-2: var(--accent-dark);
   --chrome-ink: #F2EFE6;
   --chrome-ink-faint: rgba(242, 239, 230, 0.75);
-  /* --accent-2/--accent-2-light (gold) are already invariant across
-     themes — see the block comment above — so text on this permanently
-     dark chrome can just use those directly (.dashboard-hero-cycle,
-     .platform-message-badge) without a separate chrome-gold variable. */
+  /* Gold text sitting directly on --chrome-bg-1/2 (.dashboard-hero-cycle,
+     .platform-message-badge) — plain --accent-2-light only clears 3.6:1
+     against light mode's --accent stop (fails AA for this size), so this
+     is a paler gold tuned to clear AA against both gradient stops
+     (5.1:1 on --accent, 7.1:1 on --accent-dark) instead of reusing it. */
+  --chrome-accent: #FFE9A8;
   --chrome-trim: #5C4816;
   /* Gold (--accent-2) is the same value in both themes, so the text that
      reads on top of it is invariant too — always dark, never themed. */
@@ -141,6 +151,16 @@
     radial-gradient(circle at 18% 22%, rgba(242, 251, 247, 0.025) 0, transparent 45%),
     radial-gradient(circle at 78% 60%, rgba(242, 251, 247, 0.02) 0, transparent 50%),
     radial-gradient(circle at 40% 88%, rgba(232, 185, 61, 0.02) 0, transparent 42%);
+  /* Chrome — a deep-emerald gradient pulled from this theme's own dark
+     surfaces (not a separate hardcoded pair) so it reads as "this app's
+     dark mode, deeper" rather than the old always-on blue-teal onyx.
+     White chrome-ink text still clears AA easily on both stops
+     (10.9:1 on --surface-green, 14.9:1 on --bg). */
+  --chrome-bg-1: var(--surface-green);
+  --chrome-bg-2: var(--bg);
+  /* --accent-2-light already clears AA on both new chrome stops here
+     (8.2:1 / 11.1:1) — no separate pale variant needed like light mode's. */
+  --chrome-accent: var(--accent-2-light);
 }
 
 /* A modest bump over the browser default (16px) — plain rem-based
@@ -160,8 +180,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
    book's spine — a small, easy-to-miss detail rather than a literal
    book illustration, but it's the one place in the whole app that
    nods at "book" instead of just "ledger". */
-/* Permanently dark in both themes — see the --chrome-* block comment in
-   the :root at the top of this file. */
+/* Themed chrome gradient — see the --chrome-* block comment in :root. */
 .app-header {
   background: linear-gradient(135deg, var(--chrome-bg-1), var(--chrome-bg-2));
   color: var(--chrome-ink);
@@ -992,16 +1011,16 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   font-size: 0.9rem;
 }
 
-/* Platform-owner direct message banner (PlatformMessageBanner.jsx) — a
-   deep-green/gold treatment echoing the app header on purpose, so it
-   reads as coming from "above" a group rather than from the group's own
-   admin (compare .notice-board above, which is deliberately the local,
+/* Platform-owner direct message banner (PlatformMessageBanner.jsx) — the
+   same chrome/gold treatment as the app header on purpose, so it reads
+   as coming from "above" a group rather than from the group's own admin
+   (compare .notice-board above, which is deliberately the local,
    warm-neutral treatment). One-shot: dismissing marks it read
    server-side and it's gone for good, unlike the notice board's
    persistent history. */
 .platform-message-stack { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
-/* Permanently dark in both themes, same as the header/hero it echoes —
-   see the --chrome-* block comment in :root. */
+/* Themed chrome gradient, same as the header/hero it echoes — see the
+   --chrome-* block comment in :root. */
 .platform-message-banner {
   background: linear-gradient(135deg, var(--chrome-bg-1), var(--chrome-bg-2));
   border: 1px solid var(--accent-2);
@@ -1014,7 +1033,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--accent-2-light);
+  color: var(--chrome-accent);
   margin-bottom: 6px;
 }
 .platform-message-body { font-size: 0.95rem; line-height: 1.4; white-space: pre-wrap; }
@@ -1125,7 +1144,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   margin-bottom: 10px;
 }
 .calc-display {
-  background: var(--chrome-bg-2); /* screen stays darkest-onyx in both themes, like a physical LCD */
+  background: var(--chrome-bg-2); /* darker chrome stop — still reads as an LCD screen, now themed like the rest of chrome */
   color: white;
   font-family: "IBM Plex Mono", monospace;
   font-size: 1.8rem;
@@ -1356,10 +1375,11 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
    for space here. */
 
 /* Hero — the first thing a member sees: a personal greeting on a rich,
-   deep-green card (same gradient as the app header) with the round-
-   progress ring as its visual centerpiece, gold-glowing on meaningful
-   moments (see .dashboard-hero-ring below and ProgressRing.jsx's `glow`
-   prop) rather than a small, easy-to-miss corner widget. */
+   chrome-gradient card (same themed gradient as the app header — see the
+   --chrome-* block comment in :root) with the round-progress ring as its
+   visual centerpiece, gold-glowing on meaningful moments (see
+   .dashboard-hero-ring below and ProgressRing.jsx's `glow` prop) rather
+   than a small, easy-to-miss corner widget. */
 .dashboard-hero {
   background: linear-gradient(135deg, var(--chrome-bg-1), var(--chrome-bg-2));
   border-radius: 12px;
@@ -1385,7 +1405,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 }
 .dashboard-hero-cycle {
   margin-top: 4px;
-  color: var(--accent-2-light);
+  color: var(--chrome-accent);
   font-weight: 600;
   font-size: 0.76rem;
   letter-spacing: 0.02em;
@@ -1396,7 +1416,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   display: inline-block;
   font-size: 0.8rem;
 }
-.dashboard-hero-manage:hover { color: var(--accent-2-light) !important; }
+.dashboard-hero-manage:hover { color: var(--chrome-accent) !important; }
 .dashboard-hero-ring { flex-shrink: 0; }
 /* A soft, always-on gold halo behind the ring — the "rich centerpiece"
    feel even outside a glow moment — separate from progress-ring-glow's
@@ -1616,6 +1636,16 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   border-radius: 10px;
   padding: 6px 8px;
 }
+/* Next Payment is the row's only card now — Group Fund Total moved down
+   to the collapsed "full breakdown" grid (Dashboard.jsx) so it doesn't
+   compete at equal weight with a time-sensitive, actionable stat. Spans
+   the full row and gets a bit more breathing room than the old 2-up
+   compact layout warranted. */
+.vital-secondary-row > .vital-secondary:only-child {
+  grid-column: 1 / -1;
+  padding: 10px 14px;
+}
+.vital-secondary-row > .vital-secondary:only-child .vital-secondary-value { font-size: 1.05rem; }
 .vital-secondary .vital-card-label { margin-bottom: 2px; font-size: 0.62rem; }
 .vital-secondary-value {
   font-size: 0.92rem;

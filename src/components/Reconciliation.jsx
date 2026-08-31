@@ -186,6 +186,7 @@ export default function Reconciliation({ config, premiumActive, onOpenGroupSetup
             <MiniStat label="Members Paid" value={`${totals.expectedCount - totals.outstandingCount} / ${totals.expectedCount}`} />
           </div>
 
+          <h3 className="panel-subtitle">Member Status</h3>
           <div className="grid-wrap">
             <table className="grid-table">
               <thead>
