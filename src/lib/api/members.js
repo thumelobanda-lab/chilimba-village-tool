@@ -37,7 +37,12 @@ export async function getGroupMembers() {
       const streak = computeMemberStreak(totals.rowsComputed);
 
       members.push({
-        name,
+        // account.displayName preserves the name's original casing —
+        // `name` itself is the lowercase account storage key (needed
+        // as-is for every ledger/schedule lookup above), not something
+        // meant to be shown. The real Worker route already returns
+        // display_name; this mock branch just never had picked it up.
+        name: account.displayName || name,
         role: account.role || "member",
         joinedAt: account.joinedAt || null,
         nextDueDate: next?.row.date || null,

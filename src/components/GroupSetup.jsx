@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { saveSchedule } from "../lib/api.js";
-import { getPayees, generateScheduleDates, cycleEndDate, SCHEDULE_FREQUENCIES } from "../lib/scheduleUtils.js";
+import { getPayees, generateScheduleDates, cycleEndDate, SCHEDULE_FREQUENCIES, unassignedMembers } from "../lib/scheduleUtils.js";
 import { useMemberRoster } from "../hooks/useMemberRoster.js";
 import AdminManagement from "./AdminManagement.jsx";
 import CollapsibleSection from "./CollapsibleSection.jsx";
@@ -47,6 +47,14 @@ export default function GroupSetup({ config, onSaved, session, premiumActive }) 
   };
 
   const { members: roster } = useMemberRoster();
+
+  // Live, from the in-progress draft (payeesText, not yet re-split into
+  // `payees` — that only happens in save() below) so this updates the
+  // instant an admin types a name in, not just after saving.
+  const draftPayeesPerRow = draft.schedule.map((r) =>
+    (r.payeesText || "").split(/[,/]/).map((s) => s.trim()).filter(Boolean)
+  );
+  const unassigned = unassignedMembers(draftPayeesPerRow, roster.map((m) => m.name));
 
   const [missingRecipientIds, setMissingRecipientIds] = useState([]);
   // Frequency is a real, persisted group setting now (see paymentInterval
@@ -227,13 +235,21 @@ export default function GroupSetup({ config, onSaved, session, premiumActive }) 
         icon="📅"
         title="Payout Schedule"
         summary={
-          dateCount === 0
+          (dateCount === 0
             ? "No dates set up"
             : `${dateCount} date${dateCount === 1 ? "" : "s"}` +
-              (cycleEndDate(draft.schedule) ? ` · ends ${formatDate(cycleEndDate(draft.schedule))}` : "")
+              (cycleEndDate(draft.schedule) ? ` · ends ${formatDate(cycleEndDate(draft.schedule))}` : "")) +
+          (unassigned.length > 0 ? ` · ${unassigned.length} unassigned` : "")
         }
         defaultOpen
       >
+        {unassigned.length > 0 && (
+          <div className="unassigned-members-notice">
+            <strong>{unassigned.length}</strong> member{unassigned.length === 1 ? "" : "s"} not on the
+            schedule yet: {unassigned.join(", ")}. Add {unassigned.length === 1 ? "them" : "each"} as a
+            Recipient below to give {unassigned.length === 1 ? "them" : "them all"} a payout turn.
+          </div>
+        )}
         <h3 className="panel-subtitle">Generate Payout Dates</h3>
         <p className="muted tiny" style={{ marginBottom: 10 }}>
           Auto-fills a run of dates so you're not typing them one by one — every generated

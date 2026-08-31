@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { getPayees, payeesLabel, isRecipient, resolveDue, findNextDue, myNextDueDates, generateScheduleDates, cycleEndDate } from "./scheduleUtils.js";
+import { getPayees, payeesLabel, isRecipient, resolveDue, findNextDue, myNextDueDates, generateScheduleDates, cycleEndDate, unassignedMembers } from "./scheduleUtils.js";
 
 describe("getPayees", () => {
   it("reads a payees array directly", () => {
@@ -30,6 +30,27 @@ describe("payeesLabel", () => {
 
   it("shows an em dash placeholder for no recipients", () => {
     expect(payeesLabel({ payees: [] })).toBe("—");
+  });
+});
+
+describe("unassignedMembers", () => {
+  it("returns members who appear on no row", () => {
+    const rows = [["Doreen", "Dorothy"], ["Fridah"]];
+    expect(unassignedMembers(rows, ["Doreen", "Dorothy", "Fridah", "Harriet"])).toEqual(["Harriet"]);
+  });
+
+  it("matches case-insensitively and ignores surrounding whitespace", () => {
+    const rows = [[" doreen "]];
+    expect(unassignedMembers(rows, ["DOREEN"])).toEqual([]);
+  });
+
+  it("returns every member when the schedule has no rows", () => {
+    expect(unassignedMembers([], ["Doreen", "Fridah"])).toEqual(["Doreen", "Fridah"]);
+  });
+
+  it("returns an empty array when every member is assigned somewhere", () => {
+    const rows = [["Doreen"], ["Fridah"]];
+    expect(unassignedMembers(rows, ["Doreen", "Fridah"])).toEqual([]);
   });
 });
 

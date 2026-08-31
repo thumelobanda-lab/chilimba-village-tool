@@ -10,7 +10,7 @@
    archived pre-Onyx light palette — --ink-faint, --accent, --green,
    --red, --pending, and --rose are all darkened from their original
    values for exactly this reason (see each variable's note below).
-   --highlight (Spring Green in dark mode) is the one reserved 10% accent
+   --highlight (Emerald in dark mode) is the one reserved 10% accent
    used only for the dashboard's single primary figure
    (.vital-primary-value.vital-card-value-ok and its own
    .vital-progress-fill) — distinct from --green, the ordinary
@@ -22,10 +22,14 @@
    A few elements are deliberately NOT part of this swap — the app
    header, the dashboard hero, and the platform-owner message banner stay
    permanently dark "chrome" in both themes (this was already true before
-   light mode existed — see the --chrome- and --on-accent-2 variables below),
-   and gold (--accent-2/--accent-2-light) is the same value in both
-   themes on purpose, so a handful of self-contained badges/pills don't
-   need theme-specific tuning at all. */
+   light mode existed — see the --chrome- and --on-accent-2 variables below).
+   Gold (--accent-2/--accent-2-light) *was* the same value in both themes
+   on purpose, so self-contained badges/pills wouldn't need theme-specific
+   tuning — the dark-theme brightness pass below deliberately broke that
+   invariant (dark's gold is now brighter than light's) rather than drag
+   light mode's terracotta-paired gold trim along for a change only dark
+   mode asked for; a handful of gold badges/pills can now look
+   theme-tinted where they didn't before. */
 :root {
   --ink: #4A3428;
   --ink-faint: #6F5843;      /* darkened from the archived #8A6F5C — that only cleared ~4.2:1 on --bg, just under AA's 4.5:1 */
@@ -96,39 +100,47 @@
   --on-accent-2: #241F0E;
 }
 
-/* Dark — the previous default, unchanged in every value from when it
-   was the only theme (already reasonably AA-compliant on its own dark
-   surfaces), now opt-in via the nav menu. */
+/* Dark — retuned lighter/warmer/more saturated (was near-black and flat;
+   see the archived values in git history for the original Onyx/Gold/
+   Spring-Green pass this supersedes). --accent-2/--accent-2-light are no
+   longer identical to :root's — that invariant ("gold is the same value
+   in both themes", see the block comment up top) is intentionally broken
+   here so dark mode's gold can go brighter without dragging light mode's
+   terracotta-paired gold trim along with it. Every value below was
+   re-checked against WCAG AA at its actual pairing the same way :root's
+   were (see that block's own comment) — most sit comfortably above the
+   4.5:1/3:1 minimums since this pass only ever moved lightness *up* from
+   values that already passed. */
 [data-theme="dark"] {
-  --ink: #F2EFE6;
-  --ink-faint: #9FB3B8;
-  --line: #1B3540;
-  --bg: #07191E;
-  --panel: #0E262D;
-  --surface-2: #12262C;
-  --surface-hover: #15303A;
-  --surface-active: #241F0E;
+  --ink: #F2FBF7;
+  --ink-faint: #9DBFAF;
+  --line: #244A3D;
+  --bg: #0E1F1A;
+  --panel: #16332A;
+  --surface-2: #133025;
+  --surface-hover: #1D4636;
+  --surface-active: #2E260F;
   --surface-amber: #2E230F;
   --surface-danger: #2C1714;
-  --surface-green: #12271F;
-  --surface-gold: #2A230F;
-  --accent: #D4A94A;
-  --accent-light: #E6C36B;
+  --surface-green: #163A2C;
+  --surface-gold: #332912;
+  --accent: #E8B93D;
+  --accent-light: #F0CE5E;
   --accent-dark: #5C4816;
-  --accent-2: #D4A94A;
-  --accent-2-light: #E6C36B;
-  --on-surface-gold: #E6C36B; /* this theme's surface-gold is dark, so the light-gold text already used everywhere else works here too */
+  --accent-2: #E8B93D;
+  --accent-2-light: #F0CE5E;
+  --on-surface-gold: #F0CE5E; /* this theme's surface-gold is dark, so the light-gold text already used everywhere else works here too */
   --rose: #C88B7D;
   --tan: #C3A47C;
   --red: #E0897C;
-  --green: #5FBF8F;
+  --green: #34D399;
   --pending: #E6B478;
-  --highlight: #02F5A1;
-  --on-accent: #07191E; /* dark text — --accent is light gold in this theme */
+  --highlight: #0F9D6B;
+  --on-accent: #0E1F1A; /* dark text — --accent is light gold in this theme */
   --paper-grain:
-    radial-gradient(circle at 18% 22%, rgba(242, 239, 230, 0.025) 0, transparent 45%),
-    radial-gradient(circle at 78% 60%, rgba(242, 239, 230, 0.02) 0, transparent 50%),
-    radial-gradient(circle at 40% 88%, rgba(212, 169, 74, 0.02) 0, transparent 42%);
+    radial-gradient(circle at 18% 22%, rgba(242, 251, 247, 0.025) 0, transparent 45%),
+    radial-gradient(circle at 78% 60%, rgba(242, 251, 247, 0.02) 0, transparent 50%),
+    radial-gradient(circle at 40% 88%, rgba(232, 185, 61, 0.02) 0, transparent 42%);
 }
 
 /* A modest bump over the browser default (16px) — plain rem-based
@@ -278,8 +290,79 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   text-align: center;
 }
 .nav-menu-divider { border-top: 1px solid var(--line); margin: 6px 2px; }
+/* Groups the admin-only items (Group Setup, Payment Review, Loans,
+   Create a New Group) apart from the member-facing list above them —
+   same flat menu, just no longer one undifferentiated list mixing two
+   different audiences' items together. See NavMenu.jsx. */
+.nav-menu-section-label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-faint);
+  font-weight: 700;
+  padding: 8px 12px 2px;
+}
 
 .back-link { display: inline-block; margin-bottom: 14px; }
+
+/* Persistent bottom tab bar (BottomTabBar.jsx) — mobile only (see the
+   media query below); on a wider screen there's already enough room
+   that the header hamburger alone is a fine primary-nav affordance.
+   Fixed, not part of normal flow, so .app-main gets matching bottom
+   padding below to keep the last bit of every screen's content from
+   sitting underneath it. */
+.bottom-tab-bar {
+  display: none;
+}
+@media (max-width: 640px) {
+  .bottom-tab-bar {
+    display: flex;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 50;
+    background: var(--panel);
+    border-top: 1px solid var(--line);
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.08);
+    padding: 4px 4px calc(4px + env(safe-area-inset-bottom, 0px));
+  }
+  .app-main {
+    padding-bottom: calc(20px + 64px + env(safe-area-inset-bottom, 0px));
+  }
+  /* Clears the bottom tab bar instead of sitting half-behind it. */
+  .toast {
+    bottom: calc(24px + 64px + env(safe-area-inset-bottom, 0px));
+  }
+}
+.bottom-tab {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 2px;
+  border: none;
+  background: none;
+  color: var(--ink-faint);
+  font-size: 0.65rem;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 8px;
+}
+.bottom-tab-icon { font-size: 1.2rem; line-height: 1; }
+.bottom-tab-active { color: var(--accent); background: var(--surface-active); }
+.bottom-tab-dot {
+  position: absolute;
+  top: 2px;
+  right: calc(50% - 16px);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--red);
+  border: 2px solid var(--panel);
+}
 
 /* Group switcher — sits where the plain "GroupName · Cycle" subtitle
    used to, in the dark header, so the trigger reads as text-on-dark
@@ -709,6 +792,19 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
     width: 100% !important;
     flex: 1;
   }
+  /* LedgerTable's expanded payment-history row (see .history-row in
+     LedgerTable.jsx) is one colSpan cell wrapping a whole nested panel,
+     not a labeled field like every other td here — the generic
+     `display: flex` above left it sizing to its single child's own
+     content width instead of the row's full width, letting the panel
+     (and the Receipt link inside it) push past the screen edge instead
+     of wrapping. It has no data-label and needs none of the label-
+     prefix treatment, so it just goes back to plain full-width block. */
+  .grid-table tr.history-row td {
+    display: block;
+    width: 100%;
+  }
+  .grid-table tr.history-row td::before { content: none; }
 }
 
 .btn-icon { background: none; border: none; color: var(--red); cursor: pointer; font-size: 0.9rem; }
@@ -855,6 +951,22 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .card-label { font-size: 0.7rem; text-transform: uppercase; color: var(--ink-faint); letter-spacing: 0.03em; }
 .card-value { font-size: 1.3rem; font-weight: 700; margin-top: 4px; }
 .card-warn .card-value { color: var(--red); }
+
+/* A calm, non-urgent nudge (Group Setup's Payout Schedule section, and
+   the dashboard's admin-only echo of it) that some active members have
+   never been given a payout turn — see unassignedMembers() in
+   scheduleUtils.js. Deliberately not the pulsing/animated treatment
+   .pending-queue-banner uses below: nothing here is time-sensitive or
+   money-related, it's just an easy-to-miss manual step. */
+.unassigned-members-notice {
+  background: var(--surface-amber);
+  border: 1px solid var(--pending);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  font-size: 0.85rem;
+  color: var(--ink);
+}
 
 /* Notice board — admin-to-members announcements at the top of the dashboard */
 .notice-board {
@@ -1475,6 +1587,18 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   border-radius: 6px;
   transition: width 0.4s ease;
 }
+/* Trails the big contributed figure ("K1,770 contributed 🎉") — a
+   smaller, lighter-weight companion so the number itself stays the
+   dominant thing on the card rather than competing with a same-size
+   word. font-variant-numeric/letter-spacing aren't inherited-and-wanted
+   here the way they are for the number, so this resets both. */
+.vital-primary-value-suffix {
+  font-size: 1.05rem;
+  font-weight: 700;
+  font-variant-numeric: normal;
+  letter-spacing: normal;
+  opacity: 0.75;
+}
 .vital-primary-sub {
   font-size: 0.86rem;
   font-weight: 600;
@@ -1885,6 +2009,13 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   left: 50%;
   bottom: 24px;
   transform: translateX(-50%);
+  /* Without a max-width, a long confirmation message (e.g. "K1,770
+     payment was confirmed by...") sizes the fixed-position pill to its
+     own content rather than the viewport, pushing it past the screen
+     edge on mobile — same fix pattern as .notification-bell-panel above. */
+  max-width: calc(100vw - 32px);
+  box-sizing: border-box;
+  text-align: center;
   background: var(--panel);
   border: 1px solid var(--accent-2);
   color: var(--ink);

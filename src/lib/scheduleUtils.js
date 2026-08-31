@@ -20,6 +20,29 @@ export function payeesLabel(row) {
   return getPayees(row).join(" / ") || "—";
 }
 
+/**
+ * Which of a group's active members don't appear as a recipient on any
+ * schedule date yet — surfaced as an admin nudge (Group Setup, dashboard)
+ * rather than anything automatic: joining a group never touches the
+ * schedule (see worker/src/auth.js's joinGroup), so a brand-new member
+ * silently has no payout turn until an admin types their name into a
+ * date's Recipient(s) field. Without this, that gap looked like a stale
+ * "next in line" bug rather than an unfinished manual step.
+ *
+ * @param {Array<string[]>} payeesPerRow - each row's already-resolved
+ *   recipient names (getPayees(row) per row, or the live in-progress
+ *   edit for an unsaved draft — the caller decides which)
+ * @param {string[]} memberNames
+ * @returns {string[]}
+ */
+export function unassignedMembers(payeesPerRow, memberNames) {
+  const assigned = new Set();
+  for (const payees of payeesPerRow || []) {
+    for (const p of payees) assigned.add(String(p).trim().toLowerCase());
+  }
+  return (memberNames || []).filter((name) => !assigned.has(String(name).trim().toLowerCase()));
+}
+
 // Is `name` one of this row's recipients? Case-insensitive, exact match
 // on each name (not substring — avoids "Sarah" incorrectly matching
 // "Sarah K" and "Sarah N" on the same date).

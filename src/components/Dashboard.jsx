@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { money } from "./LedgerTable.jsx";
-import { getGroupFunds, getGroupPulse, getPendingPayments } from "../lib/api.js";
+import { getGroupFunds, getGroupPulse, getPendingPayments, getGroupMembers } from "../lib/api.js";
 import { useApiData } from "../lib/useApiData.js";
-import { findNextDue, myNextDueDates, payeesLabel, cycleEndDate } from "../lib/scheduleUtils.js";
+import { findNextDue, myNextDueDates, payeesLabel, cycleEndDate, getPayees, unassignedMembers } from "../lib/scheduleUtils.js";
 import {
   computeCycleProgress,
   daysUntil,
@@ -69,6 +69,16 @@ export default function Dashboard({
     session?.role === "admin" ? getPendingPayments : () => Promise.resolve(null),
     [session?.role]
   );
+  // Admin-only, same gating as pendingData above — echoes GroupSetup's
+  // own unassigned-members notice here too, since an admin who never
+  // opens Group Setup would otherwise never see it.
+  const { data: membersData } = useApiData(
+    session?.role === "admin" ? getGroupMembers : () => Promise.resolve(null),
+    [session?.role]
+  );
+  const unassigned = membersData
+    ? unassignedMembers(config.schedule.map(getPayees), membersData.members.map((m) => m.name))
+    : [];
   const fundTotal = fundsData ? sumFundBalances(fundsData.funds) : 0;
   const fundTotalDisplay = useCountUp(fundTotal);
   const balanceDisplay = useCountUp(totals.balance);
@@ -134,6 +144,19 @@ export default function Dashboard({
         </div>
       )}
 
+      {session?.role === "admin" && unassigned.length > 0 && (
+        <div
+          className="unassigned-members-notice"
+          onClick={onOpenGroupSetup}
+          role={onOpenGroupSetup ? "button" : undefined}
+          tabIndex={onOpenGroupSetup ? 0 : undefined}
+          style={onOpenGroupSetup ? { cursor: "pointer" } : undefined}
+        >
+          <strong>{unassigned.length}</strong> member{unassigned.length === 1 ? "" : "s"} not on the
+          payout schedule yet — {onOpenGroupSetup ? "tap to add them in Group Setup" : "add them in Group Setup"}.
+        </div>
+      )}
+
       {recentPayout && <PayoutAcknowledgment groupSlug={session.groupSlug} row={recentPayout} />}
 
       <div className="dashboard-hero">
@@ -193,13 +216,15 @@ export default function Dashboard({
         tabIndex={onOpenLedger ? 0 : undefined}
         title={onOpenLedger ? "Go to My Payment History" : undefined}
       >
-        <div className="vital-card-label">You've Contributed This Round</div>
-        <div className="vital-primary-value vital-card-value-ok">{money(paidDisplay)}</div>
+        <div className="vital-card-label">This Round</div>
+        <div className="vital-primary-value vital-card-value-ok">
+          {money(paidDisplay)} <span className="vital-primary-value-suffix">contributed 🎉</span>
+        </div>
         <div className="vital-progress-track">
           <div className="vital-progress-fill" style={{ width: `${contributionPercent}%` }} />
         </div>
         <div className={"vital-primary-sub" + (totals.balance > 0 ? " vital-card-value-warn" : " vital-card-value-ok")}>
-          {totals.balance > 0 ? `${money(balanceDisplay)} still owed` : "All caught up 🎉"}
+          {totals.balance > 0 ? `${money(balanceDisplay)} remaining` : "All caught up 🎉"}
         </div>
       </div>
 

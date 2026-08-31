@@ -14,6 +14,7 @@ import Community from "./components/Community.jsx";
 import Profile from "./components/Profile.jsx";
 import Loans from "./components/Loans.jsx";
 import NavMenu from "./components/NavMenu.jsx";
+import BottomTabBar from "./components/BottomTabBar.jsx";
 import Dashboard from "./components/Dashboard.jsx";
 import PaymentInfo from "./components/PaymentInfo.jsx";
 import NoticeBoard from "./components/NoticeBoard.jsx";
@@ -127,6 +128,11 @@ export default function App() {
   const pendingConfirmCount = pendingData?.pending?.length || 0;
 
   const [tab, setTab] = useState("home");
+  // Shared between the header's hamburger trigger and BottomTabBar's
+  // Menu tab (mobile only) — both open/close the exact same NavMenu
+  // panel rather than each owning an independent one. See NavMenu.jsx's
+  // doc comment for why this moved out of that component.
+  const [navMenuOpen, setNavMenuOpen] = useState(false);
   const [showCalculator, setShowCalculator] = useState(false);
   const [showWalkthrough, setShowWalkthrough] = useState(false);
   const [sessionEndedNotice, setSessionEndedNotice] = useState(false);
@@ -348,6 +354,9 @@ export default function App() {
               onOpenWalkthrough={() => setShowWalkthrough(true)}
               theme={theme}
               onToggleTheme={toggleTheme}
+              open={navMenuOpen}
+              onToggle={() => setNavMenuOpen((o) => !o)}
+              onClose={() => setNavMenuOpen(false)}
             />
 
             {tab === "home" && (
@@ -563,6 +572,19 @@ export default function App() {
           </>
         )}
       </main>
+
+      {session && !onboarding.needsOnboarding && (
+        <BottomTabBar
+          activeId={tab}
+          onSelect={(id) => {
+            setTab(id);
+            setNavMenuOpen(false);
+          }}
+          onOpenMenu={() => setNavMenuOpen((o) => !o)}
+          menuOpen={navMenuOpen}
+          hasMenuBadge={receipts.unseenCount > 0}
+        />
+      )}
     </div>
   );
 }
