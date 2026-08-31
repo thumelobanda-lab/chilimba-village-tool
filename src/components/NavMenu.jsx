@@ -8,7 +8,7 @@ import React, { useEffect, useRef, useState } from "react";
  * bar that used to sit on the home screen. Closes on selection, Escape,
  * or a click outside the panel.
  */
-export default function NavMenu({ items, activeId, onSelect, onOpenWalkthrough }) {
+export default function NavMenu({ items, activeId, onSelect, onOpenWalkthrough, theme, onToggleTheme }) {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef(null);
 
@@ -33,16 +33,23 @@ export default function NavMenu({ items, activeId, onSelect, onOpenWalkthrough }
     setOpen(false);
   };
 
+  // Persistent indicator (not a dismissible toast) that something in the
+  // menu is waiting to be seen — e.g. a newly confirmed receipt (see
+  // useReceipts.js). Visible on the collapsed trigger itself so it
+  // doesn't require opening the menu first to notice.
+  const hasBadge = items.some((t) => t.badge > 0);
+
   return (
     <div className="nav-menu" ref={wrapRef}>
       <button
         className="nav-menu-trigger"
         aria-haspopup="true"
         aria-expanded={open}
-        aria-label="Open menu"
+        aria-label={hasBadge ? "Open menu — new items to review" : "Open menu"}
         onClick={() => setOpen((o) => !o)}
       >
         <span aria-hidden="true">☰</span> Menu
+        {hasBadge && <span className="nav-menu-trigger-dot" aria-hidden="true" />}
       </button>
       {open && (
         <div className="nav-menu-panel" role="menu">
@@ -54,9 +61,22 @@ export default function NavMenu({ items, activeId, onSelect, onOpenWalkthrough }
               onClick={() => select(t.id)}
             >
               {t.label}
+              {t.badge > 0 && <span className="nav-badge">{t.badge > 9 ? "9+" : t.badge}</span>}
             </button>
           ))}
           <div className="nav-menu-divider" />
+          {onToggleTheme && (
+            <button
+              role="menuitem"
+              className="nav-menu-item"
+              onClick={() => {
+                onToggleTheme();
+                setOpen(false);
+              }}
+            >
+              {theme === "dark" ? "☀️ Switch to Light Mode" : "🌙 Switch to Dark Mode"}
+            </button>
+          )}
           <button
             role="menuitem"
             className="nav-menu-item"

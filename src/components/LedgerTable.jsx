@@ -16,6 +16,8 @@ export default function LedgerTable({
   groupName,
   cycleName,
   premiumActive,
+  focusRowId,
+  onFocusHandled,
 }) {
   // One receipt modal for the whole table (not per-row) — only one entry's
   // receipt is ever open at a time, and keeping it here means Receipt
@@ -49,6 +51,8 @@ export default function LedgerTable({
               onSetDueOverride={onSetDueOverride}
               onViewReceipt={(payment) => setReceiptFor({ payment, row: r })}
               premiumActive={premiumActive}
+              autoOpen={r.id === focusRowId}
+              onAutoOpened={onFocusHandled}
             />
           ))}
         </tbody>
@@ -87,13 +91,31 @@ export default function LedgerTable({
   );
 }
 
-function RowWithHistory({ row, allRows, isRecipient, onAddPayment, onVoidPayment, onEditPayment, onSetDueOverride, onViewReceipt, premiumActive }) {
+function RowWithHistory({ row, allRows, isRecipient, onAddPayment, onVoidPayment, onEditPayment, onSetDueOverride, onViewReceipt, premiumActive, autoOpen, onAutoOpened }) {
   const [open, setOpen] = useState(false);
   const [editingDue, setEditingDue] = useState(false);
   const [dueDraft, setDueDraft] = useState(row.due);
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
+  const rowRef = useRef(null);
+  const amountInputRef = useRef(null);
+  // Deep-link target from the dashboard's "Log a Payment" CTA (see
+  // App.jsx's focusPaymentRowId / Dashboard.jsx's onLogPayment) — expands
+  // this row, scrolls it into view, and focuses the amount field so
+  // there's genuinely nothing left to hunt for. Fires once per deep-link
+  // (onAutoOpened clears the id in App.jsx), not on every re-render.
+  useEffect(() => {
+    if (!autoOpen) return;
+    setOpen(true);
+    const raf = requestAnimationFrame(() => {
+      rowRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      amountInputRef.current?.focus();
+    });
+    onAutoOpened?.();
+    return () => cancelAnimationFrame(raf);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoOpen]);
   // A brief "✓ Logged" confirmation on the button itself, right where
   // the member's attention already is (rather than chasing the new
   // entry in the history list below, which might not even be in view).
@@ -154,7 +176,7 @@ function RowWithHistory({ row, allRows, isRecipient, onAddPayment, onVoidPayment
 
   return (
     <>
-      <tr>
+      <tr ref={rowRef}>
         <td className="al" data-label="Payment Date">{row.date}</td>
         <td className="al muted" data-label="Group Paying Out">
           {row.group}
@@ -294,6 +316,7 @@ function RowWithHistory({ row, allRows, isRecipient, onAddPayment, onVoidPayment
 
               <div className="history-add">
                 <input
+                  ref={amountInputRef}
                   type="number"
                   placeholder="Amount (K)"
                   value={amount}

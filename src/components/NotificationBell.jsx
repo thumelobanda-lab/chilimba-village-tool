@@ -20,8 +20,14 @@ const KIND_ICON = { owner: "✦", notice: "📢", payment: "💸", reminder: "�
  * relevant while looking at Reminders as it is on the dashboard. See
  * useNotifications.js for what feeds into `items` and how dismissing
  * each kind actually works.
+ *
+ * `urgent` is a separate, stronger signal from the plain unread count —
+ * currently just "an admin has a payment confirmation waiting" (see
+ * App.jsx's pendingConfirmCount) — for a time-sensitive action that a
+ * quiet number badge doesn't convey. It pulses/glows and persists across
+ * every tab, not just Home, until the pending queue is actually cleared.
  */
-export default function NotificationBell({ items }) {
+export default function NotificationBell({ items, urgent }) {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef(null);
 
@@ -46,15 +52,25 @@ export default function NotificationBell({ items }) {
   return (
     <div className="notification-bell" ref={wrapRef}>
       <button
-        className="btn-ghost notification-bell-trigger"
+        className={"btn-ghost notification-bell-trigger" + (urgent ? " notification-bell-trigger-urgent" : "")}
         aria-haspopup="true"
         aria-expanded={open}
-        aria-label={count > 0 ? `${count} unread notification${count === 1 ? "" : "s"}` : "Notifications"}
-        title="Notifications"
+        aria-label={
+          urgent
+            ? "Notifications — a payment confirmation is waiting for review"
+            : count > 0
+              ? `${count} unread notification${count === 1 ? "" : "s"}`
+              : "Notifications"
+        }
+        title={urgent ? "A payment confirmation is waiting for review" : "Notifications"}
         onClick={() => setOpen((o) => !o)}
       >
         🔔
-        {count > 0 && <span className="notification-bell-badge">{count > 9 ? "9+" : count}</span>}
+        {(count > 0 || urgent) && (
+          <span className={"notification-bell-badge" + (urgent ? " notification-bell-badge-urgent" : "")}>
+            {count > 0 ? (count > 9 ? "9+" : count) : "!"}
+          </span>
+        )}
       </button>
       {open && (
         <div className="notification-bell-panel" role="menu">

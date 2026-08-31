@@ -58,6 +58,7 @@ export default function Dashboard({
   onOpenGroupSetup,
   onOpenPaymentOptions,
   onOpenCommunity,
+  onLogPayment,
 }) {
   const { data: fundsData, loading: fundsLoading } = useApiData(getGroupFunds, []);
   const { data: pulseData, loading: pulseLoading } = useApiData(getGroupPulse, []);
@@ -166,6 +167,21 @@ export default function Dashboard({
           <ProgressRing percent={cycle.percent} size={52} strokeWidth={5} glow={ringGlow} />
         </div>
       </div>
+
+      {onLogPayment && (
+        <button type="button" className="log-payment-cta" onClick={onLogPayment}>
+          <span className="log-payment-cta-icon" aria-hidden="true">💸</span>
+          <span className="log-payment-cta-text">
+            <span className="log-payment-cta-title">Log a Payment</span>
+            <span className="log-payment-cta-sub">
+              {nextDue
+                ? `${money(nextDue.balance)} due ${formatDate(nextDue.row.date)}`
+                : "Record a contribution"}
+            </span>
+          </span>
+          <span className="log-payment-cta-arrow" aria-hidden="true">›</span>
+        </button>
+      )}
 
       <PayoutAvatarRow rows={payoutAvatarRows} />
 
