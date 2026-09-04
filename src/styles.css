@@ -69,6 +69,15 @@
   --green: #3F6B2E;           /* darkened from the archived #8FA876 (~2.4:1) */
   --pending: #8C5F16;         /* darkened from the archived #E6B478 (~1.7:1, near-invisible on cream) */
   --highlight: #1F8A5C;
+  /* Generic aliases for --highlight/--green, for callers that want a
+     semantic "primary accent" / "success" name rather than this app's
+     own --highlight/--green vocabulary. --color-primary-hover has no
+     existing counterpart to alias — it's this theme's --highlight
+     darkened ~20%, matching the ratio of dark theme's own hover value
+     (see [data-theme="dark"] below) to its --highlight. */
+  --color-primary: var(--highlight);
+  --color-primary-hover: #196E4A;
+  --color-success: var(--green);
   /* Text-safe color for content sitting on a var(--accent) fill
      (.btn-primary, the dashboard's Log a Payment CTA, etc). Can't reuse
      var(--bg) for this the way the app used to — that only worked by
@@ -146,6 +155,9 @@
   --green: #34D399;
   --pending: #E6B478;
   --highlight: #0F9D6B;
+  --color-primary: var(--highlight);
+  --color-primary-hover: #0C7F56;
+  --color-success: var(--green);
   --on-accent: #0E1F1A; /* dark text — --accent is light gold in this theme */
   --paper-grain:
     radial-gradient(circle at 18% 22%, rgba(242, 251, 247, 0.025) 0, transparent 45%),
@@ -1630,8 +1642,12 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   height: 100%;
   background: var(--highlight); /* same highlight unit as the number above it */
   border-radius: 6px;
-  transition: width 0.4s ease;
+  transition: width 0.4s ease, background-color 0.2s ease;
 }
+/* Only interactive use of --color-primary-hover so far — darkens the
+   progress fill when a pointer hovers the card it lives on. No-op on
+   touch, which is most of this app's traffic, so low-risk to add. */
+.vital-primary:hover .vital-progress-fill { background: var(--color-primary-hover); }
 /* Trails the big contributed figure ("K1,770 contributed 🎉") — a
    smaller, lighter-weight companion so the number itself stays the
    dominant thing on the card rather than competing with a same-size
