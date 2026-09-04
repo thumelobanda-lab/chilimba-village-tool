@@ -271,6 +271,20 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab]);
 
+  // Tab switches don't reset scroll position on their own — returning to
+  // Home after scrolling partway down another tab (e.g. a long Ledger
+  // list, right after confirming a payment) otherwise leaves the browser
+  // still scrolled down, so Home's top content (admin notices,
+  // PayoutAcknowledgment's "you just got paid out" banner, etc.) renders
+  // partially above the still-scrolled viewport — looks clipped, though
+  // it's really a stale scroll position, not a layout bug. Scoped to
+  // "home" only, not every tab, so it doesn't fight Ledger's own
+  // scroll-to-the-focused-row behavior (LedgerTable.jsx, driven by
+  // focusPaymentRowId below) when landing there instead.
+  useEffect(() => {
+    if (tab === "home") window.scrollTo(0, 0);
+  }, [tab]);
+
   const handleFinishOnboarding = (rate) => {
     const nonRecipientIds = config.schedule.filter((r) => !isRecipientRow(r)).map((r) => r.id);
     return onboarding.finish(rate, nonRecipientIds);

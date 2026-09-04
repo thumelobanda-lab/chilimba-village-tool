@@ -23,7 +23,7 @@ export default function GRSBadge({ grs }) {
       className={`grs-badge grs-badge-${tone}`}
       title={`Group Reliability Score — how often the group pays on time, based on ${grs.sampleSize} past due dates`}
     >
-      {grs.score}%
+      GRS {grs.score}%
     </span>
   );
 }
