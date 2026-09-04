@@ -38,6 +38,7 @@ export default function Community() {
 
       {data && (
         <>
+          <h3 className="panel-subtitle">Fund Breakdown</h3>
           <div className="calc-grid" style={{ marginBottom: 20 }}>
             {data.funds.map((f) => (
               <div className="card" key={f.id}>

@@ -134,6 +134,7 @@ export default function Loans() {
         </p>
       ) : (
         <>
+          <h3 className="panel-subtitle">Issue a Loan</h3>
           <div className="field-row" style={{ alignItems: "flex-end" }}>
             <label className="field">
               Fund
