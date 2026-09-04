@@ -1,7 +1,21 @@
 import React, { useEffect, useState } from "react";
 import TermsModal from "./TermsModal.jsx";
+import CreateGroup from "./CreateGroup.jsx";
+import { MOCK_MODE } from "../lib/api/core.js";
 
 const LAST_GROUP_KEY = "chilimba:last-group-slug";
+
+// Production group creation is intentionally admin-gated (see App.jsx's
+// "creategroup" tab) — a fresh, logged-out browser has no self-service way
+// to create the very first group, by design. That's a chicken-and-egg
+// problem for local testing only: a brand-new mock-mode browser has no
+// group to sign into yet either. `import.meta.env.DEV` is statically
+// replaced with the literal `false` by Vite for a production build (`npm
+// run build`), so this condition is always false there and the shortcut
+// below can never render or execute outside `npm run dev`. Also requires
+// MOCK_MODE so it can't fire against a real deployed Worker if someone
+// points a local dev server at one.
+const DEV_CREATE_GROUP_ENABLED = import.meta.env.DEV && MOCK_MODE;
 
 // Reads ?join=<slug> from the URL — the format InviteCard.jsx's share
 // link now uses (see buildJoinUrl in inviteCard.js). Its presence is
@@ -14,9 +28,9 @@ function getInviteSlugFromUrl() {
   return new URLSearchParams(window.location.search).get("join") || "";
 }
 
-export default function Login({ onLogin, onJoin, onOwnerLogin, sessionEndedNotice }) {
+export default function Login({ onLogin, onJoin, onCreateGroup, onOwnerLogin, sessionEndedNotice }) {
   const [inviteSlug] = useState(getInviteSlugFromUrl);
-  const [mode, setMode] = useState(inviteSlug ? "join" : "signin"); // "join" | "signin" | "owner"
+  const [mode, setMode] = useState(inviteSlug ? "join" : "signin"); // "join" | "signin" | "owner" | "devCreateGroup"
   const [groupSlug, setGroupSlug] = useState(
     () => inviteSlug || localStorage.getItem(LAST_GROUP_KEY) || ""
   );
@@ -85,6 +99,13 @@ export default function Login({ onLogin, onJoin, onOwnerLogin, sessionEndedNotic
 
   const onEnter = (e) => e.key === "Enter" && submit();
 
+  // Early return, not a branch inside the main panel below — CreateGroup
+  // renders its own "panel login-panel" wrapper, so nesting it inside this
+  // component's would double up the panel chrome.
+  if (mode === "devCreateGroup" && DEV_CREATE_GROUP_ENABLED) {
+    return <CreateGroup onCreate={onCreateGroup} onBackToLogin={() => setMode("signin")} />;
+  }
+
   return (
     <div className="panel login-panel">
       <p className="login-tagline">Your group's honest record.</p>
@@ -124,6 +145,25 @@ export default function Login({ onLogin, onJoin, onOwnerLogin, sessionEndedNotic
           Owner
         </button>
       </div>
+
+      {DEV_CREATE_GROUP_ENABLED && (
+        <button
+          type="button"
+          className="btn-link"
+          style={{
+            display: "block",
+            margin: "0 0 14px",
+            fontSize: 12,
+            border: "1px dashed #999",
+            borderRadius: 6,
+            padding: "6px 10px",
+          }}
+          onClick={() => setMode("devCreateGroup")}
+          disabled={busy}
+        >
+          🛠 DEV ONLY — create a new group for local testing (never shown in production)
+        </button>
+      )}
 
       {isJoin ? (
         <>

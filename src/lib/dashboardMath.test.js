@@ -3,6 +3,8 @@ import {
   computeCycleProgress,
   daysUntil,
   relativeDueLabel,
+  receiveTimingPhrase,
+  compactReceiveLabel,
   sumFundBalances,
   buildCycleTimeline,
   findRecentPayout,
@@ -69,6 +71,46 @@ describe("relativeDueLabel", () => {
 
   it("labels further-out dates as 'in N days'", () => {
     expect(relativeDueLabel(9)).toBe("in 9 days");
+  });
+});
+
+describe("receiveTimingPhrase", () => {
+  it("labels a past date", () => {
+    expect(receiveTimingPhrase(-3)).toBe("3 days ago");
+  });
+
+  it("uses singular for exactly one day ago", () => {
+    expect(receiveTimingPhrase(-1)).toBe("1 day ago");
+  });
+
+  it("labels today", () => {
+    expect(receiveTimingPhrase(0)).toBe("today");
+  });
+
+  it("labels tomorrow", () => {
+    expect(receiveTimingPhrase(1)).toBe("tomorrow");
+  });
+
+  it("labels further-out dates as 'in N days'", () => {
+    expect(receiveTimingPhrase(9)).toBe("in 9 days");
+  });
+});
+
+describe("compactReceiveLabel", () => {
+  it("labels a past date", () => {
+    expect(compactReceiveLabel(-3)).toBe("3d ago");
+  });
+
+  it("labels today", () => {
+    expect(compactReceiveLabel(0)).toBe("today");
+  });
+
+  it("labels a future date as 'in Nd'", () => {
+    expect(compactReceiveLabel(5)).toBe("in 5d");
+  });
+
+  it("labels tomorrow the same as any other future date", () => {
+    expect(compactReceiveLabel(1)).toBe("in 1d");
   });
 });
 

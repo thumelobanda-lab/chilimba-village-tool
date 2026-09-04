@@ -57,6 +57,38 @@ export function relativeDueLabel(days) {
 }
 
 /**
+ * Bare relative-time phrase for a payout date, no subject or verb, so a
+ * caller can compose "<Name> receives {phrase}" — the sentence-length
+ * companion to compactReceiveLabel below. Mirrors relativeDueLabel's
+ * shape but phrased for "receiving" rather than "owing", since the two
+ * read very differently on a payout-rotation stepper vs. a due-amount
+ * card.
+ *
+ * @param {number} days - output of daysUntil()
+ * @returns {string}
+ */
+export function receiveTimingPhrase(days) {
+  if (days < 0) return `${Math.abs(days)} day${Math.abs(days) === 1 ? "" : "s"} ago`;
+  if (days === 0) return "today";
+  if (days === 1) return "tomorrow";
+  return `in ${days} days`;
+}
+
+/**
+ * Same relative-time information as receiveTimingPhrase, abbreviated to
+ * fit under a 36px avatar in the rotation stepper — "Nd overdue"'s
+ * abbreviation style in relativeDueLabel is the precedent for "Nd" here.
+ *
+ * @param {number} days - output of daysUntil()
+ * @returns {string}
+ */
+export function compactReceiveLabel(days) {
+  if (days < 0) return `${Math.abs(days)}d ago`;
+  if (days === 0) return "today";
+  return `in ${days}d`;
+}
+
+/**
  * Per-date payout status across the whole schedule, for the cycle
  * timeline — each row tagged "past" (that date's payout has happened),
  * "next" (the soonest date still ahead — exactly one row, the first

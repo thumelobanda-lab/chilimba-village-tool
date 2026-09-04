@@ -1464,13 +1464,38 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
    coming up. Compact and horizontally scrollable rather than wrapping,
    so a big group never turns this into a block of its own. */
 .payout-avatar-block { margin-bottom: 14px; }
+/* "<Name> receives in N days" — the one-line answer to "when's my turn"
+   pulled out of the strip below into its own headline, so it reads
+   without having to decode the stepper's colors first. */
+.payout-avatar-headline {
+  font-size: 0.82rem;
+  color: var(--ink);
+  margin: 0 0 8px;
+}
+.payout-avatar-headline strong { color: var(--accent-2-light); }
 .payout-avatar-row {
   display: flex;
-  gap: 8px;
+  gap: 10px;
   overflow-x: auto;
   padding: 2px 2px 6px;
   -webkit-overflow-scrolling: touch;
 }
+/* Each member's spot in the rotation: avatar plus a "when" label
+   underneath, turning the strip into an actual stepper rather than a
+   bare row of circles. */
+.payout-avatar-step {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+.payout-avatar-step-label {
+  font-size: 0.6rem;
+  color: var(--ink-faint);
+  white-space: nowrap;
+}
+.payout-avatar-step-label-next { color: var(--accent-2); font-weight: 700; }
 .payout-avatar {
   flex: 0 0 auto;
   width: 36px;
