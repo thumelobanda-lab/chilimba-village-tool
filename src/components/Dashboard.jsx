@@ -38,17 +38,22 @@ function formatDate(dateISO) {
 
 /**
  * The home screen — deliberately a 3-second glance, not a wall of cards.
- * Above the fold: greeting + ring, the ONE number that's actually
- * front and center — what you've contributed this round, framed as
- * progress rather than a deficit, with what's still owed demoted to a
- * smaller sub-label underneath — a compact secondary row for Next
- * Payment (the one other genuinely time-sensitive, actionable stat), a
- * slim loan alert if one applies, and quick-action icons. Group Fund
- * Total isn't time-sensitive the way a due date is, so it lives behind
- * "See full breakdown" instead of sharing top billing with Next
- * Payment — same tier as the full paid-so-far breakdown, the cycle
- * timeline, Group Pulse, and the full upcoming-dates lists. Nothing is
- * gone, just no longer competing for space by default.
+ * Four focal points in order, below the admin action banners (pending
+ * confirmations, unassigned members — those are urgent, so they stay
+ * above everything else) and the greeting/cycle-ring header:
+ *   1. Contribution status — what you've contributed this round, framed
+ *      as progress rather than a deficit, with what's still owed
+ *      demoted to a smaller sub-label underneath.
+ *   2. Payout rotation — who's next in the group's payout schedule and
+ *      when, right below the contribution card since they're the two
+ *      numbers a member actually checks in most sessions.
+ *   3. Group Fund Total + Next Payment, side by side — the other two
+ *      genuinely at-a-glance stats.
+ * A slim loan alert (if one applies) and quick-action icons follow,
+ * then "See full breakdown" holds the rest: the full paid-so-far
+ * figure, the cycle timeline, streak dots, the full upcoming-payments
+ * list, and Group Pulse. Nothing is gone, just no longer competing for
+ * space by default.
  */
 export default function Dashboard({
   session,
@@ -189,7 +194,10 @@ export default function Dashboard({
           )}
         </div>
         <div className="dashboard-hero-ring">
-          <ProgressRing percent={cycle.percent} size={52} strokeWidth={5} glow={ringGlow} />
+          <div className="dashboard-hero-ring-labeled">
+            <ProgressRing percent={cycle.percent} size={52} strokeWidth={5} glow={ringGlow} />
+            <span className="dashboard-hero-ring-caption">Cycle progress</span>
+          </div>
         </div>
       </div>
 
@@ -207,8 +215,6 @@ export default function Dashboard({
           <span className="log-payment-cta-arrow" aria-hidden="true">›</span>
         </button>
       )}
-
-      <PayoutAvatarRow rows={payoutAvatarRows} />
 
       <div
         className={"vital-primary" + (onOpenLedger ? " vital-card-clickable" : "")}
@@ -230,11 +236,8 @@ export default function Dashboard({
         </div>
       </div>
 
-      {/* Solo now — Group Fund Total moved down to the collapsed "full
-          breakdown" grid below, so it no longer sits at equal visual
-          weight next to a time-sensitive, actionable stat (see
-          .vital-secondary-row > .vital-secondary:only-child in
-          styles.css for the full-width layout this leaves behind). */}
+      <PayoutAvatarRow rows={payoutAvatarRows} />
+
       <div className="vital-secondary-row">
         <div className="vital-secondary">
           <div className="vital-card-label">Next Payment</div>
@@ -251,6 +254,12 @@ export default function Dashboard({
                 {config.schedule.length === 0 ? "No schedule yet" : "All caught up 🎉"}
               </span>
             )}
+          </div>
+        </div>
+        <div className="vital-secondary">
+          <div className="vital-card-label">Group Fund Total</div>
+          <div className="vital-secondary-value">
+            {fundsLoading ? <span className="muted small">Loading…</span> : money(fundTotalDisplay)}
           </div>
         </div>
       </div>
@@ -297,12 +306,6 @@ export default function Dashboard({
             <div className="vital-card">
               <div className="vital-card-label">What You've Paid So Far</div>
               <div className="vital-card-value">{money(paidDisplay)}</div>
-            </div>
-            <div className="vital-card">
-              <div className="vital-card-label">Group Fund Total</div>
-              <div className="vital-card-value">
-                {fundsLoading ? <span className="muted small">Loading…</span> : money(fundTotalDisplay)}
-              </div>
             </div>
           </div>
 

@@ -1,4 +1,4 @@
-/* Theme: "Open Book" — light (cream/parchment) is the DEFAULT now, for
+/* Theme: "Open Book" — light (mint/parchment) is the DEFAULT now, for
    accessibility: elderly members reading small DUE/PAID/BALANCE-style
    labels need higher, more dependable contrast than a dark theme gives
    under most lighting. Dark (the previous default, Onyx/Gold/Spring-
@@ -6,55 +6,77 @@
    "Switch to Dark Mode" — selected via [data-theme="dark"] below, which
    overrides every variable in this block. Every color below was picked
    or re-checked against WCAG AA (4.5:1 for normal text, 3:1 for large/
-   UI) for its actual pairing, not carried over unchanged from the
-   archived pre-Onyx light palette — --ink-faint, --accent, --green,
-   --red, --pending, and --rose are all darkened from their original
-   values for exactly this reason (see each variable's note below).
-   --highlight (Emerald in dark mode) is the one reserved 10% accent
-   used only for the dashboard's single primary figure
-   (.vital-primary-value.vital-card-value-ok and its own
-   .vital-progress-fill) — distinct from --green, the ordinary
-   "positive/ok/paid/on-time" status color used in ~15 places across the
-   app (ledger, streaks, avatars, owner lifecycle badges); recoloring
-   *that* to the vivid highlight would spread it everywhere, which is
-   exactly what the highlight is supposed to avoid.
+   UI) for its actual pairing.
+
+   Light mode's primary accent (--accent/--accent-light/--accent-dark)
+   was retinted from its original terracotta to emerald, so the "primary
+   action" color (header/chrome, Log a Payment CTA, buttons, active nav)
+   matches the emerald already used for status accents instead of
+   sitting next to it as a clashing warm brown. That leaves three
+   related-but-distinct greens in light mode, each with its own job —
+   don't collapse them:
+     --accent       the primary/brand/action color (chrome, CTAs, links,
+                     active nav) — the one that changed in this pass.
+     --highlight    the one reserved 10% accent used only for the
+                     dashboard's single primary figure
+                     (.vital-primary-value.vital-card-value-ok and its
+                     own .vital-progress-fill) — deliberately a
+                     brighter, more saturated green than --accent so it
+                     still reads as "the one highlighted number" even
+                     though the surrounding chrome is green too now.
+     --green        the ordinary "positive/ok/paid/on-time" status color
+                     used in ~15 places across the app (ledger, streaks,
+                     avatars, owner lifecycle badges) — unchanged by
+                     this pass, recoloring *that* to --accent or
+                     --highlight would spread one of those meanings
+                     everywhere, which is exactly what keeping them
+                     separate avoids.
+   --bg/--panel/--surface-2/--surface-hover/--surface-active were
+   retinted the same pass, from cream/terracotta-tinted neutrals to
+   mint/emerald-tinted ones, still light enough to keep the same AA
+   margins the cream palette had. --surface-amber/--surface-danger/
+   --surface-gold, --rose/--red/--pending/--tan, and gold
+   (--accent-2/--accent-2-light) are untouched — they're separate
+   semantic categories (warning/danger/flagged/gold-badge), not part of
+   the primary/surface migration this pass covers.
 
    The app header, dashboard hero, platform-owner message banner, and
    calculator screen ("chrome" — see --chrome-bg-1/--chrome-bg-2 below)
    used to be hardcoded to one fixed dark-onyx gradient in both themes.
    That's gone: --chrome-bg-1/2 are now themed like everything else —
-   light gets the terracotta --accent/--accent-dark gradient this app
-   used before Onyx existed, dark gets a deep-emerald gradient pulled
-   from its own --surface-green/--bg rather than the old blue-leaning
-   onyx (#0E262D/#07191E measured out at hue ~193°, i.e. actually blue,
-   not the near-black "onyx" the name implied). --chrome-accent is the
-   new per-theme gold-on-chrome text color this requires (see below) —
-   plain --accent-2-light isn't reliably AA on the lighter, mid-tone
-   --accent end of light mode's gradient (3.6:1), so light mode gets its
-   own paler gold tuned for that pairing instead.
+   both themes now pull an emerald-family --accent/--accent-dark-rooted
+   gradient (light: the retinted --accent pair described above; dark:
+   its own deep-emerald gradient pulled from --surface-green/--bg rather
+   than the old blue-leaning onyx, #0E262D/#07191E measured out at hue
+   ~193°, i.e. actually blue, not the near-black "onyx" the name
+   implied). --chrome-accent is the new per-theme gold-on-chrome text
+   color this requires (see below) — plain --accent-2-light isn't
+   reliably AA on light mode's --accent gradient stop (3.84:1), so light
+   mode gets its own paler gold tuned for that pairing instead (5.4:1 on
+   --accent, 8.6:1 on --accent-dark).
    Gold (--accent-2/--accent-2-light) *was* the same value in both themes
    on purpose, so self-contained badges/pills wouldn't need theme-specific
    tuning — the dark-theme brightness pass below deliberately broke that
    invariant (dark's gold is now brighter than light's) rather than drag
-   light mode's terracotta-paired gold trim along for a change only dark
-   mode asked for; a handful of gold badges/pills can now look
-   theme-tinted where they didn't before. */
+   light mode's gold trim along for a change only dark mode asked for; a
+   handful of gold badges/pills can now look theme-tinted where they
+   didn't before. */
 :root {
-  --ink: #4A3428;
-  --ink-faint: #6F5843;      /* darkened from the archived #8A6F5C — that only cleared ~4.2:1 on --bg, just under AA's 4.5:1 */
-  --line: #E4D3BC;
-  --bg: #FBF3E7;
-  --panel: #FFFBF3;
-  --surface-2: #F5E8D6;       /* highlighted/inset panels — history rows, cards */
-  --surface-hover: #F0E0C8;   /* nav/switcher hover, neutral toggles */
-  --surface-active: #F6DCC9;  /* active nav item — terracotta-tinted */
+  --ink: #1B2E22;
+  --ink-faint: #4F6A5A;      /* 5.54:1 on --bg, 5.84:1 on --panel — clears AA's 4.5:1 with margin */
+  --line: #D6E6DA;
+  --bg: #F2F9F4;
+  --panel: #FBFEFC;
+  --surface-2: #E7F2E9;       /* highlighted/inset panels — history rows, cards */
+  --surface-hover: #E0EEE2;   /* nav/switcher hover, neutral toggles */
+  --surface-active: #DCEEDF;  /* active nav item — emerald-tinted, matches the new --accent */
   --surface-amber: #FBEBCB;   /* pending/notice/warning banners */
   --surface-danger: #FBE1D9;  /* flagged rows */
   --surface-green: #E9EEDF;   /* green badges/tags on light bg */
   --surface-gold: #FBF0D2;    /* gold badges/tags on light bg */
-  --accent: #9C4A32;          /* darkened from the archived #C96A4E (~3.4:1) so it clears AA both as a fill (with --on-accent text) and as plain link/button text */
-  --accent-light: #8A4A2E;
-  --accent-dark: #7A3A26;
+  --accent: #166B47;          /* retinted from the archived terracotta #9C4A32 to emerald — 6.08:1 on --bg (link/button text), 6.51:1 for white --on-accent text on a fill */
+  --accent-light: #0F5233;
+  --accent-dark: #0E4A2E;
   --accent-2: #D4A94A;        /* gold — same value in both themes, see block comment above */
   --accent-2-light: #E6C36B;
   /* --accent-2-light itself only works as *text* on --surface-gold when
@@ -92,26 +114,26 @@
      grain, not a printed texture. Deliberately this faint (~2%): it
      should only be noticeable if you go looking for it. */
   --paper-grain:
-    radial-gradient(circle at 18% 22%, rgba(74, 52, 40, 0.025) 0, transparent 45%),
-    radial-gradient(circle at 78% 60%, rgba(74, 52, 40, 0.02) 0, transparent 50%),
-    radial-gradient(circle at 40% 88%, rgba(181, 86, 60, 0.018) 0, transparent 42%);
+    radial-gradient(circle at 18% 22%, rgba(27, 46, 34, 0.025) 0, transparent 45%),
+    radial-gradient(circle at 78% 60%, rgba(27, 46, 34, 0.02) 0, transparent 50%),
+    radial-gradient(circle at 40% 88%, rgba(22, 107, 71, 0.018) 0, transparent 42%);
   font-family: "Inter", "IBM Plex Sans", system-ui, sans-serif;
 
   /* "Chrome" — the app header, dashboard hero, platform message banner,
      and calculator screen. Themed now (see the block comment above):
-     light mode's gradient is the terracotta --accent pair, same as every
-     other accent fill in this theme. --chrome-ink/--chrome-ink-faint
+     light mode's gradient is the retinted emerald --accent pair, same as
+     every other accent fill in this theme. --chrome-ink/--chrome-ink-faint
      (near-white) stay invariant — both this gradient and dark theme's
-     stay dark enough for white text (6.1:1+ on every stop, checked). */
+     stay dark enough for white text (5.4:1+ on every stop, checked). */
   --chrome-bg-1: var(--accent);
   --chrome-bg-2: var(--accent-dark);
   --chrome-ink: #F2EFE6;
   --chrome-ink-faint: rgba(242, 239, 230, 0.75);
   /* Gold text sitting directly on --chrome-bg-1/2 (.dashboard-hero-cycle,
-     .platform-message-badge) — plain --accent-2-light only clears 3.6:1
+     .platform-message-badge) — plain --accent-2-light only clears 3.84:1
      against light mode's --accent stop (fails AA for this size), so this
      is a paler gold tuned to clear AA against both gradient stops
-     (5.1:1 on --accent, 7.1:1 on --accent-dark) instead of reusing it. */
+     (5.4:1 on --accent, 8.6:1 on --accent-dark) instead of reusing it. */
   --chrome-accent: #FFE9A8;
   --chrome-trim: #5C4816;
   /* Gold (--accent-2) is the same value in both themes, so the text that
@@ -125,11 +147,11 @@
    longer identical to :root's — that invariant ("gold is the same value
    in both themes", see the block comment up top) is intentionally broken
    here so dark mode's gold can go brighter without dragging light mode's
-   terracotta-paired gold trim along with it. Every value below was
-   re-checked against WCAG AA at its actual pairing the same way :root's
-   were (see that block's own comment) — most sit comfortably above the
-   4.5:1/3:1 minimums since this pass only ever moved lightness *up* from
-   values that already passed. */
+   gold trim along with it. Every value below was re-checked against WCAG
+   AA at its actual pairing the same way :root's were (see that block's
+   own comment) — most sit comfortably above the 4.5:1/3:1 minimums since
+   this pass only ever moved lightness *up* from values that already
+   passed. */
 [data-theme="dark"] {
   --ink: #F2FBF7;
   --ink-faint: #9DBFAF;
@@ -1443,6 +1465,23 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   margin-top: 0;
 }
 .dashboard-hero-ring .progress-ring-percent { color: #FAF7F0; font-size: 0.62rem; }
+/* The ring's sublabel prop is unused everywhere else in the app (the
+   generic .progress-ring-wrap is a row flex container, which would put
+   it beside the ring rather than under it) — here it explains what the
+   percentage actually measures, so it needs to read as a caption below
+   the ring instead. */
+.dashboard-hero-ring-labeled {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.dashboard-hero-ring-caption {
+  margin-top: 2px;
+  font-size: 0.56rem;
+  font-weight: 600;
+  color: var(--chrome-ink-faint);
+  text-align: center;
+}
 
 /* Log a Payment — a persistent, high-contrast call to action right below
    the hero, not nested inside a collapsed ledger date row. Solid accent
@@ -1677,16 +1716,6 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   border-radius: 10px;
   padding: 6px 8px;
 }
-/* Next Payment is the row's only card now — Group Fund Total moved down
-   to the collapsed "full breakdown" grid (Dashboard.jsx) so it doesn't
-   compete at equal weight with a time-sensitive, actionable stat. Spans
-   the full row and gets a bit more breathing room than the old 2-up
-   compact layout warranted. */
-.vital-secondary-row > .vital-secondary:only-child {
-  grid-column: 1 / -1;
-  padding: 10px 14px;
-}
-.vital-secondary-row > .vital-secondary:only-child .vital-secondary-value { font-size: 1.05rem; }
 .vital-secondary .vital-card-label { margin-bottom: 2px; font-size: 0.62rem; }
 .vital-secondary-value {
   font-size: 0.92rem;
