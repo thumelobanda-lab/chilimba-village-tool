@@ -180,11 +180,10 @@ export default function Reconciliation({ config, premiumActive, onOpenGroupSetup
               {money(totals.due - totals.paid)}
             </div>
           </div>
-          <div className="vital-secondary-row" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", marginBottom: 18 }}>
-            <MiniStat label="Total Expected" value={money(totals.due)} />
-            <MiniStat label="Total Received So Far" value={money(totals.paid)} />
-            <MiniStat label="Members Paid" value={`${totals.expectedCount - totals.outstandingCount} / ${totals.expectedCount}`} />
-          </div>
+          <p className="muted small recon-summary-line">
+            <strong>{money(totals.due)}</strong> expected · <strong>{money(totals.paid)}</strong> received ·{" "}
+            <strong>{totals.expectedCount - totals.outstandingCount} / {totals.expectedCount}</strong> members paid
+          </p>
 
           <h3 className="panel-subtitle">Member Status</h3>
           <div className="grid-wrap">
@@ -212,7 +211,15 @@ export default function Reconciliation({ config, premiumActive, onOpenGroupSetup
                         )}
                       </td>
                       <td className="ar" data-label="Due (K)">{m.due.toLocaleString()}</td>
-                      <td className="ar" data-label="Paid (K)">{m.paid.toLocaleString()}</td>
+                      <td className="ar" data-label="Paid (K)">
+                        {m.paid.toLocaleString()}
+                        {m.entries && m.entries.length > 0 && (
+                          <div className="muted tiny">
+                            {latestEntryDate(m.entries)}
+                            {m.entries.length > 1 ? ` +${m.entries.length - 1} more` : ""}
+                          </div>
+                        )}
+                      </td>
                       <td className={"ar " + (m.balance > 0 && !m.isRecipient ? "neg" : "pos")} data-label="Balance (K)">
                         {m.balance.toLocaleString()}
                       </td>
@@ -317,13 +324,15 @@ export default function Reconciliation({ config, premiumActive, onOpenGroupSetup
   );
 }
 
-function MiniStat({ label, value, warn }) {
-  return (
-    <div className="vital-secondary">
-      <div className="vital-card-label">{label}</div>
-      <div className={"vital-secondary-value" + (warn ? " vital-card-value-warn" : "")}>{value}</div>
-    </div>
-  );
+// The main Member Status table used to only imply a date via the payout
+// round dropdown above it — the date an individual payment was actually
+// made only showed up once you expanded a member's row. This surfaces
+// it inline instead: the most recent entry's date, without a click,
+// with the expand-on-name-click still there for the full breakdown when
+// there's more than one.
+function latestEntryDate(entries) {
+  const latest = entries.reduce((a, b) => (new Date(a.recordedAt) > new Date(b.recordedAt) ? a : b));
+  return new Date(latest.recordedAt).toLocaleDateString();
 }
 
 function pickDefaultRow(schedule) {

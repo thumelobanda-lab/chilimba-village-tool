@@ -15,6 +15,7 @@ import Profile from "./components/Profile.jsx";
 import Loans from "./components/Loans.jsx";
 import NavMenu from "./components/NavMenu.jsx";
 import BottomTabBar from "./components/BottomTabBar.jsx";
+import DesktopTabBar from "./components/DesktopTabBar.jsx";
 import Dashboard from "./components/Dashboard.jsx";
 import PaymentInfo from "./components/PaymentInfo.jsx";
 import NoticeBoard from "./components/NoticeBoard.jsx";
@@ -43,6 +44,16 @@ import { useApiData } from "./lib/useApiData.js";
 import { greeting } from "./lib/dashboardMath.js";
 import { findNextDue } from "./lib/scheduleUtils.js";
 import { getPendingPayments } from "./lib/api.js";
+
+// Same formatting Dashboard.jsx's own local formatDate uses for its
+// log-payment-cta subtitle — kept as its own small copy here rather than
+// a shared import, matching this codebase's existing pattern of small
+// per-component date formatters (see also GroupRoster.jsx's own).
+function formatDate(dateISO) {
+  const d = new Date(dateISO + "T00:00:00");
+  if (isNaN(d.getTime())) return dateISO;
+  return d.toLocaleDateString("en-ZM", { weekday: "short", day: "numeric", month: "short" });
+}
 
 const TABS = [
   { id: "ledger", label: "My Payment History" },
@@ -324,6 +335,25 @@ export default function App() {
         {session && (
           <div className="header-right">
             <NotificationBell items={notifications.items} urgent={pendingConfirmCount > 0} />
+            {session.role === "admin" && (
+              <button
+                className="btn-ghost calc-icon-btn payment-review-icon-btn"
+                onClick={() => setTab("reconciliation")}
+                aria-label={
+                  pendingConfirmCount > 0
+                    ? `Payment Review — ${pendingConfirmCount} pending confirmation${pendingConfirmCount === 1 ? "" : "s"}`
+                    : "Payment Review"
+                }
+                title="Payment Review"
+              >
+                ✅ <span className="calc-icon-label">Review</span>
+                {pendingConfirmCount > 0 && (
+                  <span className="notification-bell-badge notification-bell-badge-urgent">
+                    {pendingConfirmCount > 9 ? "9+" : pendingConfirmCount}
+                  </span>
+                )}
+              </button>
+            )}
             <button
               className="btn-ghost calc-icon-btn"
               onClick={() => setShowCalculator(true)}
@@ -375,19 +405,22 @@ export default function App() {
               </div>
             )}
 
-            <NavMenu
-              items={TABS.filter((t) => !t.adminOnly || session.role === "admin").map((t) =>
-                t.id === "receipts" ? { ...t, badge: receipts.unseenCount } : t
-              )}
-              activeId={tab}
-              onSelect={setTab}
-              onOpenWalkthrough={() => setShowWalkthrough(true)}
-              theme={theme}
-              onToggleTheme={toggleTheme}
-              open={navMenuOpen}
-              onToggle={() => setNavMenuOpen((o) => !o)}
-              onClose={() => setNavMenuOpen(false)}
-            />
+            <div className="nav-row">
+              <DesktopTabBar activeId={tab} onSelect={setTab} />
+              <NavMenu
+                items={TABS.filter((t) => !t.adminOnly || session.role === "admin").map((t) =>
+                  t.id === "receipts" ? { ...t, badge: receipts.unseenCount } : t
+                )}
+                activeId={tab}
+                onSelect={setTab}
+                onOpenWalkthrough={() => setShowWalkthrough(true)}
+                theme={theme}
+                onToggleTheme={toggleTheme}
+                open={navMenuOpen}
+                onToggle={() => setNavMenuOpen((o) => !o)}
+                onClose={() => setNavMenuOpen(false)}
+              />
+            </div>
 
             {tab === "home" && (
               <>
@@ -436,6 +469,22 @@ export default function App() {
                   </p>
                 ) : (
                   <>
+                    {/* Same CTA as Dashboard.jsx's own — reused here so logging a
+                        payment doesn't require hunting through the table below and
+                        clicking "Paid (K)" to expand a row first, for anyone who
+                        lands on this tab directly instead of via the Dashboard. */}
+                    <button type="button" className="log-payment-cta" onClick={openLedgerToPay}>
+                      <span className="log-payment-cta-icon" aria-hidden="true">💸</span>
+                      <span className="log-payment-cta-text">
+                        <span className="log-payment-cta-title">Log a Payment</span>
+                        <span className="log-payment-cta-sub">
+                          {nextDue
+                            ? `${money(nextDue.balance)} due ${formatDate(nextDue.row.date)}`
+                            : "Record a contribution"}
+                        </span>
+                      </span>
+                      <span className="log-payment-cta-arrow" aria-hidden="true">›</span>
+                    </button>
                     <p className="muted tiny" style={{ marginBottom: 10 }}>
                       Tap "Paid" to log a payment or view its history. Tap "Due" to
                       set your own agreed rate for a date.
@@ -575,7 +624,9 @@ export default function App() {
             )}
 
             {tab === "community" && (
-              <div role="tabpanel" id="panel-community" aria-labelledby="tab-community"><Community /></div>
+              <div role="tabpanel" id="panel-community" aria-labelledby="tab-community">
+                <Community schedule={config.schedule} currentMemberName={session.name} />
+              </div>
             )}
 
             {tab === "subscription" && (

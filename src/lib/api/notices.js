@@ -5,12 +5,18 @@ export async function getNotices() {
   if (!session) throw new Error("Not signed in.");
   if (MOCK_MODE) {
     const notices = lsGet(groupScopedKey(session, "notices"), []);
-    return { notices: [...notices].sort((a, b) => new Date(b.postedAt) - new Date(a.postedAt)).slice(0, 20) };
+    // Same visibility rule as the Worker route: admins see every notice
+    // in their group; a member only sees broadcasts (no target) plus
+    // anything addressed to them by name.
+    const visible = notices.filter(
+      (n) => session.role === "admin" || !n.targetMemberName || n.targetMemberName === session.name
+    );
+    return { notices: visible.sort((a, b) => new Date(b.postedAt) - new Date(a.postedAt)).slice(0, 20) };
   }
   return realFetch("/api/notices");
 }
 
-export async function postNotice(message) {
+export async function postNotice(message, targetMemberName) {
   const session = currentSession();
   if (!session || session.role !== "admin") throw new Error("Admin access required.");
   if (!message || !message.trim()) throw new Error("A message is required.");
@@ -19,12 +25,18 @@ export async function postNotice(message) {
   if (MOCK_MODE) {
     const key = groupScopedKey(session, "notices");
     const notices = lsGet(key, []);
-    const notice = { id: uid(), message: message.trim(), postedBy: session.name, postedAt: new Date().toISOString() };
+    const notice = {
+      id: uid(),
+      message: message.trim(),
+      postedBy: session.name,
+      postedAt: new Date().toISOString(),
+      targetMemberName: targetMemberName ? targetMemberName.trim() : null,
+    };
     lsSet(key, [...notices, notice]);
     return { id: notice.id, ok: true };
   }
 
-  return realFetch("/api/notices", { method: "POST", body: JSON.stringify({ message }) });
+  return realFetch("/api/notices", { method: "POST", body: JSON.stringify({ message, targetMemberName }) });
 }
 
 export async function deleteNotice(id) {

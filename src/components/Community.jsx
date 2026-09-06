@@ -5,6 +5,7 @@ import { sumFundBalances } from "../lib/dashboardMath.js";
 import { COMMUNITY_FUND_ID } from "../lib/fundUtils.js";
 import GrowthProjection from "./GrowthProjection.jsx";
 import GroupReliabilityScore from "./GroupReliabilityScore.jsx";
+import GroupRoster from "./GroupRoster.jsx";
 
 const money = (n) => "K" + (Number(n) || 0).toLocaleString("en-ZM", { maximumFractionDigits: 0 });
 
@@ -18,7 +19,7 @@ function timeAgo(iso) {
   return `${days}d ago`;
 }
 
-export default function Community() {
+export default function Community({ schedule, currentMemberName }) {
   const { data, error, loading } = useApiData(getGroupFunds, []);
   const { data: pulseData } = useApiData(getGroupPulse, []);
 
@@ -30,6 +31,8 @@ export default function Community() {
         borrowing — visible to everyone in the group, the way a shared payment record works.
         This shows names, amounts, and dates only — never anyone's full payment history or balance.
       </p>
+
+      <GroupRoster schedule={schedule} currentMemberName={currentMemberName} />
 
       <GroupReliabilityScore grs={pulseData?.grs} />
 

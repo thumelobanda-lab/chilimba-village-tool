@@ -1,4 +1,4 @@
-import { requireAdmin } from "../auth.js";
+import { requireAdmin, requireSession } from "../auth.js";
 import { HttpError } from "../httpError.js";
 import { uid } from "../crypto.js";
 import { json } from "../responses.js";
@@ -95,6 +95,23 @@ export default function registerAdminRoutes(router) {
     });
 
     return json({ members: roster }, 200, cors);
+  });
+
+  // Public roster: every active member's name, nothing else — deliberately
+  // NOT gated by requireAdmin, unlike every other route in this file.
+  // Transparency is the point of a Chilimba's payout rotation, so any
+  // signed-in member of the group can see who's in it; the payout date
+  // each name maps to is derived client-side from the schedule they
+  // already have (src/lib/scheduleUtils.js's buildMemberRoster), not
+  // computed here, which keeps this route from ever having to decide
+  // whether to also expose due amounts/balances/streaks — the admin
+  // roster above stays the only place that financial detail is visible.
+  router.get("/api/members/roster", async ({ request, env, cors }) => {
+    const user = await requireSession(request, env);
+    const membersResult = await env.DB.prepare(
+      `SELECT display_name as name FROM users WHERE group_id = ? AND active = 1 ORDER BY display_name ASC`
+    ).bind(user.groupId).all();
+    return json({ members: membersResult.results || [] }, 200, cors);
   });
 
   // Self-service promotion: any existing admin can promote another
