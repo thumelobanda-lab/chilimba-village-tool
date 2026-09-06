@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import TermsModal from "./TermsModal.jsx";
 import CreateGroup from "./CreateGroup.jsx";
+import LoginScene from "./LoginScene.jsx";
 import { MOCK_MODE } from "../lib/api/core.js";
 
 const LAST_GROUP_KEY = "chilimba:last-group-slug";
@@ -108,6 +109,7 @@ export default function Login({ onLogin, onJoin, onCreateGroup, onOwnerLogin, se
 
   return (
     <div className="panel login-panel">
+      <LoginScene />
       <p className="login-tagline">Your group's honest record.</p>
       {sessionEndedNotice && (
         <div className="error-text" role="alert" style={{ marginBottom: 14 }}>

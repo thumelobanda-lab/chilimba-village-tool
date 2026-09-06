@@ -299,7 +299,9 @@ CREATE TABLE IF NOT EXISTS notices (
   group_id TEXT NOT NULL REFERENCES groups(id),
   message TEXT NOT NULL,
   posted_by TEXT NOT NULL,
-  posted_at TEXT NOT NULL DEFAULT (datetime('now'))
+  posted_at TEXT NOT NULL DEFAULT (datetime('now')),
+  target_member_name TEXT  -- NULL = broadcast to the whole group; a display
+                            -- name = direct to just that member (migration 018)
 );
 CREATE INDEX IF NOT EXISTS idx_notices_group ON notices(group_id);
 

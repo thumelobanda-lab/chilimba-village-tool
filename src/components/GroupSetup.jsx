@@ -198,8 +198,29 @@ export default function GroupSetup({ config, onSaved, session, premiumActive }) 
   const fundCount = (draft.funds || []).length;
   const paymentCount = (draft.paymentMethods || []).length;
 
+  // The 4 sections that are actually "fill this in" tasks (vs. Invite
+  // Members / Members & Group Leaders below, which are always-available
+  // views with nothing to complete) — drives both the hero's "X of 4"
+  // readout and each section's own done badge.
+  const basicsDone = !!draft.groupName?.trim() && !!draft.cycleName?.trim();
+  const scheduleDone = dateCount > 0;
+  const fundsDone = fundCount > 0 || Number(draft.communityFundDeduction) > 0 || Number(draft.latePenaltyAmount) > 0;
+  const paymentDetailsDone = paymentCount > 0;
+  const essentialTotal = 4;
+  const essentialDone = [basicsDone, scheduleDone, fundsDone, paymentDetailsDone].filter(Boolean).length;
+
   return (
     <div className="panel">
+      <div className="setup-hero">
+        <h2 className="setup-hero-title">Let's get your group set up</h2>
+        <p className="setup-hero-sub">
+          A few short sections below — payout dates, savings funds, and where members should
+          send their contributions. Nothing here is permanent; come back and change any of it
+          any time.
+        </p>
+        <span className="setup-hero-progress">{essentialDone} of {essentialTotal} sections set up</span>
+      </div>
+
       <div className="setup-header">
         <h2 className="panel-title">Group Setup</h2>
         <span className="badge badge-admin">Group Leader only</span>
@@ -209,6 +230,7 @@ export default function GroupSetup({ config, onSaved, session, premiumActive }) 
         icon="🏷️"
         title="Group Basics"
         summary={`${draft.groupName || "Untitled group"} · ${draft.cycleName || "no round name set"}`}
+        done={basicsDone}
         defaultOpen
       >
         <div className="field-row">
@@ -241,6 +263,7 @@ export default function GroupSetup({ config, onSaved, session, premiumActive }) 
               (cycleEndDate(draft.schedule) ? ` · ends ${formatDate(cycleEndDate(draft.schedule))}` : "")) +
           (unassigned.length > 0 ? ` · ${unassigned.length} unassigned` : "")
         }
+        done={scheduleDone}
         defaultOpen
       >
         {unassigned.length > 0 && (
@@ -338,6 +361,7 @@ export default function GroupSetup({ config, onSaved, session, premiumActive }) 
         icon="💰"
         title="Group Savings Funds"
         summary={fundCount === 0 ? "None set up" : `${fundCount} fund${fundCount === 1 ? "" : "s"}`}
+        done={fundsDone}
       >
         <h3 className="panel-subtitle">Automatic Payment Split</h3>
         <p className="muted tiny" style={{ marginBottom: 10 }}>
@@ -424,6 +448,7 @@ export default function GroupSetup({ config, onSaved, session, premiumActive }) 
         icon="📱"
         title="Payment Details"
         summary={paymentCount === 0 ? "Not set up" : `${paymentCount} method${paymentCount === 1 ? "" : "s"}`}
+        done={paymentDetailsDone}
       >
         <p className="muted tiny" style={{ marginBottom: 10 }}>
           Where members should actually send their contribution. Shown to every member —

@@ -43,6 +43,37 @@ export function unassignedMembers(payeesPerRow, memberNames) {
   return (memberNames || []).filter((name) => !assigned.has(String(name).trim().toLowerCase()));
 }
 
+/**
+ * Every active member matched to the schedule date they're a payout
+ * recipient on — the source for the group-wide roster (Community tab),
+ * visible to every member, not just admins: the payout rotation is the
+ * whole trust model of a Chilimba, so everyone gets to see where
+ * everyone else sits in it, the same transparency principle behind the
+ * dashboard's payout stepper. A member can in principle appear as a
+ * recipient more than once across a long schedule; this takes their
+ * first match (soonest, since schedule rows are already date-ordered).
+ * Not yet assigned reads as payoutDate: null and sorts last — the same
+ * "unfinished manual step" gap unassignedMembers() above flags to
+ * admins, just surfaced to everyone here instead.
+ *
+ * @param {object[]} schedule
+ * @param {string[]} memberNames
+ * @returns {{name: string, payoutDate: string|null, payoutGroup: string|null}[]}
+ */
+export function buildMemberRoster(schedule, memberNames) {
+  const roster = (memberNames || []).map((name) => {
+    const target = String(name).trim().toLowerCase();
+    const row = (schedule || []).find((r) => getPayees(r).some((p) => p.toLowerCase() === target));
+    return { name, payoutDate: row?.date || null, payoutGroup: row?.group || null };
+  });
+  return roster.sort((a, b) => {
+    if (!a.payoutDate && !b.payoutDate) return a.name.localeCompare(b.name);
+    if (!a.payoutDate) return 1;
+    if (!b.payoutDate) return -1;
+    return new Date(a.payoutDate) - new Date(b.payoutDate);
+  });
+}
+
 // Is `name` one of this row's recipients? Case-insensitive, exact match
 // on each name (not substring — avoids "Sarah" incorrectly matching
 // "Sarah K" and "Sarah N" on the same date).

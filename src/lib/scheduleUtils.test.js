@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { getPayees, payeesLabel, isRecipient, resolveDue, findNextDue, myNextDueDates, generateScheduleDates, cycleEndDate, unassignedMembers } from "./scheduleUtils.js";
+import { getPayees, payeesLabel, isRecipient, resolveDue, findNextDue, myNextDueDates, generateScheduleDates, cycleEndDate, unassignedMembers, buildMemberRoster } from "./scheduleUtils.js";
 
 describe("getPayees", () => {
   it("reads a payees array directly", () => {
@@ -51,6 +51,38 @@ describe("unassignedMembers", () => {
   it("returns an empty array when every member is assigned somewhere", () => {
     const rows = [["Doreen"], ["Fridah"]];
     expect(unassignedMembers(rows, ["Doreen", "Fridah"])).toEqual([]);
+  });
+});
+
+describe("buildMemberRoster", () => {
+  const schedule = [
+    { date: "2026-09-15", group: "Group A", payees: ["Doreen"] },
+    { date: "2026-09-01", group: "Group A", payees: ["Fridah", "Harriet"] },
+  ];
+
+  it("matches each member to their payout date, case-insensitively", () => {
+    const roster = buildMemberRoster(schedule, ["Doreen", "fridah"]);
+    expect(roster).toEqual([
+      { name: "fridah", payoutDate: "2026-09-01", payoutGroup: "Group A" },
+      { name: "Doreen", payoutDate: "2026-09-15", payoutGroup: "Group A" },
+    ]);
+  });
+
+  it("sorts by payout date ascending regardless of input order", () => {
+    const roster = buildMemberRoster(schedule, ["Doreen", "Fridah"]);
+    expect(roster.map((r) => r.name)).toEqual(["Fridah", "Doreen"]);
+  });
+
+  it("puts unassigned members last, sorted alphabetically among themselves", () => {
+    const roster = buildMemberRoster(schedule, ["Zainab", "Doreen", "Amara"]);
+    expect(roster.map((r) => r.name)).toEqual(["Doreen", "Amara", "Zainab"]);
+    expect(roster[1].payoutDate).toBeNull();
+    expect(roster[2].payoutDate).toBeNull();
+  });
+
+  it("returns every member unscheduled when the schedule is empty", () => {
+    const roster = buildMemberRoster([], ["Doreen", "Fridah"]);
+    expect(roster.every((r) => r.payoutDate === null)).toBe(true);
   });
 });
 

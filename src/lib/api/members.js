@@ -61,6 +61,34 @@ export async function getGroupMembers() {
   return realFetch("/api/admin/members");
 }
 
+// Every active member's name, nothing else — the non-admin counterpart
+// to getGroupMembers() above. Deliberately no role/joinedAt/due-amount/
+// streak data: those are the admin roster's own detail, not something
+// every member should see about each other. Powers GroupRoster.jsx,
+// which cross-references this against the caller's own config.schedule
+// (already loaded, not admin-gated) via buildMemberRoster() in
+// scheduleUtils.js to show each member's payout date.
+export async function getGroupRoster() {
+  const session = currentSession();
+  if (!session) throw new Error("Not signed in.");
+
+  if (MOCK_MODE) {
+    const accountPrefix = `chilimba:account:${session.groupSlug}:`;
+    const members = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (!key.startsWith(accountPrefix)) continue;
+      const account = lsGet(key, {});
+      if (account.active === false) continue;
+      members.push({ name: account.displayName || key.slice(accountPrefix.length) });
+    }
+    members.sort((a, b) => a.name.localeCompare(b.name));
+    return { members };
+  }
+
+  return realFetch("/api/members/roster");
+}
+
 // Promotes another member of the admin's own group. The only self-service
 // way to gain admin rights for a group that already exists — becoming
 // the first admin of a brand-new group happens through createGroup()
