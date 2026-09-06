@@ -28,23 +28,28 @@ export default function registerNoticeRoutes(router) {
     if (!body.message || !body.message.trim()) throw new HttpError(400, "A message is required.");
     if (body.message.length > 500) throw new HttpError(400, "Keep notices under 500 characters.");
 
-    let targetMemberName = null;
-    if (body.targetMemberName && body.targetMemberName.trim()) {
-      // Validated against the group's real active members, not trusted
-      // as freeform client input — same principle as every other
-      // group-scoped write in this app (see the group-isolation note in
-      // CLAUDE.md).
-      const match = await env.DB.prepare(
-        `SELECT display_name FROM users WHERE group_id = ? AND active = 1 AND display_name = ?`
-      ).bind(admin.groupId, body.targetMemberName.trim()).first();
-      if (!match) throw new HttpError(400, "That member isn't in your group.");
-      targetMemberName = match.display_name;
-    }
+    const targetMemberName = body.targetMemberName && body.targetMemberName.trim() ? body.targetMemberName.trim() : null;
 
+    // Validated in the same statement as the insert (WHERE EXISTS) rather
+    // than a separate SELECT beforehand, saving a D1 round trip — the insert
+    // simply doesn't happen when targetMemberName is set but isn't a real,
+    // active member of the admin's own group (same group-isolation principle
+    // as every other group-scoped write in this app, see CLAUDE.md).
     const id = uid();
-    await env.DB.prepare(
-      `INSERT INTO notices (id, group_id, message, posted_by, target_member_name) VALUES (?,?,?,?,?)`
-    ).bind(id, admin.groupId, body.message.trim(), admin.name, targetMemberName).run();
+    const result = await env.DB.prepare(
+      `INSERT INTO notices (id, group_id, message, posted_by, target_member_name)
+       SELECT ?, ?, ?, ?, ?
+       WHERE ? IS NULL OR EXISTS (
+         SELECT 1 FROM users WHERE group_id = ? AND active = 1 AND display_name = ?
+       )`
+    ).bind(
+      id, admin.groupId, body.message.trim(), admin.name, targetMemberName,
+      targetMemberName, admin.groupId, targetMemberName
+    ).run();
+
+    if (targetMemberName && result.meta.changes === 0) {
+      throw new HttpError(400, "That member isn't in your group.");
+    }
 
     return json({ id, ok: true }, 201, cors);
   });
