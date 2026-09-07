@@ -29,6 +29,7 @@ import QuickActions from "./QuickActions.jsx";
 import PayoutAvatarRow from "./PayoutAvatarRow.jsx";
 import StreakDots from "./StreakDots.jsx";
 import GRSBadge from "./GRSBadge.jsx";
+import NoticeBoard from "./NoticeBoard.jsx";
 
 function formatDate(dateISO) {
   const d = new Date(dateISO + "T00:00:00");
@@ -38,9 +39,9 @@ function formatDate(dateISO) {
 
 /**
  * The home screen — deliberately a 3-second glance, not a wall of cards.
- * Four focal points in order, below the admin action banners (pending
- * confirmations, unassigned members — those are urgent, so they stay
- * above everything else) and the greeting/cycle-ring header:
+ * Four focal points in order, below the admin pending-confirmations
+ * banner (urgent, so it stays above everything else) and the
+ * greeting/cycle-ring header:
  *   1. Contribution status — what you've contributed this round, framed
  *      as progress rather than a deficit, with what's still owed
  *      demoted to a smaller sub-label underneath.
@@ -49,6 +50,12 @@ function formatDate(dateISO) {
  *      numbers a member actually checks in most sessions.
  *   3. Group Fund Total + Next Payment, side by side — the other two
  *      genuinely at-a-glance stats.
+ *   4. Notices / alerts — the read-only notice board (NoticeBoard.jsx;
+ *      posting one is an admin tool that lives on the Community tab
+ *      instead, see NoticeComposer.jsx) plus the admin-only "N members
+ *      not on the payout schedule" nudge, downgraded to a single inline
+ *      line here rather than a card — Group Setup's own copy of that
+ *      nudge is where the actual explanation/fix lives.
  * A slim loan alert (if one applies) and quick-action icons follow,
  * then "See full breakdown" holds the rest: the full paid-so-far
  * figure, the cycle timeline, streak dots, the full upcoming-payments
@@ -151,19 +158,6 @@ export default function Dashboard({
         </div>
       )}
 
-      {session?.role === "admin" && unassigned.length > 0 && (
-        <div
-          className="unassigned-members-notice"
-          onClick={onOpenGroupSetup}
-          role={onOpenGroupSetup ? "button" : undefined}
-          tabIndex={onOpenGroupSetup ? 0 : undefined}
-          style={onOpenGroupSetup ? { cursor: "pointer" } : undefined}
-        >
-          <strong>{unassigned.length}</strong> member{unassigned.length === 1 ? "" : "s"} not on the
-          payout schedule yet — {onOpenGroupSetup ? "tap to add them in Group Setup" : "add them in Group Setup"}.
-        </div>
-      )}
-
       {recentPayout && <PayoutAcknowledgment groupSlug={session.groupSlug} row={recentPayout} />}
 
       <div className="dashboard-hero">
@@ -263,6 +257,22 @@ export default function Dashboard({
           </div>
         </div>
       </div>
+
+      <NoticeBoard isAdmin={session?.role === "admin"} />
+
+      {session?.role === "admin" && unassigned.length > 0 && (
+        <p className="inline-alert">
+          ⚠️ <strong>{unassigned.length}</strong> member{unassigned.length === 1 ? "" : "s"} not on the payout
+          schedule —{" "}
+          {onOpenGroupSetup ? (
+            <button type="button" className="inline-alert-link" onClick={onOpenGroupSetup}>
+              add them in Group Setup
+            </button>
+          ) : (
+            "add them in Group Setup"
+          )}
+        </p>
+      )}
 
       {myLoanTotal > 0 && (
         <div className="loan-alert-banner">
