@@ -672,101 +672,164 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 
 .login-panel { max-width: 380px; margin: 40px auto; text-align: left; }
 
-/* LoginScene.jsx — warm sky-to-ground gradient using the same emerald/gold
-   chrome tokens as .dashboard-hero/.setup-hero, so the very first screen
-   shares the app's palette instead of introducing a one-off color set.
-   Fixed height + overflow:hidden keeps this from ever pushing the actual
-   login form down by a variable amount as figures animate in. */
+/* LoginScene.jsx — a sunset scene four women converge on, drawn as one
+   SVG (viewBox 0 0 400 160). Colors below are literal hex, not theme
+   tokens — this is the one part of the app that deliberately does NOT
+   invert for dark mode (a sunset is a sunset regardless of the reader's
+   theme). Fixed aspect-ratio + overflow:hidden keeps this from ever
+   pushing the actual login form down by a variable amount as figures
+   animate in. */
 .login-scene {
   position: relative;
-  height: 110px;
+  width: 100%;
+  aspect-ratio: 400 / 160;
   margin-bottom: 16px;
   border-radius: 10px;
   overflow: hidden;
-  background: linear-gradient(180deg, var(--chrome-bg-1), var(--chrome-bg-2));
+  /* Matches the sky gradient's own bottom stop — the color visible for
+     the one frame before the SVG itself paints, not a mismatched flash. */
+  background: #DE5F55;
 }
-.login-scene-ground {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 22px;
-  background: rgba(0, 0, 0, 0.16);
+.login-scene-svg { display: block; width: 100%; height: 100%; }
+.login-scene-track {
+  fill: none;
+  stroke: #CFE8BE;
+  stroke-width: 9;
+  stroke-linecap: round;
+  opacity: 0.55;
 }
+.login-scene-hearth { filter: drop-shadow(0 0 6px rgba(212, 169, 74, 0.35)); }
+.login-scene-lamp-glow { opacity: 1; }
+
+/* Every figure (see LoginScene.jsx's Figure()) is nested <g>s, each
+   owning exactly one CSS animation so none of them fight over the
+   `transform` property:
+     .login-scene-figure        offset-path position + opacity (entrance)
+     .login-scene-figure-scale  scale 0.28 -> her own resting scale
+     .login-scene-figure-shadow ground contact shadow (sibling of the
+                                 two below — doesn't bob or lean with them)
+     .login-scene-figure-bounce per-gait walking bob
+     .login-scene-figure-turn   settle-phase inward turn
+   and, inside .login-scene-figure-turn, .login-scene-pose-standing /
+   .login-scene-pose-seated crossfade between the walking figure and her
+   seated final pose. Every rule in this un-queried block is the resting
+   pose — no motion at all, seated pose already visible — since it's
+   what prefers-reduced-motion: reduce (and any browser without
+   offset-path support) renders as-is. The @media block below layers the
+   actual entrance/settle animations on top of these same values for
+   everyone else, same pattern the rest of this scene already used. */
 .login-scene-figure {
-  position: absolute;
-  bottom: 8px;
-  transform: translateX(-50%);
+  transform: translate(calc(var(--login-scene-ring-x) * 1px), calc(var(--login-scene-ring-y) * 1px));
 }
-/* The vertical "footstep" bounce lives on its own inner wrapper, separate
-   from .login-scene-figure's own translateX entrance above — two CSS
-   animations can't both drive `transform` on the same element without one
-   overwriting the other, so the walk-in (horizontal) and the bounce
-   (vertical) each get their own element instead. Per-gait duration/
-   iteration-count below are chosen so the bounce settles at translateY(0)
-   at roughly the same moment the outer entrance animation finishes (see
-   each figure's `duration` in LoginScene.jsx: steady 1.1s, limp 1.3s,
-   stooped 1.5s, heavy 1.4s) — arriving and stopping together instead of
-   still bobbing after the walk-in has visibly ended. */
+.login-scene-figure-scale-plain { transform: scale(var(--login-scene-scale)); }
+.login-scene-figure-scale-mirrored { transform: scale(calc(var(--login-scene-scale) * -1), var(--login-scene-scale)); }
+/* Soft ellipse under her feet — elongated toward the viewer/downward
+   (away from the low sun sitting behind the mat, see the sun circle in
+   LoginScene.jsx) and fading out at its own far edge via the radial
+   gradient below, rather than a hard-edged shape. */
+.login-scene-figure-shadow {
+  fill: url(#login-scene-shadow-gradient);
+}
 .login-scene-figure-bounce { transform: translateY(0); }
-.login-scene-book {
-  position: absolute;
-  bottom: 14px;
-  left: 50%;
-  transform: translateX(-50%);
-  filter: drop-shadow(0 0 6px rgba(212, 169, 74, 0.7));
+.login-scene-figure-turn {
+  transform: rotate(var(--login-scene-turn));
+  transform-origin: 50% 100%;
 }
-/* Resting state — every figure and the book render fully in place with
-   no motion at all by default. The walk-in animation below is added
-   ONLY under prefers-reduced-motion: no-preference, same pattern as
-   .progress-ring-glow's pulse — so a reduced-motion user (or a browser
-   that doesn't support the media query) still sees the complete,
-   correct scene, just without the entrance motion. */
+.login-scene-pose-standing { opacity: 0; }
+.login-scene-pose-seated { opacity: 1; }
+
 @media (prefers-reduced-motion: no-preference) {
+  .login-scene-lamp-glow {
+    opacity: 0;
+    animation: login-scene-lamp-in 0.6s ease-out forwards;
+  }
+
+  /* offset-path is the literal same `d` string used to draw the visible
+     track (see LoginScene.jsx's TRACKS/--login-scene-track), so the
+     figure walking it can never end up diverging from her own trail.
+     offset-distance runs 100% -> her own walkEnd: she starts at the
+     track's far end (small, faint) and stops just short of dead center,
+     at roughly her ring position, rather than exactly on top of the
+     other three at the convergence point. */
   .login-scene-figure {
     opacity: 0;
+    offset-path: var(--login-scene-track);
+    offset-rotate: 0deg;
+    offset-distance: 100%;
+    transform: none;
+    animation: login-scene-walk-in 2s ease-out forwards, login-scene-fade-in 2s ease-out forwards;
+  }
+
+  .login-scene-figure-scale-plain,
+  .login-scene-figure-scale-mirrored {
+    animation-duration: 2s;
     animation-timing-function: ease-out;
     animation-fill-mode: forwards;
-    /* animation-duration is set inline per figure (LoginScene.jsx) since
-       each gait walks at its own pace — a limping/stooped/heavy-load
-       figure arrives more slowly than the steady one. */
   }
-  .login-scene-walk-left { animation-name: login-scene-walk-left; }
-  .login-scene-walk-right { animation-name: login-scene-walk-right; }
-  .login-scene-walk-top-left { animation-name: login-scene-walk-top-left; }
-  .login-scene-walk-top-right { animation-name: login-scene-walk-top-right; }
-  /* Each bounce cadence is its own keyframe shape, not just a faster/slower
-     copy of the same one — steady is even and symmetric, limp is
-     deliberately uneven (a bigger dip on the bad-leg step), stooped is one
-     slow shallow dip, heavy is one slow deep dip under the extra weight. */
-  .login-scene-bounce-steady { animation: login-scene-bounce-steady 0.37s ease-in-out 3; }
-  .login-scene-bounce-limp { animation: login-scene-bounce-limp 0.65s ease-in-out 2; }
-  .login-scene-bounce-stooped { animation: login-scene-bounce-stooped 0.75s ease-in-out 2; }
-  .login-scene-bounce-heavy { animation: login-scene-bounce-heavy 0.7s ease-in-out 2; }
-  .login-scene-book {
-    /* Delay must clear the slowest figure's own delay + duration (the
-       heavy-load figure: 3 * 0.22s stagger + 1.4s walk = 2.06s, see
-       FIGURES in LoginScene.jsx) so the book only appears once every
-       figure has actually arrived. */
-    opacity: 0;
-    animation: login-scene-book-in 0.6s ease-out 2.2s forwards;
+  .login-scene-figure-scale-plain { animation-name: login-scene-grow; }
+  .login-scene-figure-scale-mirrored { animation-name: login-scene-grow-mirrored; }
+
+  /* Each bounce cadence is its own keyframe shape, not just a faster/
+     slower copy of the same one — steady is even and symmetric, limp is
+     deliberately uneven (a bigger dip on the bad-leg step), stooped is
+     one slow shallow dip, heavy is one slow deep dip under the extra
+     weight. Iteration counts are tuned to land back on translateY(0) at
+     roughly 2.6s, the same moment the walk-in above ends and the settle
+     phase takes over — arriving and stopping together instead of still
+     bobbing after the walk-in has visibly finished. */
+  .login-scene-bounce-steady { animation: login-scene-bounce-steady 0.36s ease-in-out 6; }
+  .login-scene-bounce-limping { animation: login-scene-bounce-limp 0.5s ease-in-out 4; }
+  .login-scene-bounce-stooped { animation: login-scene-bounce-stooped 0.66s ease-in-out 3; }
+  .login-scene-bounce-heavy { animation: login-scene-bounce-heavy 0.5s ease-in-out 4; }
+
+  /* She's drawn standing/walking for the whole 0.6s-2.6s entrance (the
+     un-queried default further up is the reduced-motion/seated-only
+     state, wrong for this phase) — flip the pose crossfade's resting
+     values here before the settle animations below override them at
+     2.6s. */
+  .login-scene-pose-standing { opacity: 1; }
+  .login-scene-pose-seated { opacity: 0; }
+
+  /* Settle phase, 2.6s-3.5s — after every figure has arrived. The turn
+     starts from rotate(0), not from the resting pose the un-queried
+     rules above give reduced-motion users, so there's no jump the
+     instant this animation's delay elapses; its 100% keyframe lands on
+     that same resting value, so the two code paths agree on the final
+     frame. The standing->seated crossfade works the same way — each
+     animation's own 0% keyframe matches the still-standing values set
+     just above, so there's no jump there either once the delay elapses. */
+  .login-scene-figure-turn {
+    transform: rotate(0deg);
+    animation: login-scene-settle-turn 0.9s ease-out 2.6s forwards;
+  }
+  .login-scene-pose-standing {
+    animation: login-scene-settle-standing-out 0.8s ease-in-out 2.6s forwards;
+  }
+  .login-scene-pose-seated {
+    animation: login-scene-settle-seated-in 0.8s ease-in-out 2.6s forwards;
   }
 }
-@keyframes login-scene-walk-left {
-  0% { opacity: 0; transform: translateX(calc(-50% - 60px)); }
-  100% { opacity: 1; transform: translateX(-50%); }
+
+@keyframes login-scene-lamp-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
-@keyframes login-scene-walk-right {
-  0% { opacity: 0; transform: translateX(calc(-50% + 60px)); }
-  100% { opacity: 1; transform: translateX(-50%); }
+@keyframes login-scene-walk-in {
+  from { offset-distance: 100%; }
+  to { offset-distance: var(--login-scene-walk-end); }
 }
-@keyframes login-scene-walk-top-left {
-  0% { opacity: 0; transform: translate(calc(-50% - 24px), -30px); }
-  100% { opacity: 1; transform: translateX(-50%); }
+@keyframes login-scene-fade-in {
+  0% { opacity: 0; }
+  1% { opacity: 0.5; }
+  100% { opacity: 1; }
 }
-@keyframes login-scene-walk-top-right {
-  0% { opacity: 0; transform: translate(calc(-50% + 24px), -30px); }
-  100% { opacity: 1; transform: translateX(-50%); }
+@keyframes login-scene-grow {
+  from { transform: scale(0.28); }
+  to { transform: scale(var(--login-scene-scale)); }
+}
+@keyframes login-scene-grow-mirrored {
+  from { transform: scale(-0.28, 0.28); }
+  to { transform: scale(calc(var(--login-scene-scale) * -1), var(--login-scene-scale)); }
 }
 @keyframes login-scene-bounce-steady {
   0%, 100% { transform: translateY(0); }
@@ -787,9 +850,17 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-2.5px); }
 }
-@keyframes login-scene-book-in {
-  0% { opacity: 0; transform: translateX(-50%) scale(0.5); }
-  100% { opacity: 1; transform: translateX(-50%) scale(1); }
+@keyframes login-scene-settle-turn {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(var(--login-scene-turn)); }
+}
+@keyframes login-scene-settle-standing-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+@keyframes login-scene-settle-seated-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .login-tagline {
@@ -797,6 +868,22 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   color: var(--accent);
   font-weight: 600;
   font-size: 0.95rem;
+}
+/* Caption fades in once the scene has settled (~3s in) rather than
+   sitting there fully legible while the women are still mid-walk — see
+   the .login-scene-figure-turn settle timing above (2.6s-3.5s), this
+   overlaps the tail end of it on purpose. Reduced-motion users get it
+   at full opacity immediately, same as every other un-queried rule in
+   this file. */
+@media (prefers-reduced-motion: no-preference) {
+  .login-tagline {
+    opacity: 0;
+    animation: login-scene-caption-in 0.6s ease-out 3s forwards;
+  }
+}
+@keyframes login-scene-caption-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .panel-title { margin: 0 0 12px; font-size: 1.1rem; }
