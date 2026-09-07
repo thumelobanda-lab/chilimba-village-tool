@@ -128,13 +128,13 @@ behavior go in that file directly.
 ## Deployment
 
 **Frontend (Cloudflare Pages) deploys via `git push`, not a script.**
-The `chilimba-circle` Pages project is Git-connected to
+The `open-book` Pages project is Git-connected to
 `thumelobanda-lab/chilimba-village-tool`:
 - Push to `main` → builds and deploys to production
-  (`chilimba-circle.pages.dev`) automatically.
+  (`open-book-co1.pages.dev`) automatically.
 - Push to the `staging` branch (or open a PR from any other branch) →
   Cloudflare builds a preview deployment, reachable at the stable
-  branch-alias URL `staging.chilimba-circle.pages.dev`, plus a unique
+  branch-alias URL `staging.open-book-co1.pages.dev`, plus a unique
   per-commit URL.
 - Build command `npm run build`, output dir `dist`, both configured in
   the Pages dashboard, not in a script — there is no

@@ -77,7 +77,7 @@ echo "  cd worker && npx wrangler secret put MOMO_API_KEY"
 echo "  cd worker && npx wrangler secret put SMS_API_KEY"
 echo
 echo "Then paste these into the Cloudflare Pages dashboard for the"
-echo "chilimba-circle project (Settings > Environment variables, under"
+echo "open-book project (Settings > Environment variables, under"
 echo "the Production environment):"
 echo "  VITE_API_BASE=${WORKER_URL:-<check output above>}"
 echo "  VITE_VAPID_PUBLIC_KEY=${VAPID_PUBLIC:-<check output above>}"

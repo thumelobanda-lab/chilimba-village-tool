@@ -31,7 +31,7 @@ crons = ["0 6 * * *"]
 name = "chilimba-worker-staging"
 
 [env.staging.vars]
-ALLOWED_ORIGIN = "https://staging.chilimba-circle.pages.dev"
+ALLOWED_ORIGIN = "https://staging.open-book-co1.pages.dev"
 VAPID_SUBJECT = "mailto:admin@example.com"
 VAPID_PUBLIC_KEY = "BHADhlX_-bRYZQ-H8yqICfupLxkR-XoZEqYYh3CbSnvaKxX-vy55-DBTbiRQ45OdTrM0tRNvCv6rK-wWKjpbW80"
 
