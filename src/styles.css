@@ -691,37 +691,42 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .login-scene-hearth { filter: drop-shadow(0 0 6px rgba(212, 169, 74, 0.35)); }
 .login-scene-lamp-glow { opacity: 1; }
 
-/* Every figure (see LoginScene.jsx's Figure()) is four nested <g>s, each
+/* Every figure (see LoginScene.jsx's Figure()) is nested <g>s, each
    owning exactly one CSS animation so none of them fight over the
    `transform` property:
      .login-scene-figure        offset-path position + opacity (entrance)
      .login-scene-figure-scale  scale 0.28 -> her own resting scale
+     .login-scene-figure-shadow ground contact shadow (sibling of the
+                                 two below — doesn't bob or lean with them)
      .login-scene-figure-bounce per-gait walking bob
      .login-scene-figure-turn   settle-phase inward turn
-   plus .login-scene-arm-load-* / .login-scene-reach-arm-* one level
-   further in, for the settle-phase "set the load down" / "reach toward
-   the ledger" motion. Every rule in this un-queried block is the
-   resting pose — no motion at all — since it's what
-   prefers-reduced-motion: reduce (and any browser without offset-path
-   support) renders as-is. The @media block below layers the actual
-   entrance/settle animations on top of these same values for everyone
-   else, same pattern the rest of this scene already used. */
+   and, inside .login-scene-figure-turn, .login-scene-pose-standing /
+   .login-scene-pose-seated crossfade between the walking figure and her
+   seated final pose. Every rule in this un-queried block is the resting
+   pose — no motion at all, seated pose already visible — since it's
+   what prefers-reduced-motion: reduce (and any browser without
+   offset-path support) renders as-is. The @media block below layers the
+   actual entrance/settle animations on top of these same values for
+   everyone else, same pattern the rest of this scene already used. */
 .login-scene-figure {
   transform: translate(calc(var(--login-scene-ring-x) * 1px), calc(var(--login-scene-ring-y) * 1px));
 }
 .login-scene-figure-scale-plain { transform: scale(var(--login-scene-scale)); }
 .login-scene-figure-scale-mirrored { transform: scale(calc(var(--login-scene-scale) * -1), var(--login-scene-scale)); }
+/* Soft ellipse under her feet — elongated toward the viewer/downward
+   (away from the low sun sitting behind the mat, see the sun circle in
+   LoginScene.jsx) and fading out at its own far edge via the radial
+   gradient below, rather than a hard-edged shape. */
+.login-scene-figure-shadow {
+  fill: url(#login-scene-shadow-gradient);
+}
 .login-scene-figure-bounce { transform: translateY(0); }
 .login-scene-figure-turn {
   transform: rotate(var(--login-scene-turn));
   transform-origin: 50% 100%;
 }
-.login-scene-arm-load-a { transform: rotate(52deg) translate(-2px, 9px); transform-origin: 15px 32px; }
-.login-scene-arm-load-b { transform: rotate(48deg) translate(-3px, 9px); transform-origin: 23px 34px; }
-.login-scene-arm-load-c { transform: rotate(46deg) translate(-2px, 7px); transform-origin: 9px 15px; }
-.login-scene-arm-load-d { transform: rotate(40deg) translate(0, 8px); transform-origin: 23px 20px; }
-.login-scene-reach-arm-a { transform: rotate(-55deg) translate(3px, -2px); transform-origin: 25px 34px; }
-.login-scene-reach-arm-c { transform: rotate(-70deg) translate(4px, -3px); transform-origin: 20px 15px; }
+.login-scene-pose-standing { opacity: 0; }
+.login-scene-pose-seated { opacity: 1; }
 
 @media (prefers-reduced-motion: no-preference) {
   .login-scene-lamp-glow {
@@ -732,10 +737,10 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   /* offset-path is the literal same `d` string used to draw the visible
      track (see LoginScene.jsx's TRACKS/--login-scene-track), so the
      figure walking it can never end up diverging from her own trail.
-     offset-distance runs 100% -> 28%: she starts at the track's far
-     end (small, faint) and stops just short of dead center, at
-     roughly her ring position, rather than exactly on top of the other
-     three at the convergence point. */
+     offset-distance runs 100% -> her own walkEnd: she starts at the
+     track's far end (small, faint) and stops just short of dead center,
+     at roughly her ring position, rather than exactly on top of the
+     other three at the convergence point. */
   .login-scene-figure {
     opacity: 0;
     offset-path: var(--login-scene-track);
@@ -767,28 +772,32 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   .login-scene-bounce-stooped { animation: login-scene-bounce-stooped 0.66s ease-in-out 3; }
   .login-scene-bounce-heavy { animation: login-scene-bounce-heavy 0.5s ease-in-out 4; }
 
-  /* Settle phase, 2.6s-3.5s — after every figure has arrived. Each
-     starts from rotate(0)/translate(0,0), not from the resting pose the
-     un-queried rules above give reduced-motion users, so there's no
-     jump the instant this animation's delay elapses; the 100% keyframe
-     below then lands on that exact same resting value, so the two code
-     paths agree on the final frame. */
+  /* She's drawn standing/walking for the whole 0.6s-2.6s entrance (the
+     un-queried default further up is the reduced-motion/seated-only
+     state, wrong for this phase) — flip the pose crossfade's resting
+     values here before the settle animations below override them at
+     2.6s. */
+  .login-scene-pose-standing { opacity: 1; }
+  .login-scene-pose-seated { opacity: 0; }
+
+  /* Settle phase, 2.6s-3.5s — after every figure has arrived. The turn
+     starts from rotate(0), not from the resting pose the un-queried
+     rules above give reduced-motion users, so there's no jump the
+     instant this animation's delay elapses; its 100% keyframe lands on
+     that same resting value, so the two code paths agree on the final
+     frame. The standing->seated crossfade works the same way — each
+     animation's own 0% keyframe matches the still-standing values set
+     just above, so there's no jump there either once the delay elapses. */
   .login-scene-figure-turn {
     transform: rotate(0deg);
     animation: login-scene-settle-turn 0.9s ease-out 2.6s forwards;
   }
-  .login-scene-arm-load-a { transform: rotate(0deg) translate(0, 0); animation: login-scene-settle-load-a 0.85s ease-in-out 2.6s forwards; }
-  .login-scene-arm-load-b { transform: rotate(0deg) translate(0, 0); animation: login-scene-settle-load-b 0.85s ease-in-out 2.6s forwards; }
-  .login-scene-arm-load-c { transform: rotate(0deg) translate(0, 0); animation: login-scene-settle-load-c 0.85s ease-in-out 2.6s forwards; }
-  .login-scene-arm-load-d { transform: rotate(0deg) translate(0, 0); animation: login-scene-settle-load-d 0.85s ease-in-out 2.6s forwards; }
-  /* Only the steady and stooped figures extend a free hand toward the
-     ledger — the limping figure's is holding her stick, the heavy-load
-     figure's are both already braced on her bundle (see the doc
-     comments on SteadyWalker/StoopedWalker in LoginScene.jsx). Starts
-     just after the main settle turn so it reads as a second beat
-     ("settles in, *then* reaches") rather than one single motion. */
-  .login-scene-reach-arm-a { transform: rotate(0deg) translate(0, 0); animation: login-scene-settle-reach-a 0.6s ease-out 2.75s forwards; }
-  .login-scene-reach-arm-c { transform: rotate(0deg) translate(0, 0); animation: login-scene-settle-reach-c 0.6s ease-out 2.75s forwards; }
+  .login-scene-pose-standing {
+    animation: login-scene-settle-standing-out 0.8s ease-in-out 2.6s forwards;
+  }
+  .login-scene-pose-seated {
+    animation: login-scene-settle-seated-in 0.8s ease-in-out 2.6s forwards;
+  }
 }
 
 @keyframes login-scene-lamp-in {
@@ -835,29 +844,13 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   from { transform: rotate(0deg); }
   to { transform: rotate(var(--login-scene-turn)); }
 }
-@keyframes login-scene-settle-load-a {
-  from { transform: rotate(0deg) translate(0, 0); }
-  to { transform: rotate(52deg) translate(-2px, 9px); }
+@keyframes login-scene-settle-standing-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
 }
-@keyframes login-scene-settle-load-b {
-  from { transform: rotate(0deg) translate(0, 0); }
-  to { transform: rotate(48deg) translate(-3px, 9px); }
-}
-@keyframes login-scene-settle-load-c {
-  from { transform: rotate(0deg) translate(0, 0); }
-  to { transform: rotate(46deg) translate(-2px, 7px); }
-}
-@keyframes login-scene-settle-load-d {
-  from { transform: rotate(0deg) translate(0, 0); }
-  to { transform: rotate(40deg) translate(0, 8px); }
-}
-@keyframes login-scene-settle-reach-a {
-  from { transform: rotate(0deg) translate(0, 0); }
-  to { transform: rotate(-55deg) translate(3px, -2px); }
-}
-@keyframes login-scene-settle-reach-c {
-  from { transform: rotate(0deg) translate(0, 0); }
-  to { transform: rotate(-70deg) translate(4px, -3px); }
+@keyframes login-scene-settle-seated-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .login-tagline {
