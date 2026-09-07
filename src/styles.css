@@ -688,6 +688,17 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   bottom: 8px;
   transform: translateX(-50%);
 }
+/* The vertical "footstep" bounce lives on its own inner wrapper, separate
+   from .login-scene-figure's own translateX entrance above — two CSS
+   animations can't both drive `transform` on the same element without one
+   overwriting the other, so the walk-in (horizontal) and the bounce
+   (vertical) each get their own element instead. Per-gait duration/
+   iteration-count below are chosen so the bounce settles at translateY(0)
+   at roughly the same moment the outer entrance animation finishes (see
+   each figure's `duration` in LoginScene.jsx: steady 1.1s, limp 1.3s,
+   stooped 1.5s, heavy 1.4s) — arriving and stopping together instead of
+   still bobbing after the walk-in has visibly ended. */
+.login-scene-figure-bounce { transform: translateY(0); }
 .login-scene-book {
   position: absolute;
   bottom: 14px;
@@ -704,20 +715,31 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 @media (prefers-reduced-motion: no-preference) {
   .login-scene-figure {
     opacity: 0;
-    animation-duration: 1.1s;
     animation-timing-function: ease-out;
     animation-fill-mode: forwards;
+    /* animation-duration is set inline per figure (LoginScene.jsx) since
+       each gait walks at its own pace — a limping/stooped/heavy-load
+       figure arrives more slowly than the steady one. */
   }
   .login-scene-walk-left { animation-name: login-scene-walk-left; }
   .login-scene-walk-right { animation-name: login-scene-walk-right; }
   .login-scene-walk-top-left { animation-name: login-scene-walk-top-left; }
   .login-scene-walk-top-right { animation-name: login-scene-walk-top-right; }
+  /* Each bounce cadence is its own keyframe shape, not just a faster/slower
+     copy of the same one — steady is even and symmetric, limp is
+     deliberately uneven (a bigger dip on the bad-leg step), stooped is one
+     slow shallow dip, heavy is one slow deep dip under the extra weight. */
+  .login-scene-bounce-steady { animation: login-scene-bounce-steady 0.37s ease-in-out 3; }
+  .login-scene-bounce-limp { animation: login-scene-bounce-limp 0.65s ease-in-out 2; }
+  .login-scene-bounce-stooped { animation: login-scene-bounce-stooped 0.75s ease-in-out 2; }
+  .login-scene-bounce-heavy { animation: login-scene-bounce-heavy 0.7s ease-in-out 2; }
   .login-scene-book {
-    /* Delay must clear the last figure's own delay + duration (3 * 0.22s
-       stagger + 1.1s walk = 1.76s, see FIGURES/Figure in LoginScene.jsx)
-       so the book only appears once every figure has actually arrived. */
+    /* Delay must clear the slowest figure's own delay + duration (the
+       heavy-load figure: 3 * 0.22s stagger + 1.4s walk = 2.06s, see
+       FIGURES in LoginScene.jsx) so the book only appears once every
+       figure has actually arrived. */
     opacity: 0;
-    animation: login-scene-book-in 0.6s ease-out 1.8s forwards;
+    animation: login-scene-book-in 0.6s ease-out 2.2s forwards;
   }
 }
 @keyframes login-scene-walk-left {
@@ -735,6 +757,25 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 @keyframes login-scene-walk-top-right {
   0% { opacity: 0; transform: translate(calc(-50% + 24px), -30px); }
   100% { opacity: 1; transform: translateX(-50%); }
+}
+@keyframes login-scene-bounce-steady {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+@keyframes login-scene-bounce-limp {
+  0% { transform: translateY(0); }
+  30% { transform: translateY(-4.5px); }
+  55% { transform: translateY(0); }
+  75% { transform: translateY(-1.5px); }
+  100% { transform: translateY(0); }
+}
+@keyframes login-scene-bounce-stooped {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+}
+@keyframes login-scene-bounce-heavy {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2.5px); }
 }
 @keyframes login-scene-book-in {
   0% { opacity: 0; transform: translateX(-50%) scale(0.5); }
