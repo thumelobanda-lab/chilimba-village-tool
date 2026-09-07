@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { getNotices, postNotice, deleteNotice, getGroupMembers } from "../lib/api.js";
+import { getNotices, deleteNotice } from "../lib/api.js";
 import { useApiData } from "../lib/useApiData.js";
 
 function timeAgo(iso) {
@@ -11,34 +11,16 @@ function timeAgo(iso) {
   return `${Math.floor(hours / 24)}d ago`;
 }
 
+/**
+ * Read-only notice list — the dashboard's "Notices / alerts" focal
+ * point. Posting lives separately in NoticeComposer.jsx (Community
+ * tab), since authoring a notice is an admin tool, not something every
+ * member looks at; this component only renders what's actually
+ * dashboard content; an admin can still remove a notice from here.
+ */
 export default function NoticeBoard({ isAdmin }) {
   const { data, error, loading, refresh } = useApiData(getNotices, []);
-  // Only fetched for an admin — the name picker below is the only
-  // caller, and getGroupMembers() itself is admin-gated (see
-  // lib/api/members.js), same pattern as Dashboard.jsx's own admin-only
-  // fetches.
-  const { data: membersData } = useApiData(isAdmin ? getGroupMembers : () => Promise.resolve(null), [isAdmin]);
-  const [message, setMessage] = useState("");
-  const [target, setTarget] = useState(""); // "" = everyone, else a member name
-  const [busy, setBusy] = useState(false);
-  const [postError, setPostError] = useState("");
   const [expanded, setExpanded] = useState(false);
-
-  const handlePost = async () => {
-    setPostError("");
-    if (!message.trim()) return;
-    setBusy(true);
-    try {
-      await postNotice(message.trim(), target || undefined);
-      setMessage("");
-      setTarget("");
-      await refresh();
-    } catch (e) {
-      setPostError(e.message || "Could not post the notice.");
-    } finally {
-      setBusy(false);
-    }
-  };
 
   const handleDelete = async (id) => {
     if (!window.confirm("Remove this notice?")) return;
@@ -50,68 +32,30 @@ export default function NoticeBoard({ isAdmin }) {
   if (error) return null; // notices are non-critical — fail quietly, don't block the dashboard
 
   const notices = data?.notices || [];
-  // A member with nothing to read and no post form to see (that's
-  // admin-only) has nothing this component would actually render — stop
-  // here rather than rendering an empty, still-visibly-bordered box.
-  if (notices.length === 0 && !isAdmin) return null;
+  if (notices.length === 0) return null;
   const visible = expanded ? notices : notices.slice(0, 1);
 
   return (
     <div className="notice-board">
-      {notices.length === 0 ? null : (
-        <>
-          {visible.map((n) => (
-            <div className="notice-item" key={n.id}>
-              <div className="notice-message">
-                {n.targetMemberName ? "📬" : "📢"} {n.message}
-              </div>
-              <div className="notice-meta">
-                <span className="muted tiny">{n.postedBy} · {timeAgo(n.postedAt)}</span>
-                {n.targetMemberName && <span className="tag notice-target-tag">→ {n.targetMemberName}</span>}
-                {isAdmin && (
-                  <button className="btn-link" onClick={() => handleDelete(n.id)}>remove</button>
-                )}
-              </div>
-            </div>
-          ))}
-          {notices.length > 1 && (
-            <button className="btn-link" onClick={() => setExpanded(!expanded)}>
-              {expanded ? "Show less" : `Show ${notices.length - 1} more notice${notices.length - 1 > 1 ? "s" : ""}`}
-            </button>
-          )}
-        </>
-      )}
-
-      {isAdmin && (
-        <div className="notice-post-form">
-          {membersData?.members?.length > 0 && (
-            <select
-              className="notice-target-select"
-              value={target}
-              onChange={(e) => setTarget(e.target.value)}
-              disabled={busy}
-              aria-label="Post to"
-            >
-              <option value="">Post to: Everyone</option>
-              {membersData.members.map((m) => (
-                <option key={m.name} value={m.name}>Post to: {m.name}</option>
-              ))}
-            </select>
-          )}
-          <input
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handlePost()}
-            placeholder={target ? `Message for ${target}…` : "Post a notice to everyone in the group…"}
-            maxLength={500}
-            disabled={busy}
-          />
-          <button className="btn-ghost-dark" disabled={busy || !message.trim()} onClick={handlePost}>
-            Post
-          </button>
+      {visible.map((n) => (
+        <div className="notice-item" key={n.id}>
+          <div className="notice-message">
+            {n.targetMemberName ? "📬" : "📢"} {n.message}
+          </div>
+          <div className="notice-meta">
+            <span className="muted tiny">{n.postedBy} · {timeAgo(n.postedAt)}</span>
+            {n.targetMemberName && <span className="tag notice-target-tag">→ {n.targetMemberName}</span>}
+            {isAdmin && (
+              <button className="btn-link" onClick={() => handleDelete(n.id)}>remove</button>
+            )}
+          </div>
         </div>
+      ))}
+      {notices.length > 1 && (
+        <button className="btn-link" onClick={() => setExpanded(!expanded)}>
+          {expanded ? "Show less" : `Show ${notices.length - 1} more notice${notices.length - 1 > 1 ? "s" : ""}`}
+        </button>
       )}
-      {postError && <div className="error-text" role="alert">{postError}</div>}
     </div>
   );
 }

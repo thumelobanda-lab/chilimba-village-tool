@@ -290,6 +290,16 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   border-radius: 8px;
   cursor: pointer;
 }
+/* Mobile (<=640px) already has this exact panel one tap away via
+   .bottom-tab-bar's own Menu tab (BottomTabBar.jsx) — both open the
+   same NavMenu, sharing App.jsx's open/close state, so showing this
+   trigger too just doubles the same button on screen. Desktop has no
+   bottom tab bar, so this stays the only way in there. Must come after
+   the base .nav-menu-trigger rule above — same selector specificity, so
+   source order decides the winner, and this needs to win on mobile. */
+@media (max-width: 640px) {
+  .nav-menu-trigger { display: none; }
+}
 /* Persistent "something's new in here" indicator on the collapsed
    trigger itself (e.g. an unseen receipt — see useReceipts.js) — a small
    dot, not a dismissible toast, so it stays lit until the member actually
@@ -898,6 +908,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   border: 1px solid var(--line);
   border-radius: 6px;
   color: var(--ink);
+  background: var(--panel);
 }
 
 .payout-block { margin-top: 24px; padding-top: 16px; border-top: 1px dashed var(--line); }
@@ -1022,7 +1033,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .setup-section-chevron-open { transform: rotate(90deg); }
 .setup-section-body { padding: 16px 14px; border-top: 1px solid var(--line); }
 .checkbox-field { flex-direction: row; align-items: center; gap: 8px; font-size: 0.85rem; }
-.cell-input-text { width: 100px; padding: 4px 6px; border: 1px solid var(--line); border-radius: 6px; }
+.cell-input-text { width: 100px; padding: 4px 6px; border: 1px solid var(--line); border-radius: 6px; color: var(--ink); background: var(--panel); }
 .cell-input-text.wide { width: 160px; }
 
 /* Below this width, the schedule/funds/payment-method tables were
@@ -1232,12 +1243,15 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .card-value { font-size: 1.3rem; font-weight: 700; margin-top: 4px; }
 .card-warn .card-value { color: var(--red); }
 
-/* A calm, non-urgent nudge (Group Setup's Payout Schedule section, and
-   the dashboard's admin-only echo of it) that some active members have
-   never been given a payout turn — see unassignedMembers() in
-   scheduleUtils.js. Deliberately not the pulsing/animated treatment
-   .pending-queue-banner uses below: nothing here is time-sensitive or
-   money-related, it's just an easy-to-miss manual step. */
+/* A calm, non-urgent nudge (Group Setup's Payout Schedule section) that
+   some active members have never been given a payout turn — see
+   unassignedMembers() in scheduleUtils.js. Deliberately not the
+   pulsing/animated treatment .pending-queue-banner uses below: nothing
+   here is time-sensitive or money-related, it's just an easy-to-miss
+   manual step. Full-card treatment is appropriate here since it's the
+   one place actually explaining what to do about it; the dashboard's
+   own echo of this same nudge uses the slimmer .inline-alert below
+   instead. */
 .unassigned-members-notice {
   background: var(--surface-amber);
   border: 1px solid var(--pending);
@@ -1247,6 +1261,20 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   font-size: 0.85rem;
   color: var(--ink);
 }
+
+/* Dashboard's admin-only echo of .unassigned-members-notice above — a
+   single small line, not a bordered card, since it's a secondary
+   pointer to Group Setup rather than the primary explanation of what to
+   do (that's Group Setup's own full card). */
+.inline-alert {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--pending);
+  margin-bottom: 10px;
+}
+.inline-alert-link { background: none; border: none; padding: 0; font: inherit; color: inherit; text-decoration: underline; cursor: pointer; }
 
 /* Notice board — admin-to-members announcements at the top of the dashboard */
 .notice-board {

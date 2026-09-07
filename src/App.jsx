@@ -18,7 +18,6 @@ import BottomTabBar from "./components/BottomTabBar.jsx";
 import DesktopTabBar from "./components/DesktopTabBar.jsx";
 import Dashboard from "./components/Dashboard.jsx";
 import PaymentInfo from "./components/PaymentInfo.jsx";
-import NoticeBoard from "./components/NoticeBoard.jsx";
 import PlatformMessageBanner from "./components/PlatformMessageBanner.jsx";
 import Toast from "./components/Toast.jsx";
 import PaymentOptions from "./components/PaymentOptions.jsx";
@@ -425,7 +424,6 @@ export default function App() {
             {tab === "home" && (
               <>
                 <PlatformMessageBanner />
-                <NoticeBoard isAdmin={session.role === "admin"} />
                 <FreeTierBanner
                   status={subscription.status}
                   isAdmin={session.role === "admin"}
@@ -625,7 +623,7 @@ export default function App() {
 
             {tab === "community" && (
               <div role="tabpanel" id="panel-community" aria-labelledby="tab-community">
-                <Community schedule={config.schedule} currentMemberName={session.name} />
+                <Community schedule={config.schedule} currentMemberName={session.name} isAdmin={session.role === "admin"} />
               </div>
             )}
 
