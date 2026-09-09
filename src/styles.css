@@ -19,11 +19,11 @@
                      active nav) — the one that changed in this pass.
      --highlight    the one reserved 10% accent used only for the
                      dashboard's single primary figure
-                     (.vital-primary-value.vital-card-value-ok and its
-                     own .vital-progress-fill) — deliberately a
-                     brighter, more saturated green than --accent so it
-                     still reads as "the one highlighted number" even
-                     though the surrounding chrome is green too now.
+                     (.vital-primary-value.vital-card-value-ok) —
+                     deliberately a brighter, more saturated green than
+                     --accent so it still reads as "the one highlighted
+                     number" even though the surrounding chrome is green
+                     too now.
      --green        the ordinary "positive/ok/paid/on-time" status color
                      used in ~15 places across the app (ledger, streaks,
                      avatars, owner lifecycle badges) — unchanged by
@@ -1611,12 +1611,13 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 }
 .rejected-reason { color: var(--red); }
 
-/* Streak Dots — a member's own on-time payment history, one dot per
+/* Streak dots — a member's own on-time payment history, one dot per
    past due date. Same inline-bullet sizing as .confirm-bulb above (a
    row of dates reads better as small bullets than as the heavier
-   avatar-circle style PayoutAvatarRow uses for people). */
-.streak-block { margin-top: 14px; }
-.streak-summary { margin: 4px 0 8px; font-size: 0.85rem; color: var(--ink); }
+   avatar-circle style PayoutAvatarRow uses for people). Used inline by
+   AdminManagement.jsx's roster rows (.streak-dot-row-inline below); the
+   dashboard itself now states the streak as a plain number in its
+   "Your Money" table instead of rendering the dots directly. */
 .streak-dot-row {
   display: flex;
   gap: 4px;
@@ -1650,23 +1651,6 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 }
 .grs-ok { color: var(--pending); font-weight: 700; }
 .grs-low { color: var(--red); font-weight: 700; }
-
-/* Compact GRS pill for the dashboard hero (GRSBadge.jsx) — same pastel-
-   on-dark-gradient pattern already proven by .tag in this same hero
-   (the member/admin role tag next to the greeting). Gold/red only, no
-   green variant — GRSBadge.jsx folds the "good" tone into "ok" so this
-   pill never competes with the theme's single green highlight. */
-.grs-badge {
-  display: inline-block;
-  margin-left: 8px;
-  padding: 2px 8px;
-  border-radius: 12px;
-  font-size: 0.68rem;
-  font-weight: 700;
-  vertical-align: middle;
-}
-.grs-badge-ok { background: var(--surface-gold); color: var(--pending); }
-.grs-badge-low { background: var(--surface-danger); color: var(--red); }
 
 /* Owner Groups Health lifecycle badge — New/Active/At Risk, same
    pill shape as the other status tags in this file. */
@@ -1770,85 +1754,99 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   justify-content: center;
 }
 
-/* Home dashboard — the "vital records" the app opens to: next due date,
-   outstanding balance, community fund total, cycle progress. Everything
+/* Home dashboard — the "vital records" the app opens to: what's owed,
+   contribution progress, the payout rotation, cycle progress. Everything
    else lives behind the nav menu, so this is the only content competing
    for space here. */
 
-/* Hero — the first thing a member sees: a personal greeting on a rich,
-   chrome-gradient card (same themed gradient as the app header — see the
-   --chrome-* block comment in :root) with the round-progress ring as its
-   visual centerpiece, gold-glowing on meaningful moments (see
-   .dashboard-hero-ring below and ProgressRing.jsx's `glow` prop) rather
-   than a small, easy-to-miss corner widget. */
-.dashboard-hero {
-  background: linear-gradient(135deg, var(--chrome-bg-1), var(--chrome-bg-2));
-  border-radius: 12px;
-  padding: 12px 16px;
+/* Compact greeting strip — one line, no gradient panel. The ring used to
+   live in a dedicated hero block above the contribution card; it moved
+   INTO that card instead (see .vital-primary-with-ring below) so this
+   strip only ever needs to hold text, freeing an entire block's worth of
+   vertical height for the "must fit on one screen" budget above. */
+.dashboard-strip {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 6px;
+  font-size: 0.85rem;
+}
+.dashboard-strip-greeting { font-weight: 700; color: var(--ink); }
+.dashboard-strip-cycle { flex-basis: 100%; }
+.dashboard-strip-manage { margin-left: auto; font-size: 0.78rem; }
+
+/* "What I owe right now", when there's nothing to pay — a single quiet
+   line, not a card, since there's no action to take here. */
+.owed-now-clear {
+  padding: 10px 4px;
   margin-bottom: 14px;
+  color: var(--green);
+  font-weight: 700;
+  font-size: 0.92rem;
+}
+
+/* The contribution card with the cycle-progress ring folded in beside
+   the figure rather than above it in its own hero (see the dashboard
+   home-screen doc comment in Dashboard.jsx for the full reasoning).
+   Tighter padding and a smaller figure than the base .vital-primary
+   (Reconciliation.jsx's own, untouched) — the dashboard's four
+   above-the-fold items are on a real vertical budget, this card isn't
+   used anywhere that budget doesn't apply. */
+.vital-primary-with-ring {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  flex-wrap: wrap;
+  gap: 16px;
+  padding: 10px 14px;
 }
-.dashboard-hero-left { min-width: 0; }
-.dashboard-hero-greeting {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #FAF7F0;
-}
-.dashboard-hero-sub {
-  margin: 3px 0 0;
-  color: rgba(250, 247, 240, 0.75);
-  font-size: 0.8rem;
-  max-width: 36ch;
-}
-.dashboard-hero-cycle {
-  margin-top: 4px;
-  color: var(--chrome-accent);
-  font-weight: 600;
-  font-size: 0.76rem;
-  letter-spacing: 0.02em;
-}
-.dashboard-hero-manage {
-  color: rgba(250, 247, 240, 0.85) !important;
-  margin-top: 4px;
-  display: inline-block;
-  font-size: 0.8rem;
-}
-.dashboard-hero-manage:hover { color: var(--chrome-accent) !important; }
-.dashboard-hero-ring { flex-shrink: 0; }
-/* A soft, always-on gold halo behind the ring — the "rich centerpiece"
-   feel even outside a glow moment — separate from progress-ring-glow's
-   brighter, pulsing highlight, which stays reserved for something
-   actually worth noticing (see Dashboard.jsx's ringGlow). Compact now
-   (48-56px, sits right next to the greeting, not a dedicated card) —
-   the halo padding shrinks to match rather than dwarfing the ring. */
-.dashboard-hero-ring .progress-ring-wrap {
-  background: radial-gradient(circle, rgba(212, 169, 74, 0.32), transparent 70%);
-  border-radius: 50%;
-  padding: 3px;
-  margin-top: 0;
-}
-.dashboard-hero-ring .progress-ring-percent { color: #FAF7F0; font-size: 0.62rem; }
-/* The ring's sublabel prop is unused everywhere else in the app (the
-   generic .progress-ring-wrap is a row flex container, which would put
-   it beside the ring rather than under it) — here it explains what the
-   percentage actually measures, so it needs to read as a caption below
-   the ring instead. */
-.dashboard-hero-ring-labeled {
+.vital-primary-with-ring .vital-primary-value { font-size: 2.1rem; }
+.vital-primary-body { flex: 1; min-width: 0; }
+.vital-ring-labeled {
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
 }
-.dashboard-hero-ring-caption {
+.vital-ring-caption {
   margin-top: 2px;
-  font-size: 0.56rem;
+  font-size: 0.62rem;
   font-weight: 600;
-  color: var(--chrome-ink-faint);
+  color: var(--ink-faint);
   text-align: center;
 }
+@media (max-width: 400px) {
+  .vital-primary-with-ring { gap: 10px; }
+}
+
+/* Section-labeled tabular blocks (Dashboard.jsx's "See full breakdown"
+   section, via DashboardStatBlock.jsx / MyNextPaymentsTable.jsx) —
+   table-layout: fixed with an explicit <colgroup> so a longer label
+   ("Members paid this week") never truncates the way free-width columns
+   did before this. */
+.dashboard-stat-block { margin-bottom: 18px; }
+.section-label-caps {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-faint);
+  margin-bottom: 6px;
+}
+.dashboard-stat-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+.dashboard-stat-table td {
+  padding: 7px 0;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink);
+  overflow-wrap: break-word;
+}
+.dashboard-stat-table tr:last-child td { border-bottom: none; }
+.dashboard-stat-table td.ar { font-variant-numeric: tabular-nums; font-weight: 700; }
+.dashboard-stat-table-3col td:nth-child(2) { font-size: 0.8rem; }
 
 /* Log a Payment — a persistent, high-contrast call to action right below
    the hero, not nested inside a collapsed ledger date row. Solid accent
@@ -1866,8 +1864,8 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   background: var(--accent);
   border: none;
   border-radius: 12px;
-  padding: 14px 16px;
-  margin-bottom: 14px;
+  padding: 10px 16px;
+  margin-bottom: 8px;
   cursor: pointer;
   text-align: left;
 }
@@ -2040,7 +2038,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
    under the ring: the last couple already paid, who's next, who's
    coming up. Compact and horizontally scrollable rather than wrapping,
    so a big group never turns this into a block of its own. */
-.payout-avatar-block { margin-bottom: 14px; }
+.payout-avatar-block { margin-bottom: 8px; }
 /* "<Name> receives in N days" — the one-line answer to "when's my turn"
    pulled out of the strip below into its own headline, so it reads
    without having to decode the stepper's colors first. */
@@ -2102,43 +2100,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   font-size: 0.74rem;
   box-shadow: 0 0 0 3px rgba(212, 169, 74, 0.35);
 }
-.payout-avatar-legend {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  font-size: 0.66rem;
-  color: var(--ink-faint);
-}
-.payout-avatar-dot {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  margin-right: 4px;
-  vertical-align: middle;
-}
-.payout-avatar-dot-received { background: var(--green); }
-.payout-avatar-dot-next { background: var(--accent-2); }
-.payout-avatar-dot-upcoming { background: transparent; border: 1px dashed var(--tan); }
 
-.dashboard-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 14px;
-}
-.vital-card {
-  background: var(--panel);
-  background-image: var(--paper-grain);
-  border: 1px solid var(--line);
-  border-top: 3px solid var(--accent);
-  border-radius: 12px;
-  padding: 18px 20px;
-}
-/* A loan is a genuinely different kind of obligation from the regular
-   contribution balance it sits next to — pending-amber border keeps it
-   visually distinct rather than blending in as just another green-accent
-   stat card. */
-.vital-card-loan { border-top-color: var(--pending); }
 .vital-card-clickable {
   cursor: pointer;
   transition: box-shadow 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
@@ -2196,23 +2158,6 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   letter-spacing: -0.01em;
   line-height: 1.1;
 }
-.vital-progress-track {
-  height: 8px;
-  border-radius: 6px;
-  background: var(--line);
-  margin: 10px 0 8px;
-  overflow: hidden;
-}
-.vital-progress-fill {
-  height: 100%;
-  background: var(--highlight); /* same highlight unit as the number above it */
-  border-radius: 6px;
-  transition: width 0.4s ease, background-color 0.2s ease;
-}
-/* Only interactive use of --color-primary-hover so far — darkens the
-   progress fill when a pointer hovers the card it lives on. No-op on
-   touch, which is most of this app's traffic, so low-risk to add. */
-.vital-primary:hover .vital-progress-fill { background: var(--color-primary-hover); }
 /* Trails the big contributed figure ("K1,770 contributed 🎉") — a
    smaller, lighter-weight companion so the number itself stays the
    dominant thing on the card rather than competing with a same-size
@@ -2229,25 +2174,6 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   font-size: 0.86rem;
   font-weight: 600;
   color: var(--ink-faint);
-}
-.vital-secondary-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin-top: 8px;
-}
-.vital-secondary {
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 6px 8px;
-}
-.vital-secondary .vital-card-label { margin-bottom: 2px; font-size: 0.62rem; }
-.vital-secondary-value {
-  font-size: 0.92rem;
-  font-weight: 700;
-  color: var(--ink);
-  font-variant-numeric: tabular-nums;
 }
 .loan-alert-banner {
   background: var(--surface-amber);
@@ -2339,9 +2265,8 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 }
 .cycle-node-next .cycle-node-payee { color: var(--accent-2-light); }
 
-/* Upcoming — the next few group-wide payout dates, so there's always
-   something relevant even between the member's own due dates. */
-.upcoming-panel { margin-top: 14px; }
+/* Upcoming — MyReceipts.jsx's list of receipts, each dated like an
+   upcoming-item row (reused shape, not actually "upcoming" there). */
 .upcoming-list { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
 .upcoming-item {
   display: flex;
@@ -2429,8 +2354,8 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-top: 8px;
-  padding: 8px 12px;
+  margin-top: 4px;
+  padding: 6px 12px;
   background: var(--bg);
   border: 1px solid var(--line);
   border-radius: 10px;
@@ -2475,6 +2400,14 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 }
 .progress-ring-percent { font-size: 1.05rem; font-weight: 700; color: var(--ink); }
 .progress-ring-sublabel { margin-top: 6px; }
+/* Translucent gold disc behind the ring — the dashboard's hero placement
+   (Dashboard.jsx's `filled` prop), giving it more visual weight than the
+   plain stroke-only ring used elsewhere. */
+.progress-ring-filled {
+  background: radial-gradient(circle, rgba(212, 169, 74, 0.22), rgba(212, 169, 74, 0.05) 68%, transparent 100%);
+  border-radius: 50%;
+  padding: 4px;
+}
 
 @media (prefers-reduced-motion: reduce) {
   .progress-ring-arc { transition: none; }

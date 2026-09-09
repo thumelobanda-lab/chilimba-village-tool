@@ -15,8 +15,24 @@ import React, { useEffect, useState } from "react";
  * close, the cycle's nearly done, or someone was just paid out; see
  * Dashboard.jsx), so it stays off otherwise and means something when it
  * lights up.
+ *
+ * `arcColor` overrides the arc's stroke (default the theme's ordinary
+ * --accent) — the dashboard's hero placement uses gold instead, so the
+ * ring reads as the one centerpiece metric rather than matching the
+ * plain green everything else on the card already uses. `filled` adds a
+ * soft translucent gold disc behind the ring for that same hero
+ * placement, giving it more visual weight than the plain stroke-only
+ * ring everywhere else.
  */
-export default function ProgressRing({ percent, size = 96, strokeWidth = 8, sublabel, glow = false }) {
+export default function ProgressRing({
+  percent,
+  size = 96,
+  strokeWidth = 8,
+  sublabel,
+  glow = false,
+  arcColor = "var(--accent)",
+  filled = false,
+}) {
   const clamped = Math.max(0, Math.min(100, percent));
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -32,7 +48,9 @@ export default function ProgressRing({ percent, size = 96, strokeWidth = 8, subl
   }, [targetOffset]);
 
   return (
-    <div className={"progress-ring-wrap" + (glow ? " progress-ring-glow" : "")}>
+    <div
+      className={"progress-ring-wrap" + (glow ? " progress-ring-glow" : "") + (filled ? " progress-ring-filled" : "")}
+    >
       <svg
         width={size}
         height={size}
@@ -47,7 +65,7 @@ export default function ProgressRing({ percent, size = 96, strokeWidth = 8, subl
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="var(--accent)"
+          stroke={arcColor}
           strokeWidth={strokeWidth}
           strokeDasharray={circumference}
           strokeDashoffset={offset}
