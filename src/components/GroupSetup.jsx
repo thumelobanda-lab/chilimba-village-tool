@@ -5,7 +5,6 @@ import { useMemberRoster } from "../hooks/useMemberRoster.js";
 import AdminManagement from "./AdminManagement.jsx";
 import CollapsibleSection from "./CollapsibleSection.jsx";
 import InviteCard from "./InviteCard.jsx";
-import PaymentMethodsEditor from "./PaymentMethodsEditor.jsx";
 import Toast from "./Toast.jsx";
 
 function formatDate(dateISO) {
@@ -14,7 +13,7 @@ function formatDate(dateISO) {
   return d.toLocaleDateString("en-ZM", { day: "numeric", month: "short", year: "numeric" });
 }
 
-export default function GroupSetup({ config, onSaved, session, premiumActive }) {
+export default function GroupSetup({ config, onSaved, session, premiumActive, onOpenPaymentOptions }) {
   const [draft, setDraft] = useState(() => {
     const cloned = JSON.parse(JSON.stringify(config));
     cloned.schedule = cloned.schedule.map((r) => ({
@@ -173,9 +172,6 @@ export default function GroupSetup({ config, onSaved, session, premiumActive }) 
       }
       if ((toSave.funds || []).some((f) => !f.name.trim())) {
         throw new Error("Every fund needs a name.");
-      }
-      if ((toSave.paymentMethods || []).some((m) => !m.label.trim() || !m.accountNumber.trim())) {
-        throw new Error("Every payment method needs a label and an account/phone number.");
       }
       if (Number(toSave.communityFundDeduction) < 0) {
         throw new Error("Community fund deduction can't be negative.");
@@ -451,14 +447,29 @@ export default function GroupSetup({ config, onSaved, session, premiumActive }) 
         done={paymentDetailsDone}
       >
         <p className="muted tiny" style={{ marginBottom: 10 }}>
-          Where members should actually send their contribution. Shown to every member —
-          also editable from its own dedicated "Payment Options" screen, not just here;
-          both edit the same data.
+          Where members should actually send their contribution. Shown to every member.
+          Managed from its own dedicated "Payment Options" screen, not here — this is just
+          a summary.
         </p>
-        <PaymentMethodsEditor
-          methods={draft.paymentMethods}
-          onChange={(next) => setDraft({ ...draft, paymentMethods: next })}
-        />
+        {config.paymentMethods && config.paymentMethods.length > 0 ? (
+          <div className="payment-methods-list">
+            {config.paymentMethods.map((m) => (
+              <div className="payment-method-card" key={m.id}>
+                <div className="payment-method-type">{m.type === "bank" ? "🏦 Bank" : "📱 Mobile Money"}</div>
+                <div className="payment-method-label">{m.label}</div>
+                <div className="muted small">{m.accountName}</div>
+                <div className="payment-method-number">{m.accountNumber}</div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="muted small">No payment details set up yet.</p>
+        )}
+        {onOpenPaymentOptions && (
+          <button type="button" className="btn-link" style={{ marginTop: 10 }} onClick={onOpenPaymentOptions}>
+            Manage in Payment Options →
+          </button>
+        )}
       </CollapsibleSection>
 
       <CollapsibleSection icon="📣" title="Invite Members" summary="WhatsApp-ready invite card">
