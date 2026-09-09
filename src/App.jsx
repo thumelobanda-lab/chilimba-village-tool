@@ -44,16 +44,6 @@ import { greeting } from "./lib/dashboardMath.js";
 import { findNextDue } from "./lib/scheduleUtils.js";
 import { getPendingPayments } from "./lib/api.js";
 
-// Same formatting Dashboard.jsx's own local formatDate uses for its
-// log-payment-cta subtitle — kept as its own small copy here rather than
-// a shared import, matching this codebase's existing pattern of small
-// per-component date formatters (see also GroupRoster.jsx's own).
-function formatDate(dateISO) {
-  const d = new Date(dateISO + "T00:00:00");
-  if (isNaN(d.getTime())) return dateISO;
-  return d.toLocaleDateString("en-ZM", { weekday: "short", day: "numeric", month: "short" });
-}
-
 const TABS = [
   { id: "ledger", label: "My Payment History" },
   { id: "receipts", label: "My Receipts" },
@@ -466,43 +456,21 @@ export default function App() {
                     No payout dates are set up yet. A group leader can add them from Group Setup.
                   </p>
                 ) : (
-                  <>
-                    {/* Same CTA as Dashboard.jsx's own — reused here so logging a
-                        payment doesn't require hunting through the table below and
-                        clicking "Paid (K)" to expand a row first, for anyone who
-                        lands on this tab directly instead of via the Dashboard. */}
-                    <button type="button" className="log-payment-cta" onClick={openLedgerToPay}>
-                      <span className="log-payment-cta-icon" aria-hidden="true">💸</span>
-                      <span className="log-payment-cta-text">
-                        <span className="log-payment-cta-title">Log a Payment</span>
-                        <span className="log-payment-cta-sub">
-                          {nextDue
-                            ? `${money(nextDue.balance)} due ${formatDate(nextDue.row.date)}`
-                            : "Record a contribution"}
-                        </span>
-                      </span>
-                      <span className="log-payment-cta-arrow" aria-hidden="true">›</span>
-                    </button>
-                    <p className="muted tiny" style={{ marginBottom: 10 }}>
-                      Tap "Paid" to log a payment or view its history. Tap "Due" to
-                      set your own agreed rate for a date.
-                    </p>
-                    <LedgerTable
-                      rowsComputed={totals.rowsComputed}
-                      totals={totals}
-                      isRecipientRow={isRecipientRow}
-                      onAddPayment={addPayment}
-                      onVoidPayment={voidPayment}
-                      onEditPayment={editPayment}
-                      onSetDueOverride={setDueOverride}
-                      memberName={session.name}
-                      groupName={config.groupName}
-                      cycleName={config.cycleName}
-                      premiumActive={subscription.status?.active}
-                      focusRowId={focusPaymentRowId}
-                      onFocusHandled={() => setFocusPaymentRowId(null)}
-                    />
-                  </>
+                  <LedgerTable
+                    rowsComputed={totals.rowsComputed}
+                    totals={totals}
+                    isRecipientRow={isRecipientRow}
+                    onAddPayment={addPayment}
+                    onVoidPayment={voidPayment}
+                    onEditPayment={editPayment}
+                    onSetDueOverride={setDueOverride}
+                    memberName={session.name}
+                    groupName={config.groupName}
+                    cycleName={config.cycleName}
+                    premiumActive={subscription.status?.active}
+                    focusRowId={focusPaymentRowId}
+                    onFocusHandled={() => setFocusPaymentRowId(null)}
+                  />
                 )}
 
                 <div className="payout-block">
@@ -597,7 +565,13 @@ export default function App() {
 
             {tab === "setup" && session.role === "admin" && (
               <div role="tabpanel" id="panel-setup" aria-labelledby="tab-setup">
-                <GroupSetup config={config} onSaved={setConfig} session={session} premiumActive={subscription.status?.active} />
+                <GroupSetup
+                  config={config}
+                  onSaved={setConfig}
+                  session={session}
+                  premiumActive={subscription.status?.active}
+                  onOpenPaymentOptions={() => setTab("payment-options")}
+                />
               </div>
             )}
 

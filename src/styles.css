@@ -1877,6 +1877,165 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .log-payment-cta-sub { font-size: 0.8rem; font-weight: 600; color: var(--on-accent); opacity: 0.82; }
 .log-payment-cta-arrow { margin-left: auto; font-size: 1.4rem; font-weight: 700; color: var(--on-accent); flex-shrink: 0; }
 
+/* Ledger tab redesign (LedgerTable.jsx) — replaces the old dense
+   label/value table with a hero ("do I owe anything right now") plus one
+   card per payment date. Large touch targets and plain language throughout
+   are deliberate: the design goal is that someone who's never used a
+   smartphone app can log a payment without reading instructions. */
+.payment-cards-wrap { display: flex; flex-direction: column; gap: 14px; }
+
+.payment-hero {
+  border-radius: 14px;
+  padding: 18px;
+  text-align: center;
+}
+.payment-hero-label { font-size: 1rem; font-weight: 700; }
+.payment-hero-amount {
+  font-size: 2.4rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  margin: 4px 0 6px;
+}
+.payment-hero-sub { font-size: 0.88rem; font-weight: 600; margin-bottom: 12px; }
+.payment-hero .btn-pay { max-width: 320px; margin: 0 auto; }
+
+/* Factual, not alarming — amber (--pending/--surface-amber), never red.
+   A shortfall never appears here without the Pay button right beneath it. */
+.payment-hero-behind {
+  background: var(--surface-amber);
+  border: 1px solid var(--pending);
+}
+.payment-hero-behind .payment-hero-label,
+.payment-hero-behind .payment-hero-amount { color: var(--pending); }
+.payment-hero-behind .payment-hero-sub { color: var(--ink); opacity: 0.85; }
+
+.payment-hero-due {
+  background: var(--panel);
+  background-image: var(--paper-grain);
+  border: 1px solid var(--line);
+  border-top: 4px solid var(--accent);
+}
+.payment-hero-due .payment-hero-label { color: var(--ink-faint); }
+.payment-hero-due .payment-hero-amount { color: var(--ink); }
+
+/* The common case — most members, most days. Celebratory, not blank. */
+.payment-hero-ok {
+  background: var(--surface-green);
+  border: 1px solid var(--green);
+}
+.payment-hero-ok .payment-hero-label { color: var(--green); font-size: 1.2rem; margin-bottom: 4px; }
+.payment-hero-ok .payment-hero-sub { color: var(--ink); opacity: 0.85; margin-bottom: 0; }
+
+.payment-card-list { display: flex; flex-direction: column; gap: 10px; }
+
+.payment-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+.payment-card-behind { border-color: var(--pending); background: var(--surface-amber); }
+.payment-card-paid { opacity: 0.82; }
+
+.payment-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.payment-card-date { font-weight: 700; font-size: 1rem; color: var(--ink); }
+.payment-card-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink-faint);
+  font-size: 0.82rem;
+  margin-top: 2px;
+}
+
+.status-pill {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 12px;
+  white-space: nowrap;
+}
+.status-pill-due { background: var(--surface-2); color: var(--ink-faint); }
+.status-pill-behind { background: var(--pending); color: var(--surface-amber); }
+.status-pill-paid { background: var(--surface-green); color: var(--green); }
+
+.payment-card-amount {
+  font-size: 1.5rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  margin: 8px 0 12px;
+}
+.payment-card-amount-paid { color: var(--green); font-size: 1.1rem; margin-bottom: 4px; }
+
+/* The single primary action on this screen — full width, large enough to
+   hit without precision, pre-filled to the exact remaining balance so a
+   tap is genuinely the whole interaction. */
+.btn-pay {
+  display: block;
+  width: 100%;
+  min-height: 52px;
+  background: var(--accent);
+  color: var(--on-accent);
+  border: none;
+  border-radius: 10px;
+  font-size: 1.05rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+.btn-pay:active { transform: scale(0.98); }
+.btn-pay:disabled { opacity: 0.7; cursor: default; }
+.btn-pay-hero { min-height: 56px; font-size: 1.15rem; }
+.btn-pay-confirmed {
+  background: var(--green);
+  animation: btn-confirmed-pop 0.4s ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn-pay-confirmed { animation: none; }
+}
+
+.payment-card-details-toggle {
+  display: block;
+  width: 100%;
+  background: none;
+  border: none;
+  color: var(--ink-faint);
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-align: center;
+  padding: 6px 0 0;
+  cursor: pointer;
+}
+.payment-card-details {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--line);
+}
+.payment-card-detail-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.88rem;
+  padding: 4px 0;
+}
+.payment-card-history { margin-top: 10px; }
+.payment-card-history-title {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--ink-faint);
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
 /* Payout avatar row — where the rotation actually is right now, right
    under the ring: the last couple already paid, who's next, who's
    coming up. Compact and horizontally scrollable rather than wrapping,
