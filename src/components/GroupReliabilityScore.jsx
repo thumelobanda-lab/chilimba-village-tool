@@ -10,9 +10,9 @@ import { grsTone } from "../lib/reliability.js";
  * {score: number|null, sampleSize: number} — null means not enough
  * payment history yet to produce a meaningful score.
  *
- * Gold/red only, no green — matches GRSBadge.jsx's dashboard pill so
- * the two GRS displays agree; grsTone()'s "good" band is folded into
- * "ok" (gold) here too, "low" stays red.
+ * Gold/red only, no green — the dashboard theme reserves green for its
+ * own single highlight (the contribution figure), so grsTone()'s "good"
+ * band is folded into "ok" (gold) here too, "low" stays red.
  */
 export default function GroupReliabilityScore({ grs }) {
   if (!grs) return null;

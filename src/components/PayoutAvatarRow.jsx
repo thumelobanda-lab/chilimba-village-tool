@@ -21,7 +21,10 @@ function statusLabel(status) {
  * visible among them (larger, gold-glowing) even if their own turn is
  * further out than the rest of the strip shows. `rows` is
  * buildPayoutAvatarRow's output (dashboardMath.js) — this component is
- * purely presentational.
+ * purely presentational. No color-key legend below the strip anymore —
+ * each avatar's `title` tooltip plus its own day-count label already say
+ * the same thing, and the dashboard's four above-the-fold items need
+ * every spare pixel of vertical room they can get (see Dashboard.jsx).
  */
 export default function PayoutAvatarRow({ rows }) {
   if (!rows || rows.length === 0) return null;
@@ -60,11 +63,6 @@ export default function PayoutAvatarRow({ rows }) {
             </div>
           </div>
         ))}
-      </div>
-      <div className="payout-avatar-legend">
-        <span><i className="payout-avatar-dot payout-avatar-dot-received" aria-hidden="true" /> Received</span>
-        <span><i className="payout-avatar-dot payout-avatar-dot-next" aria-hidden="true" /> Next in line</span>
-        <span><i className="payout-avatar-dot payout-avatar-dot-upcoming" aria-hidden="true" /> Upcoming</span>
       </div>
     </div>
   );
