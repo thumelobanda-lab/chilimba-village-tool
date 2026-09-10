@@ -2,6 +2,7 @@ import React from "react";
 import { getGroupRoster } from "../lib/api.js";
 import { useApiData } from "../lib/useApiData.js";
 import { buildMemberRoster } from "../lib/scheduleUtils.js";
+import Avatar from "./Avatar.jsx";
 
 function formatDate(dateISO) {
   const d = new Date(dateISO + "T00:00:00");
@@ -27,6 +28,7 @@ export default function GroupRoster({ schedule, currentMemberName }) {
 
   const roster = buildMemberRoster(schedule, data.members.map((m) => m.name));
   if (roster.length === 0) return null;
+  const photoByName = Object.fromEntries(data.members.map((m) => [m.name, m]));
 
   return (
     <>
@@ -40,7 +42,13 @@ export default function GroupRoster({ schedule, currentMemberName }) {
             className={"feed-item" + (r.name === currentMemberName ? " roster-item-you" : "")}
             key={r.name}
           >
-            <span className="feed-name">
+            <span className="feed-name" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <Avatar
+                name={r.name}
+                size={28}
+                hasPhoto={!!photoByName[r.name]?.hasPhoto}
+                photoDataUrl={photoByName[r.name]?.photoDataUrl}
+              />
               {r.name}
               {r.name === currentMemberName && <span className="tag" style={{ marginLeft: 6 }}>you</span>}
             </span>

@@ -12,6 +12,7 @@ import Reconciliation from "./components/Reconciliation.jsx";
 import Reminders from "./components/Reminders.jsx";
 import Community from "./components/Community.jsx";
 import Profile from "./components/Profile.jsx";
+import ToolsPanel from "./components/ToolsPanel.jsx";
 import Loans from "./components/Loans.jsx";
 import NavMenu from "./components/NavMenu.jsx";
 import BottomTabBar from "./components/BottomTabBar.jsx";
@@ -53,6 +54,7 @@ const TABS = [
   { id: "community", label: "Community" },
   { id: "subscription", label: "Group Membership Plan" },
   { id: "account", label: "My Account" },
+  { id: "tools", label: "Tools" },
   { id: "setup", label: "Group Setup", adminOnly: true },
   { id: "reconciliation", label: "Payment Review", adminOnly: true },
   { id: "loans", label: "Loans", adminOnly: true },
@@ -614,6 +616,12 @@ export default function App() {
             {tab === "account" && (
               <div role="tabpanel" id="panel-account" aria-labelledby="tab-account">
                 <Profile session={session} onRenamed={renameSession} onLogout={handleLogout} />
+              </div>
+            )}
+
+            {tab === "tools" && (
+              <div role="tabpanel" id="panel-tools" aria-labelledby="tab-tools">
+                <ToolsPanel theme={theme} onToggleTheme={toggleTheme} />
               </div>
             )}
 

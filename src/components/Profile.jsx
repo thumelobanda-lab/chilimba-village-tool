@@ -1,5 +1,7 @@
-import React, { useState } from "react";
-import { updateProfile } from "../lib/api.js";
+import React, { useEffect, useRef, useState } from "react";
+import { updateProfile, uploadProfilePhoto, removeProfilePhoto, getProfilePhotoUrl } from "../lib/api.js";
+import { resizeImageForUpload } from "../lib/imageResize.js";
+import Avatar from "./Avatar.jsx";
 import TermsModal from "./TermsModal.jsx";
 import Toast from "./Toast.jsx";
 
@@ -18,6 +20,69 @@ export default function Profile({ session, onRenamed, onLogout }) {
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
+  const [photoUrl, setPhotoUrl] = useState(null);
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const [photoError, setPhotoError] = useState("");
+  const fileInputRef = useRef(null);
+
+  // One fetch for the signed-in member's own photo — unlike a roster
+  // (many members, so Avatar.jsx only fetches when a hasPhoto flag says
+  // there's something to get), this is always exactly one member, so
+  // there's no "wasted round trip for everyone with no photo" concern
+  // to guard against by pre-checking first.
+  useEffect(() => {
+    let cancelled = false;
+    let objectUrl = null;
+    getProfilePhotoUrl(session.name).then((url) => {
+      if (cancelled) return;
+      objectUrl = url;
+      setPhotoUrl(url);
+    });
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [session.name]);
+
+  const handlePhotoSelected = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // lets picking the same file again re-fire onChange
+    if (!file) return;
+    setPhotoError("");
+    setPhotoBusy(true);
+    try {
+      const resized = await resizeImageForUpload(file);
+      await uploadProfilePhoto(resized);
+      setPhotoUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return URL.createObjectURL(resized);
+      });
+      setStatus("Saved");
+    } catch (err) {
+      setPhotoError(err.message || "Could not upload your photo.");
+    } finally {
+      setPhotoBusy(false);
+      setTimeout(() => setStatus(""), 1500);
+    }
+  };
+
+  const handleRemovePhoto = async () => {
+    setPhotoError("");
+    setPhotoBusy(true);
+    try {
+      await removeProfilePhoto();
+      setPhotoUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return null;
+      });
+      setStatus("Saved");
+    } catch (err) {
+      setPhotoError(err.message || "Could not remove your photo.");
+    } finally {
+      setPhotoBusy(false);
+      setTimeout(() => setStatus(""), 1500);
+    }
+  };
 
   const nameChanged = displayName.trim() !== session.name && displayName.trim().length > 0;
   const wantsPinChange = !!(currentPin || newPin || confirmPin);
@@ -70,6 +135,46 @@ export default function Profile({ session, onRenamed, onLogout }) {
         Update how your name is shown, or change your PIN. This only ever affects your own
         account — nobody else's info is touched.
       </p>
+
+      <h3 className="panel-subtitle">Your Photo</h3>
+      <p className="muted tiny" style={{ marginBottom: 10 }}>
+        Visible to everyone in your group, same as the payout roster. Uploading a photo counts
+        as agreeing to that.
+      </p>
+      <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14 }}>
+        <Avatar name={session.name} photoDataUrl={photoUrl} size={64} />
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <div className="field-row" style={{ gap: 8 }}>
+            <button
+              type="button"
+              className="btn-ghost-dark"
+              style={{ width: "auto" }}
+              disabled={photoBusy}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {photoBusy ? "Working…" : photoUrl ? "Change photo" : "Upload photo"}
+            </button>
+            {photoUrl && (
+              <button
+                type="button"
+                className="btn-link"
+                disabled={photoBusy}
+                onClick={handleRemovePhoto}
+              >
+                Remove
+              </button>
+            )}
+          </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            onChange={handlePhotoSelected}
+            style={{ display: "none" }}
+          />
+        </div>
+      </div>
+      {photoError && <div className="error-text" role="alert">{photoError}</div>}
 
       <label className="field">
         Display name

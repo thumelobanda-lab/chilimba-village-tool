@@ -935,6 +935,20 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .field input:disabled, .field select:disabled { opacity: 0.5; cursor: not-allowed; }
 .field-row { display: flex; gap: 14px; flex-wrap: wrap; }
 
+.notepad-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  color: var(--ink);
+  background: var(--panel);
+  box-sizing: border-box;
+  resize: vertical;
+}
+.notepad-textarea:disabled { opacity: 0.5; cursor: not-allowed; }
+
 .btn-primary {
   background: var(--accent);
   color: var(--on-accent);
@@ -1134,6 +1148,13 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .setup-section-chevron-open { transform: rotate(90deg); }
 .setup-section-body { padding: 16px 14px; border-top: 1px solid var(--line); }
 .checkbox-field { flex-direction: row; align-items: center; gap: 8px; font-size: 0.85rem; }
+/* .field input's width:100% (meant for text/number/date inputs) also
+   matched the checkbox itself here, since a checkbox-field div keeps
+   the plain .field class too (for its font-size/color/margin-bottom) —
+   that stretched the checkbox's flex item to the full row width while
+   its rendered widget stayed native-sized, shoving the label text after
+   it out to the far right with a big empty gap in between. */
+.checkbox-field input { width: auto; flex-shrink: 0; }
 .cell-input-text { width: 100px; padding: 4px 6px; border: 1px solid var(--line); border-radius: 6px; color: var(--ink); background: var(--panel); }
 .cell-input-text.wide { width: 160px; }
 
@@ -2118,6 +2139,30 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   height: 42px;
   font-size: 0.74rem;
   box-shadow: 0 0 0 3px rgba(212, 169, 74, 0.35);
+}
+
+/* Avatar.jsx — a member's photo, or the same initials-circle language
+   as .payout-avatar above when they don't have one. Sizing comes from
+   the component's own inline style (a size prop), not fixed here, since
+   this gets reused at different sizes (roster row vs. My Account's own
+   preview). */
+.avatar-photo {
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--line);
+  flex: 0 0 auto;
+}
+.avatar-fallback {
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: #FAF7F0;
+  background: var(--accent-dark);
+  border: 2px solid var(--line);
+  flex: 0 0 auto;
 }
 
 .vital-card-clickable {

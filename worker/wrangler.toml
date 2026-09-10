@@ -8,6 +8,16 @@ binding = "DB"
 database_name = "chilimba-db"
 database_id = "ac20c439-5029-4f9e-8e14-6c97c847d9ba"
 
+# Profile photos — the binary lives here, D1's users.photo_key (migration
+# 020) is just a reference into it. Private bucket, no public r2.dev URL
+# or custom domain — every read goes through the Worker's own
+# group-scoped GET /api/profile/photo/:name (routes/profilePhoto.js), not
+# a direct R2 URL, so group isolation has somewhere to actually be
+# enforced.
+[[r2_buckets]]
+binding = "AVATARS"
+bucket_name = "chilimba-avatars"
+
 [vars]
 ALLOWED_ORIGIN = "https://open-book-co1.pages.dev"
 VAPID_SUBJECT = "mailto:admin@example.com"
@@ -39,6 +49,10 @@ VAPID_PUBLIC_KEY = "BHADhlX_-bRYZQ-H8yqICfupLxkR-XoZEqYYh3CbSnvaKxX-vy55-DBTbiRQ
 binding = "DB"
 database_name = "chilimba-db-staging"
 database_id = "b3be8e46-3899-4c3e-a915-8a8c14b010f6"
+
+[[env.staging.r2_buckets]]
+binding = "AVATARS"
+bucket_name = "chilimba-avatars-staging"
 
 # Set real secrets with, e.g.:
 #   npx wrangler secret put VAPID_PRIVATE_KEY

@@ -49,6 +49,7 @@ export async function getGroupMembers() {
         nextDueAmount: next?.balance || 0,
         currentStreak: streak.currentStreak,
         streakDots: streak.dots,
+        hasPhoto: !!account.photoDataUrl,
       });
     }
     // Newest-joined first, matching the real backend (see admin.js's
@@ -80,7 +81,15 @@ export async function getGroupRoster() {
       if (!key.startsWith(accountPrefix)) continue;
       const account = lsGet(key, {});
       if (account.active === false) continue;
-      members.push({ name: account.displayName || key.slice(accountPrefix.length) });
+      members.push({
+        name: account.displayName || key.slice(accountPrefix.length),
+        hasPhoto: !!account.photoDataUrl,
+        // Mock mode has no group-isolation boundary to enforce (it's all
+        // one browser's localStorage) — including the data URL directly
+        // here, rather than a separate fetch, mirrors how much simpler
+        // this whole flow is without a real cross-member Worker request.
+        photoDataUrl: account.photoDataUrl || null,
+      });
     }
     members.sort((a, b) => a.name.localeCompare(b.name));
     return { members };

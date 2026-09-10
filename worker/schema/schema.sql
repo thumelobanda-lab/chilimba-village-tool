@@ -103,6 +103,10 @@ CREATE TABLE IF NOT EXISTS users (
   terms_accepted_at TEXT,           -- set at sign-up (migration 013) — NULL for every
                                      -- account created before Terms & Conditions
                                      -- acceptance was required; not retroactive
+  notepad_text TEXT,                -- a member's own private scratchpad (migration 019) —
+                                     -- NULL/empty both mean "nothing written yet"
+  photo_key TEXT,                   -- reference into R2 (migration 020), not the image
+                                     -- itself — NULL means no photo. See routes/profilePhoto.js.
   UNIQUE(group_id, name)
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_group_phone ON users(group_id, phone);
@@ -489,7 +493,9 @@ INSERT OR IGNORE INTO schema_migrations (filename) VALUES
   ('015_loan_edits.sql'),
   ('016_late_penalties.sql'),
   ('017_payment_interval.sql'),
-  ('018_notice_target_member.sql');
+  ('018_notice_target_member.sql'),
+  ('019_notepad.sql'),
+  ('020_profile_photo.sql');
 
 -- Seed one example group so the app is usable immediately after a fresh
 -- deploy. Real groups are created via POST /api/groups (see routes/groups.js)

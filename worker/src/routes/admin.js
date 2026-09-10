@@ -34,7 +34,7 @@ export default function registerAdminRoutes(router) {
     const recipientExempt = !!config?.recipient_exempt;
 
     const membersResult = await env.DB.prepare(
-      `SELECT display_name as name, role, created_at as joinedAt
+      `SELECT display_name as name, role, created_at as joinedAt, photo_key as photoKey
        FROM users WHERE group_id = ? AND active = 1 ORDER BY created_at DESC`
     ).bind(admin.groupId).all();
     const members = membersResult.results || [];
@@ -91,6 +91,7 @@ export default function registerAdminRoutes(router) {
         nextDueAmount: next?.balance || 0,
         currentStreak: streak.currentStreak,
         streakDots: streak.dots,
+        hasPhoto: !!m.photoKey,
       };
     });
 
@@ -109,7 +110,8 @@ export default function registerAdminRoutes(router) {
   router.get("/api/members/roster", async ({ request, env, cors }) => {
     const user = await requireSession(request, env);
     const membersResult = await env.DB.prepare(
-      `SELECT display_name as name FROM users WHERE group_id = ? AND active = 1 ORDER BY display_name ASC`
+      `SELECT display_name as name, (photo_key IS NOT NULL) as hasPhoto
+       FROM users WHERE group_id = ? AND active = 1 ORDER BY display_name ASC`
     ).bind(user.groupId).all();
     return json({ members: membersResult.results || [] }, 200, cors);
   });
