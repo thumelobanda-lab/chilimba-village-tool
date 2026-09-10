@@ -34,6 +34,54 @@ export function computeCycleProgress(schedule, todayISO = new Date().toISOString
 }
 
 /**
+ * Which schedule row "this round" refers to for a specific member — the
+ * next upcoming/current date, or the schedule's last date once
+ * everything has passed. Same selection rule Reconciliation.jsx's
+ * pickDefaultRow already uses for Payment Review's default date, so the
+ * dashboard and Payment Review agree on what "this round" means.
+ * Deliberately NOT "the next unpaid row" — that's findNextDue in
+ * scheduleUtils.js, built for a different question ("what should I pay
+ * right now", used by the dashboard's own "You Owe" CTA) — a member who
+ * already paid this round in full should still see it reflected here,
+ * at 100%, rather than the dashboard silently jumping ahead to whatever
+ * is due next.
+ *
+ * @param {Array<{date: string, due: number, paid: number, balance: number}>} rowsComputed
+ *   - computeLedgerTotals()'s per-row output (each row's own due/paid/
+ *     balance, not the lifetime totals summed on top of it)
+ * @param {string} [todayISO] - "YYYY-MM-DD", defaults to today
+ * @returns {object|null}
+ */
+export function currentRoundRow(rowsComputed, todayISO = new Date().toISOString().slice(0, 10)) {
+  if (!rowsComputed || rowsComputed.length === 0) return null;
+  const today = new Date(todayISO + "T00:00:00");
+  const upcoming = rowsComputed.find((r) => {
+    const d = new Date(r.date + "T00:00:00");
+    return !isNaN(d.getTime()) && d >= today;
+  });
+  return upcoming || rowsComputed[rowsComputed.length - 1];
+}
+
+/**
+ * This round's payment completion, as a percent for the dashboard's
+ * progress ring — paid/due for the single currentRoundRow, not
+ * computeCycleProgress's calendar-elapsed percent above. A date having
+ * arrived and a member having paid for it are different facts;
+ * conflating them is what let the ring and the "contributed/remaining"
+ * figures shown next to it disagree. A K0-due round (e.g. the member's
+ * own recipient-exempt date) reads as fully done rather than 0/0 → NaN;
+ * no row at all (empty schedule) reads as 0%, not "done".
+ *
+ * @param {{due: number, paid: number}|null} row - output of currentRoundRow
+ * @returns {number} 0-100
+ */
+export function roundProgressPercent(row) {
+  if (!row) return 0;
+  if (row.due <= 0) return 100;
+  return Math.min(100, Math.round((row.paid / row.due) * 100));
+}
+
+/**
  * Whole days between today and a due date — negative once it's overdue.
  * Appending "T00:00:00" (no "Z") keeps both dates in local time, matching
  * generateScheduleDates' rationale in scheduleUtils.js.

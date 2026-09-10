@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import {
   computeCycleProgress,
+  currentRoundRow,
+  roundProgressPercent,
   daysUntil,
   relativeDueLabel,
   receiveTimingPhrase,
@@ -39,6 +41,59 @@ describe("computeCycleProgress", () => {
   it("ignores rows with an unparsable date rather than throwing", () => {
     const schedule = [{ date: "2026-01-01" }, { date: "not-a-date" }];
     expect(computeCycleProgress(schedule, "2026-08-20")).toEqual({ total: 2, passed: 1, percent: 50 });
+  });
+});
+
+describe("currentRoundRow", () => {
+  it("returns null for an empty schedule", () => {
+    expect(currentRoundRow([], "2026-08-20")).toBeNull();
+  });
+
+  it("picks the next upcoming/current row, not the next unpaid one", () => {
+    const rows = [
+      { id: "a", date: "2026-08-01", due: 100, paid: 100, balance: 0 },
+      { id: "b", date: "2026-08-20", due: 100, paid: 0, balance: 100 },
+      { id: "c", date: "2026-09-01", due: 100, paid: 0, balance: 100 },
+    ];
+    // "today" lands exactly on row b's date — it counts as current.
+    expect(currentRoundRow(rows, "2026-08-20").id).toBe("b");
+  });
+
+  it("still returns today's row even if it's already fully paid", () => {
+    const rows = [
+      { id: "a", date: "2026-08-01", due: 100, paid: 100, balance: 0 },
+      { id: "b", date: "2026-08-20", due: 100, paid: 100, balance: 0 },
+      { id: "c", date: "2026-09-01", due: 100, paid: 0, balance: 100 },
+    ];
+    expect(currentRoundRow(rows, "2026-08-20").id).toBe("b");
+  });
+
+  it("falls back to the last row once every date has passed", () => {
+    const rows = [
+      { id: "a", date: "2026-01-01", due: 100, paid: 100, balance: 0 },
+      { id: "b", date: "2026-02-01", due: 100, paid: 100, balance: 0 },
+    ];
+    expect(currentRoundRow(rows, "2026-08-20").id).toBe("b");
+  });
+});
+
+describe("roundProgressPercent", () => {
+  it("is 0 with no row at all", () => {
+    expect(roundProgressPercent(null)).toBe(0);
+  });
+
+  it("is 100 for a K0-due row (e.g. the member's own exempt date)", () => {
+    expect(roundProgressPercent({ due: 0, paid: 0 })).toBe(100);
+  });
+
+  it("is the paid/due ratio, rounded", () => {
+    expect(roundProgressPercent({ due: 240, paid: 0 })).toBe(0);
+    expect(roundProgressPercent({ due: 240, paid: 120 })).toBe(50);
+    expect(roundProgressPercent({ due: 240, paid: 240 })).toBe(100);
+  });
+
+  it("clamps at 100 for an overpaid round rather than exceeding it", () => {
+    expect(roundProgressPercent({ due: 240, paid: 300 })).toBe(100);
   });
 });
 

@@ -5,6 +5,8 @@ import { useApiData } from "../lib/useApiData.js";
 import { findNextDue, myNextDueDates, payeesLabel, cycleEndDate, getPayees, unassignedMembers } from "../lib/scheduleUtils.js";
 import {
   computeCycleProgress,
+  currentRoundRow,
+  roundProgressPercent,
   buildCycleTimeline,
   findRecentPayout,
   isMemberTurnSoon,
@@ -91,8 +93,17 @@ export default function Dashboard({
   const unassigned = membersData
     ? unassignedMembers(config.schedule.map(getPayees), membersData.members.map((m) => m.name))
     : [];
-  const balanceDisplay = useCountUp(totals.balance);
-  const paidDisplay = useCountUp(totals.paid);
+  // "This round" (the ring + the figures beside it) means one specific
+  // schedule row — the same row Reconciliation.jsx's Payment Review
+  // defaults to — not totals.balance/totals.paid below, which are
+  // summed across every row in config.schedule ever generated. See
+  // currentRoundRow's doc comment for why conflating the two made the
+  // ring and "contributed/remaining" disagree with each other and with
+  // Payment Review.
+  const roundRow = currentRoundRow(totals.rowsComputed);
+  const roundPercent = roundProgressPercent(roundRow);
+  const balanceDisplay = useCountUp(roundRow?.balance ?? 0);
+  const paidDisplay = useCountUp(roundRow?.paid ?? 0);
   const myLoanTotal = fundsData ? myOutstandingLoanTotal(fundsData.loans, session?.name) : 0;
   const loanTotalDisplay = useCountUp(myLoanTotal);
   // Collapsed by default — see the module doc comment above for why.
@@ -131,14 +142,13 @@ export default function Dashboard({
   const payoutAvatarRows = buildPayoutAvatarRow(timelineRows, session?.name);
   const myStreak = computeMemberStreak(totals.rowsComputed);
 
-  // "Paid all time" and "Paid this round" are the same figure today —
-  // this app has no cycle-archiving concept yet (cycleName is just an
-  // admin-editable label, config.schedule and ledger.payments both just
-  // keep growing), so totals.paid already IS every confirmed payment
-  // this member has ever logged. Kept as two separate rows anyway since
-  // they'll mean different things the moment cycle archiving exists.
+  // "Still owing" and "Paid all time" stay lifetime figures (summed
+  // across every row in config.schedule, which just keeps growing —
+  // this app has no cycle-archiving concept yet) — a legitimately
+  // different, useful question from "Paid this round" above it, which
+  // uses roundRow the same way the ring does.
   const yourMoneyRows = [
-    { label: "Paid this round", value: money(totals.paid) },
+    { label: "Paid this round", value: money(roundRow?.paid ?? 0) },
     { label: "Still owing", value: money(totals.balance), warn: totals.balance > 0 },
     { label: "Paid all time", value: money(totals.paid) },
     { label: "On-time streak", value: `${myStreak.currentStreak} date${myStreak.currentStreak === 1 ? "" : "s"}` },
@@ -221,7 +231,7 @@ export default function Dashboard({
         title={onOpenLedger ? "Go to My Payment History" : undefined}
       >
         <div className="vital-ring-labeled">
-          <ProgressRing percent={cycle.percent} size={78} strokeWidth={7} glow={ringGlow} arcColor="var(--accent-2)" filled />
+          <ProgressRing percent={roundPercent} size={78} strokeWidth={7} glow={ringGlow} arcColor="var(--accent-2)" filled />
           <span className="vital-ring-caption">Cycle progress</span>
         </div>
         <div className="vital-primary-body">
@@ -229,8 +239,8 @@ export default function Dashboard({
           <div className="vital-primary-value vital-card-value-ok">
             {money(paidDisplay)} <span className="vital-primary-value-suffix">contributed 🎉</span>
           </div>
-          <div className={"vital-primary-sub" + (totals.balance > 0 ? " vital-card-value-warn" : " vital-card-value-ok")}>
-            {totals.balance > 0 ? `${money(balanceDisplay)} remaining` : "All caught up 🎉"}
+          <div className={"vital-primary-sub" + ((roundRow?.balance ?? 0) > 0 ? " vital-card-value-warn" : " vital-card-value-ok")}>
+            {(roundRow?.balance ?? 0) > 0 ? `${money(balanceDisplay)} remaining` : "All caught up 🎉"}
           </div>
         </div>
       </div>
