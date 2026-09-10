@@ -287,6 +287,17 @@ export default function Login({ onLogin, onJoin, onCreateGroup, onOwnerLogin, se
               disabled={busy}
             />
           </label>
+          {!isJoin && (
+            <button
+              type="button"
+              className="btn-link"
+              disabled
+              title="Self-service PIN reset by SMS is coming soon."
+              style={{ marginBottom: 14 }}
+            >
+              Forgot your PIN? (coming soon — ask a group leader for now)
+            </button>
+          )}
         </>
       )}
       {isJoin && (

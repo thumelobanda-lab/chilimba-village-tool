@@ -85,6 +85,18 @@ export default function Profile({ session, onRenamed, onLogout }) {
       </p>
 
       <h3 className="panel-subtitle">Change PIN</h3>
+      <button
+        type="button"
+        className="btn-link"
+        disabled
+        title="Self-service PIN reset by SMS is coming soon."
+      >
+        Forgot your PIN?
+      </button>
+      <p className="muted tiny" style={{ marginTop: 2, marginBottom: 14 }}>
+        Self-service reset by SMS is coming soon. For now, ask a group leader to reset it for
+        you — they can do this from Group Setup.
+      </p>
       <label className="field">
         Current PIN
         <input

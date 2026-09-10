@@ -1314,6 +1314,11 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   cursor: pointer;
   padding: 0;
 }
+.btn-link:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+  text-decoration: none;
+}
 
 .calc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
 .card {

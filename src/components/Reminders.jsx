@@ -12,6 +12,7 @@ export default function Reminders({ config, premiumActive }) {
   const [prefs, setPrefs] = useState({ pushEnabled: false, smsEnabled: false, phone: "", leadDays: 2 });
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
+  const [rowError, setRowError] = useState("");
   const [busy, setBusy] = useState(false);
   const [overrides, setOverrides] = useState(null);
 
@@ -55,6 +56,11 @@ export default function Reminders({ config, premiumActive }) {
     setPrefs({ ...prefs, [field]: value });
   };
 
+  const flashSaved = () => {
+    setStatus("Saved");
+    setTimeout(() => setStatus(""), 1500);
+  };
+
   const save = async () => {
     setError("");
     if (prefs.smsEnabled && !prefs.phone?.trim()) {
@@ -64,12 +70,11 @@ export default function Reminders({ config, premiumActive }) {
     setBusy(true);
     try {
       await saveReminderPrefs(prefs);
-      setStatus("Saved");
+      flashSaved();
     } catch (e) {
       setError(e.message);
     } finally {
       setBusy(false);
-      setTimeout(() => setStatus(""), 1500);
     }
   };
 
@@ -162,6 +167,7 @@ export default function Reminders({ config, premiumActive }) {
             reminder for that date at all (handy for your own payout date, if you don't need
             a nudge about it).
           </p>
+          {rowError && <div className="error-text" role="alert" style={{ marginBottom: 10 }}>{rowError}</div>}
           {overrides === null ? (
             <p className="muted small">Loading…</p>
           ) : (
@@ -182,6 +188,8 @@ export default function Reminders({ config, premiumActive }) {
                       override={overrides[row.id]}
                       defaultLeadDays={prefs.leadDays}
                       onChange={(next) => setOverrides({ ...overrides, [row.id]: next })}
+                      onSaved={flashSaved}
+                      onError={setRowError}
                     />
                   ))}
                 </tbody>
@@ -205,13 +213,14 @@ function upcomingRows(schedule) {
     .sort((a, b) => new Date(a.date) - new Date(b.date));
 }
 
-function DateOverrideRow({ row, override, defaultLeadDays, onChange }) {
+function DateOverrideRow({ row, override, defaultLeadDays, onChange, onSaved, onError }) {
   const mode = override?.muted ? "muted" : override?.leadDays != null ? "custom" : "default";
   const [customDays, setCustomDays] = useState(override?.leadDays ?? defaultLeadDays);
   const [saving, setSaving] = useState(false);
 
   const applyMode = async (nextMode) => {
     setSaving(true);
+    onError?.("");
     try {
       if (nextMode === "default") {
         await setReminderDateOverride(row.id, { leadDays: null, muted: false });
@@ -223,6 +232,9 @@ function DateOverrideRow({ row, override, defaultLeadDays, onChange }) {
         await setReminderDateOverride(row.id, { leadDays: customDays, muted: false });
         onChange({ leadDays: customDays, muted: false });
       }
+      onSaved?.();
+    } catch (e) {
+      onError?.(e.message || "Could not save that reminder.");
     } finally {
       setSaving(false);
     }
@@ -230,9 +242,13 @@ function DateOverrideRow({ row, override, defaultLeadDays, onChange }) {
 
   const saveCustomDays = async () => {
     setSaving(true);
+    onError?.("");
     try {
       await setReminderDateOverride(row.id, { leadDays: Number(customDays) || defaultLeadDays, muted: false });
       onChange({ leadDays: Number(customDays) || defaultLeadDays, muted: false });
+      onSaved?.();
+    } catch (e) {
+      onError?.(e.message || "Could not save that reminder.");
     } finally {
       setSaving(false);
     }
