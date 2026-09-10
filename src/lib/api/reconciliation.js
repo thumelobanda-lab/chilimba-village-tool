@@ -67,11 +67,19 @@ export async function getReconciliation(scheduleRowId) {
 
     // Only accounts within THIS admin's group — the key format is
     // chilimba:account:<groupSlug>:<name>, so the slug must match exactly.
+    // Skips a removed account the same way getGroupMembers/getGroupRoster
+    // already do — the real Worker's equivalent query used to miss this
+    // (see /api/admin/reconciliation in worker/src/routes/admin.js), which
+    // let a soft-removed member keep showing up here as though they still
+    // owed their full due amount.
     const accountPrefix = `chilimba:account:${session.groupSlug}:`;
     const names = new Set();
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key.startsWith(accountPrefix)) names.add(key.slice(accountPrefix.length));
+      if (!key.startsWith(accountPrefix)) continue;
+      const account = lsGet(key, {});
+      if (account.active === false) continue;
+      names.add(key.slice(accountPrefix.length));
     }
 
     const members = [...names].map((nameKey) => {

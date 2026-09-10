@@ -229,12 +229,17 @@ export default function registerAdminRoutes(router) {
     if (!row) throw new HttpError(404, "Unknown schedule date.");
     const recipientExempt = !!config.recipient_exempt;
 
+    // active = 1 — every other cross-member query in this file (the
+    // roster above, the public roster) already excludes a removed
+    // member; this one didn't, so a soft-removed account kept showing up
+    // here as though it still owed its full due amount, alongside
+    // whatever new account the same person rejoined under.
     const members = await env.DB.prepare(
       `SELECT u.id, u.display_name as name,
               (SELECT amount FROM due_overrides WHERE user_id = u.id AND schedule_row_id = ?) as overrideAmount,
               (SELECT COALESCE(SUM(${EFFECTIVE_CONTRIBUTION_SQL}), 0) FROM payments WHERE user_id = u.id AND schedule_row_id = ? AND voided_at IS NULL) as paid
        FROM users u
-       WHERE u.group_id = ?
+       WHERE u.group_id = ? AND u.active = 1
        ORDER BY u.display_name COLLATE NOCASE`
     ).bind(rowId, rowId, admin.groupId).all();
 
