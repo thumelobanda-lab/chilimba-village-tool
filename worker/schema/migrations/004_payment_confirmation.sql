@@ -10,7 +10,7 @@
 -- visible trust, not about gating.
 --
 -- Apply with:
---   npx wrangler d1 execute chilimba-db --remote --file=./schema/migrations/004_payment_confirmation.sql
+--   scripts/apply-migration.sh worker/schema/migrations/004_payment_confirmation.sql
 
 ALTER TABLE payments ADD COLUMN confirmed_at TEXT;
 ALTER TABLE payments ADD COLUMN confirmed_by TEXT;

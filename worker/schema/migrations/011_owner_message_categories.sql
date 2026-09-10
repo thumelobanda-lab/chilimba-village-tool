@@ -16,6 +16,6 @@
 -- target_type (migration 010) is validated in application code too.
 --
 -- Apply with:
---   npx wrangler d1 execute chilimba-db --remote --file=./schema/migrations/011_owner_message_categories.sql
+--   scripts/apply-migration.sh worker/schema/migrations/011_owner_message_categories.sql
 
 ALTER TABLE owner_messages ADD COLUMN category TEXT;

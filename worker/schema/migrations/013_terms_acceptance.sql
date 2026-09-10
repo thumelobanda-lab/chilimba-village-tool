@@ -15,6 +15,6 @@
 -- migration 009) treats pre-existing rows.
 --
 -- Apply with:
---   npx wrangler d1 execute chilimba-db --remote --file=./schema/migrations/013_terms_acceptance.sql
+--   scripts/apply-migration.sh worker/schema/migrations/013_terms_acceptance.sql
 
 ALTER TABLE users ADD COLUMN terms_accepted_at TEXT;

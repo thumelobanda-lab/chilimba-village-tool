@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "wrangler dev",
+    "predeploy": "../scripts/check-migrations.sh",
     "deploy": "wrangler deploy",
     "test": "vitest run"
   },

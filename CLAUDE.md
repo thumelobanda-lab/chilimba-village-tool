@@ -159,6 +159,24 @@ migrations in `worker/schema/migrations/` need a human to decide when
 they're safe to apply against the live database, so Worker deploys
 aren't wired to fire on every push the way the frontend's are.
 
+Because that decision is manual, a migration can be written and merged
+without ever being applied to the live database — this happened for
+real with migration 017 (`payment_interval`), which sat unapplied
+against production for two weeks and silently broke every schedule
+save until it was noticed. Two things guard against a repeat:
+`worker/package.json`'s `predeploy` script runs
+`scripts/check-migrations.sh` before every `npm run deploy` (from
+`worker/`) and fails loudly if any migration in the repo isn't recorded
+as applied on production; the same script accepts `--env staging` for
+the staging database. It reads a `schema_migrations` ledger table
+(seeded in `schema.sql` for fresh installs), which only gets a new row
+once you apply a migration through `scripts/apply-migration.sh
+<path-to-migration.sql> [--env staging]` instead of a raw `wrangler d1
+execute --file=...` — use that script (not the raw command) to apply
+future migrations so the ledger stays trustworthy. Note the predeploy
+hook always checks production regardless of `--env`, and only guards
+`npm run deploy` — a bare `npx wrangler deploy` skips it.
+
 ## Conventions
 
 - ESLint (`eslint.config.js`) enforces `no-undef` and
@@ -182,6 +200,14 @@ aren't wired to fire on every push the way the frontend's are.
   Worker + D1 (see "Deployment" above — the frontend has no equivalent
   script anymore, it deploys via `git push`). `scripts/set-admin.sh
   <name>` promotes a member to admin on the real (non-mock) backend.
+  `scripts/apply-migration.sh` and `scripts/check-migrations.sh` apply
+  and audit `worker/schema/migrations/` against a deployed database —
+  see "Deployment" above.
 - Schema migrations in `worker/schema/migrations/` are purely additive
   and only needed against an *already-deployed* database — a fresh
-  `schema.sql` already includes everything they add.
+  `schema.sql` already includes everything they add. Apply one with
+  `scripts/apply-migration.sh worker/schema/migrations/<file> [--env
+  staging]`, not a raw `wrangler d1 execute --file=...` — the script
+  also records the migration in the `schema_migrations` ledger table
+  that `scripts/check-migrations.sh` (and the Worker's `predeploy` hook)
+  audit against.

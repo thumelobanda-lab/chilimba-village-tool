@@ -9,7 +9,7 @@
 -- contributions stay exactly as they were.
 --
 -- Apply with:
---   npx wrangler d1 execute chilimba-db --remote --file=./schema/migrations/003_remove_member.sql
+--   scripts/apply-migration.sh worker/schema/migrations/003_remove_member.sql
 
 ALTER TABLE users ADD COLUMN active INTEGER NOT NULL DEFAULT 1;
 ALTER TABLE users ADD COLUMN removed_at TEXT;

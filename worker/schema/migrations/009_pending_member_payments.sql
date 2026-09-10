@@ -22,7 +22,7 @@
 -- their balance drop because this column now exists.
 --
 -- Apply with:
---   npx wrangler d1 execute chilimba-db --remote --file=./schema/migrations/009_pending_member_payments.sql
+--   scripts/apply-migration.sh worker/schema/migrations/009_pending_member_payments.sql
 
 ALTER TABLE payments ADD COLUMN status TEXT;
 ALTER TABLE payments ADD COLUMN rejected_at TEXT;

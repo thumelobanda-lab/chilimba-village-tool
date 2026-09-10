@@ -15,7 +15,7 @@
 -- truth, status is a derived convenience.
 --
 -- Apply with:
---   npx wrangler d1 execute chilimba-db --remote --file=./schema/migrations/014_loan_repayments.sql
+--   scripts/apply-migration.sh worker/schema/migrations/014_loan_repayments.sql
 
 CREATE TABLE IF NOT EXISTS loan_repayments (
   id TEXT PRIMARY KEY,

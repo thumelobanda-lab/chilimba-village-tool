@@ -23,7 +23,7 @@
 -- and never send one at all.
 --
 -- Apply with:
---   npx wrangler d1 execute chilimba-db --remote --file=./schema/migrations/010_owner_messages.sql
+--   scripts/apply-migration.sh worker/schema/migrations/010_owner_messages.sql
 
 CREATE TABLE IF NOT EXISTS owner_messages (
   id TEXT PRIMARY KEY,

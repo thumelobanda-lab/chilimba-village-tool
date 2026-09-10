@@ -30,7 +30,7 @@
 -- rather than a leakable static secret.
 --
 -- Apply with:
---   npx wrangler d1 execute chilimba-db --remote --file=./schema/migrations/008_free_tier_and_platform_owner.sql
+--   scripts/apply-migration.sh worker/schema/migrations/008_free_tier_and_platform_owner.sql
 
 ALTER TABLE groups ADD COLUMN created_ip TEXT;          -- cf-connecting-ip at creation time
 ALTER TABLE groups ADD COLUMN created_by_phone TEXT;    -- optional, if the creating admin gave one

@@ -463,6 +463,34 @@ CREATE TABLE IF NOT EXISTS loan_edits (
 CREATE INDEX IF NOT EXISTS idx_loan_edits_loan ON loan_edits(loan_id);
 CREATE INDEX IF NOT EXISTS idx_loan_edits_group ON loan_edits(group_id);
 
+-- Ledger of which schema/migrations/*.sql files have been applied to this
+-- database — see scripts/check-migrations.sh and scripts/apply-migration.sh.
+-- A fresh DB built from this file already has every migration's effects
+-- baked in (per the migrations README), so it's seeded below with every
+-- migration that exists as of this schema.sql, not left empty.
+CREATE TABLE IF NOT EXISTS schema_migrations (
+  filename TEXT PRIMARY KEY,
+  applied_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+INSERT OR IGNORE INTO schema_migrations (filename) VALUES
+  ('002_group_subscription_payment_notices.sql'),
+  ('003_remove_member.sql'),
+  ('004_payment_confirmation.sql'),
+  ('005_reminder_date_overrides.sql'),
+  ('006_phone_number.sql'),
+  ('007_community_fund_split.sql'),
+  ('008_free_tier_and_platform_owner.sql'),
+  ('009_pending_member_payments.sql'),
+  ('010_owner_messages.sql'),
+  ('011_owner_message_categories.sql'),
+  ('012_platform_support_contact.sql'),
+  ('013_terms_acceptance.sql'),
+  ('014_loan_repayments.sql'),
+  ('015_loan_edits.sql'),
+  ('016_late_penalties.sql'),
+  ('017_payment_interval.sql'),
+  ('018_notice_target_member.sql');
+
 -- Seed one example group so the app is usable immediately after a fresh
 -- deploy. Real groups are created via POST /api/groups (see routes/groups.js)
 -- — a new group and its first admin are created together in one step, since

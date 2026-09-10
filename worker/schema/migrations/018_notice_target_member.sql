@@ -10,6 +10,6 @@
 -- display name within a group, not a member's row id.
 --
 -- Apply with:
---   npx wrangler d1 execute chilimba-db --remote --file=./schema/migrations/018_notice_target_member.sql
+--   scripts/apply-migration.sh worker/schema/migrations/018_notice_target_member.sql
 
 ALTER TABLE notices ADD COLUMN target_member_name TEXT;

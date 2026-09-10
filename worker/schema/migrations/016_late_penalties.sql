@@ -23,7 +23,7 @@
 -- community fund's balance alongside fund_contributions.
 --
 -- Apply with:
---   npx wrangler d1 execute chilimba-db --remote --file=./schema/migrations/016_late_penalties.sql
+--   scripts/apply-migration.sh worker/schema/migrations/016_late_penalties.sql
 
 ALTER TABLE groups ADD COLUMN late_penalty_amount REAL NOT NULL DEFAULT 0;
 ALTER TABLE payments ADD COLUMN late_penalty_amount REAL NOT NULL DEFAULT 0;

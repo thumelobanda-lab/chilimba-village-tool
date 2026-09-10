@@ -61,7 +61,7 @@ export default {
         // ARE meant for the client (they're written by our own routes to
         // be user-facing), so only this generic 500 branch is masked.
         console.error(err);
-        return json({ error: "Server error" }, 500, cors);
+        return json({ error: "Something went wrong on our end. Please try again in a moment." }, 500, cors);
       }
       return json({ error: err.message }, status, cors);
     }

@@ -34,7 +34,7 @@
 -- fund_contributions row to remove, rather than guessing by date.
 --
 -- Apply with:
---   npx wrangler d1 execute chilimba-db --remote --file=./schema/migrations/007_community_fund_split.sql
+--   scripts/apply-migration.sh worker/schema/migrations/007_community_fund_split.sql
 
 ALTER TABLE groups ADD COLUMN community_fund_deduction REAL NOT NULL DEFAULT 0;
 ALTER TABLE payments ADD COLUMN community_fund_amount REAL NOT NULL DEFAULT 0;

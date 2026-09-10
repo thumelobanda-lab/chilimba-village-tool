@@ -5,7 +5,7 @@
 -- an existing column or table.
 --
 -- Apply with:
---   npx wrangler d1 execute chilimba-db --remote --file=./schema/migrations/002_group_subscription_payment_notices.sql
+--   scripts/apply-migration.sh worker/schema/migrations/002_group_subscription_payment_notices.sql
 --
 -- What changed and why:
 --

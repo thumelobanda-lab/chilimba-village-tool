@@ -9,6 +9,6 @@
 -- wherever the cycle is referenced (dashboard, Group Setup, roster).
 --
 -- Apply with:
---   npx wrangler d1 execute chilimba-db --remote --file=./schema/migrations/017_payment_interval.sql
+--   scripts/apply-migration.sh worker/schema/migrations/017_payment_interval.sql
 
 ALTER TABLE groups ADD COLUMN payment_interval TEXT NOT NULL DEFAULT 'biweekly';

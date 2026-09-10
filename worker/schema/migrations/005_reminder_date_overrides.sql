@@ -14,7 +14,7 @@
 -- that come with it are what actually wire it up.
 --
 -- Apply with:
---   npx wrangler d1 execute chilimba-db --remote --file=./schema/migrations/005_reminder_date_overrides.sql
+--   scripts/apply-migration.sh worker/schema/migrations/005_reminder_date_overrides.sql
 
 CREATE TABLE IF NOT EXISTS reminder_date_overrides (
   user_id TEXT NOT NULL REFERENCES users(id),

@@ -17,7 +17,7 @@
 -- admin has no path to read or change this.
 --
 -- Apply with:
---   npx wrangler d1 execute chilimba-db --remote --file=./schema/migrations/012_platform_support_contact.sql
+--   scripts/apply-migration.sh worker/schema/migrations/012_platform_support_contact.sql
 
 CREATE TABLE IF NOT EXISTS platform_settings (
   id TEXT PRIMARY KEY,

@@ -18,7 +18,7 @@
 -- separate member of a different group.
 --
 -- Apply with:
---   npx wrangler d1 execute chilimba-db --remote --file=./schema/migrations/006_phone_number.sql
+--   scripts/apply-migration.sh worker/schema/migrations/006_phone_number.sql
 
 ALTER TABLE users ADD COLUMN phone TEXT;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_group_phone ON users(group_id, phone);

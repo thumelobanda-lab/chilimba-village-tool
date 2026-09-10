@@ -11,7 +11,7 @@
 -- entry is voided, never overwritten, exactly like payments.voided_at.
 --
 -- Apply with:
---   npx wrangler d1 execute chilimba-db --remote --file=./schema/migrations/015_loan_edits.sql
+--   scripts/apply-migration.sh worker/schema/migrations/015_loan_edits.sql
 
 ALTER TABLE loan_repayments ADD COLUMN voided_at TEXT;
 ALTER TABLE loan_repayments ADD COLUMN void_reason TEXT;
