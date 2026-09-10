@@ -228,7 +228,21 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   box-shadow: 0 5px 0 -3px var(--chrome-trim);
 }
 .brand { font-weight: 700; font-size: 1.1rem; }
-.header-right { display: flex; align-items: center; gap: 10px; }
+/* Two fixes for .notification-bell-panel's right:0 spilling off the
+   left edge of narrow screens (it used to anchor to .notification-bell,
+   only 44px wide, with Review/Calc sitting to its right — plenty of
+   room to its left on a wide screen, not enough on a phone):
+   - margin-left:auto keeps this row flush right on whichever flex line
+     it ends up on. .app-header's justify-content:space-between alone
+     isn't enough once flex-wrap:wrap puts this row on its own line —
+     a line with one item can't "space between" two things, so it
+     defaults to the line's start (left), silently moving the panel's
+     anchor to the wrong side of the screen.
+   - position:relative here (not on .notification-bell) makes the panel
+     anchor to this whole icon row's right edge instead of the bell's
+     own narrow box, so its available width no longer depends on how
+     many icons happen to sit to the bell's right. */
+.header-right { position: relative; display: flex; align-items: center; gap: 10px; margin-left: auto; }
 /* .muted's own color rule (var(--ink-faint), themed) would otherwise win
    here — the pre-login "Your group's honest record." tagline sits
    directly on the always-dark header with no background of its own. */
@@ -564,7 +578,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 
 /* Notification bell — same dropdown language as group-switcher/nav-menu
    (trigger on the dark header, light popup panel below it). */
-.notification-bell { position: relative; }
+.notification-bell { /* not position:relative — see .header-right below */ }
 .notification-bell-trigger { position: relative; font-size: 1rem; }
 .notification-bell-badge {
   position: absolute;
