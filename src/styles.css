@@ -243,7 +243,26 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
      own narrow box, so its available width no longer depends on how
      many icons happen to sit to the bell's right. */
 .header-right { position: relative; display: flex; align-items: center; gap: 10px; margin-left: auto; }
-.header-avatar-btn { padding: 0; border-radius: 50%; min-height: auto; line-height: 0; }
+/* One shared circular shape/size for every icon-only control that lives
+   in the header, so the dp, the bell, and the calculator read as one
+   cohesive set of round buttons rather than a mix of shapes — same
+   treatment for both admin and member sessions, since none of these
+   three are role-gated to begin with (Payment Review, which IS
+   admin-only, deliberately keeps its own rectangular icon+label look
+   via .calc-icon-btn below — it wasn't part of this ask, and a bare
+   round admin-only icon with no visible label would be harder to
+   recognize among the two member-facing ones). */
+.header-icon-btn {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: auto;
+  line-height: 0;
+}
 .header-avatar-btn .avatar-photo, .header-avatar-btn .avatar-fallback { border-color: var(--chrome-ink-faint); }
 /* .muted's own color rule (var(--ink-faint), themed) would otherwise win
    here — the pre-login "Your group's honest record." tagline sits

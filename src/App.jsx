@@ -356,7 +356,7 @@ export default function App() {
           <div className="header-right">
             <button
               type="button"
-              className="btn-ghost header-avatar-btn"
+              className="btn-ghost header-icon-btn header-avatar-btn"
               onClick={() => setTab("account")}
               aria-label={`${session.name} — My Account`}
               title={session.name}
@@ -384,12 +384,13 @@ export default function App() {
               </button>
             )}
             <button
-              className="btn-ghost calc-icon-btn"
+              type="button"
+              className="btn-ghost header-icon-btn"
               onClick={() => setShowCalculator(true)}
               aria-label="Open calculator"
               title="Calculator"
             >
-              <Icon name="calculator" size={16} className="icon-inline" /> <span className="calc-icon-label">Calc</span>
+              <Icon name="calculator" size={18} />
             </button>
           </div>
         )}

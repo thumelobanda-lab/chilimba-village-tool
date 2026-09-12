@@ -58,7 +58,7 @@ export default function NotificationBell({ items, urgent }) {
   return (
     <div className="notification-bell" ref={wrapRef}>
       <button
-        className={"btn-ghost notification-bell-trigger" + (urgent ? " notification-bell-trigger-urgent" : "")}
+        className={"btn-ghost header-icon-btn notification-bell-trigger" + (urgent ? " notification-bell-trigger-urgent" : "")}
         aria-haspopup="true"
         aria-expanded={open}
         aria-label={
