@@ -30,7 +30,7 @@ import NotificationBell from "./components/NotificationBell.jsx";
 import OfflineBanner from "./components/OfflineBanner.jsx";
 import MyReceipts from "./components/MyReceipts.jsx";
 import OwnerDashboard from "./components/owner/OwnerDashboard.jsx";
-import Avatar from "./components/Avatar.jsx";
+import ProfilePreview from "./components/ProfilePreview.jsx";
 import Icon from "./components/Icon.jsx";
 import { currentOwnerSession, ownerLogin } from "./lib/api/owner.js";
 import { getProfilePhotoUrl } from "./lib/api.js";
@@ -339,7 +339,16 @@ export default function App() {
     <div className="app-shell">
       <header className="app-header">
         <div>
-          <div className="brand">OpenBook</div>
+          <div className="brand-row">
+            {session && (
+              <ProfilePreview
+                session={session}
+                photoUrl={headerPhotoUrl}
+                onChangePhoto={() => setTab("account")}
+              />
+            )}
+            <div className="brand">OpenBook</div>
+          </div>
           {session ? (
             <GroupSwitcher
               session={session}
@@ -355,15 +364,6 @@ export default function App() {
         </div>
         {session && (
           <div className="header-right">
-            <button
-              type="button"
-              className="btn-ghost header-icon-btn header-avatar-btn"
-              onClick={() => setTab("account")}
-              aria-label={`${session.name} — My Account`}
-              title={session.name}
-            >
-              <Avatar name={session.name} photoDataUrl={headerPhotoUrl} size={32} />
-            </button>
             <NotificationBell items={notifications.items} urgent={pendingConfirmCount > 0} />
             {session.role === "admin" && (
               <button

@@ -228,6 +228,44 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   box-shadow: 0 5px 0 -3px var(--chrome-trim);
 }
 .brand { font-weight: 700; font-size: 1.1rem; }
+.brand-row { display: flex; align-items: center; gap: 8px; }
+
+/* ProfilePreview.jsx — the small profile badge in the header's top-left,
+   next to the OpenBook wordmark. Same trigger/panel language as
+   .group-switcher-trigger/.group-switcher-panel right below it (they're
+   siblings in the same left-side header column), just circular and
+   icon-only rather than text, and opening a photo+name preview instead
+   of a menu. */
+.profile-preview { position: relative; }
+.profile-preview-trigger {
+  background: none;
+  border: none;
+  padding: 0;
+  line-height: 0;
+  cursor: pointer;
+  border-radius: 50%;
+}
+.profile-preview-trigger .avatar-photo, .profile-preview-trigger .avatar-fallback {
+  border-color: var(--chrome-ink-faint);
+}
+.profile-preview-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 60;
+  min-width: 180px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+}
+.profile-preview-name { font-weight: 700; color: var(--ink); word-break: break-word; }
 /* Two fixes for .notification-bell-panel's right:0 spilling off the
    left edge of narrow screens (it used to anchor to .notification-bell,
    only 44px wide, with Review/Calc sitting to its right — plenty of
@@ -243,15 +281,17 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
      own narrow box, so its available width no longer depends on how
      many icons happen to sit to the bell's right. */
 .header-right { position: relative; display: flex; align-items: center; gap: 10px; margin-left: auto; }
-/* One shared circular shape/size for every icon-only control that lives
-   in the header, so the dp, the bell, and the calculator read as one
-   cohesive set of round buttons rather than a mix of shapes — same
-   treatment for both admin and member sessions, since none of these
-   three are role-gated to begin with (Payment Review, which IS
+/* One shared circular shape/size for the header-right icon-only
+   controls (bell, calculator) so they read as one cohesive pair rather
+   than a mix of shapes — same treatment for both admin and member
+   sessions, since neither is role-gated (Payment Review, which IS
    admin-only, deliberately keeps its own rectangular icon+label look
    via .calc-icon-btn below — it wasn't part of this ask, and a bare
    round admin-only icon with no visible label would be harder to
-   recognize among the two member-facing ones). */
+   recognize among the member-facing ones). The profile photo used to
+   be a third member of this set, on the right; it's since moved to its
+   own badge in the top-left instead (see .profile-preview-trigger),
+   so this is back to just the two. */
 .header-icon-btn {
   width: 36px;
   height: 36px;
@@ -263,7 +303,6 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   min-height: auto;
   line-height: 0;
 }
-.header-avatar-btn .avatar-photo, .header-avatar-btn .avatar-fallback { border-color: var(--chrome-ink-faint); }
 /* .muted's own color rule (var(--ink-faint), themed) would otherwise win
    here — the pre-login "Your group's honest record." tagline sits
    directly on the always-dark header with no background of its own. */
