@@ -177,6 +177,66 @@ future migrations so the ledger stays trustworthy. Note the predeploy
 hook always checks production regardless of `--env`, and only guards
 `npm run deploy` — a bare `npx wrangler deploy` skips it.
 
+## Backups
+
+Production D1 (`chilimba-db`) is exported to R2 daily, automatically —
+`worker/src/backupWorkflow.js` (a Cloudflare Workflow, not a plain
+`scheduled()` handler like reminders — a D1 export is a slow,
+multi-step, poll-until-done job, and Workflows give each step its own
+durable retry instead of one Worker invocation having to redo
+everything on a transient failure). It runs off the same
+`[triggers].crons` array in `worker/wrangler.toml` as the reminder
+sweep (a second cron string, 02:30 UTC); `scheduled()` in
+`worker/src/index.js` branches on `event.cron` and, for the backup
+one, just starts a Workflow instance rather than doing the export
+inline. Staging (`chilimba-db-staging`) gets the same daily backup
+(harmless, and keeps the restore path exercised against real backups)
+via its own `[env.staging.triggers]` — deliberately NOT the reminders
+cron too, so this doesn't silently start sending real reminder
+pushes/SMS against staging's test data.
+
+Backups land in the **same R2 bucket photos already use**
+(`chilimba-avatars` / `chilimba-avatars-staging`, bound as `AVATARS`)
+under a `backups/<db-name>/` prefix instead of `avatars/` — no second
+bucket, no new R2 binding or permission, since the Worker already has
+full read/write/list/delete on that bucket for photo uploads and
+that's exactly what backup put/list/delete need too. Kept for 7 days;
+`backupWorkflow.js`'s last step lists everything under that prefix and
+deletes anything older than that on every run, so retention doesn't
+depend on a separate cleanup job ever being remembered.
+
+**One-time setup this needs that photos didn't:** a Cloudflare API
+Token (My Profile > API Tokens > Create Token > Custom Token, scoped
+to `Account > D1 > Edit` for this account only), set as
+`D1_EXPORT_API_TOKEN` via `wrangler secret put D1_EXPORT_API_TOKEN`
+(and `--env staging`). This is deliberately separate from whatever
+OAuth session `wrangler login` uses for a human running commands — the
+Workflow calls the D1 REST export API (`POST
+/accounts/{account_id}/d1/database/{database_id}/export`) at runtime,
+on a schedule, with nobody signed in, so it needs its own credential.
+
+### Restoring from a backup
+
+`./scripts/restore-d1-backup.sh <backup-key> [--env staging]` —
+downloads the given backup from R2, then **drops every table in the
+target database and replaces it with the backup's contents**. There's
+no undo except restoring a different backup, and it requires typing
+the exact database name to confirm before touching anything. Steps:
+
+1. Find the backup key you want. There's no bucket-wide `list` in the
+   wrangler CLI — check the R2 dashboard, or adapt
+   `backupWorkflow.js`'s `listAllBackups()`. Keys look like
+   `backups/chilimba-db-staging/2026-09-11T02-30-00-000Z-export.sql`.
+2. Run the script with that key (and `--env staging` unless you
+   genuinely mean production).
+3. Confirm by typing the database name when prompted.
+4. Spot-check the restored data (the script prints a couple of
+   `SELECT COUNT(*)` commands to start with) before trusting it.
+
+Never restore into production without a fresh backup of *production's
+current state* first — otherwise a bad restore can lose today's data
+with nothing to undo it back to.
+
 ## Conventions
 
 - ESLint (`eslint.config.js`) enforces `no-undef` and

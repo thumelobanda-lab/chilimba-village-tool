@@ -22,13 +22,39 @@ bucket_name = "chilimba-avatars"
 ALLOWED_ORIGIN = "https://open-book-co1.pages.dev"
 VAPID_SUBJECT = "mailto:admin@example.com"
 VAPID_PUBLIC_KEY = "BFnLvWRoyJYy4LCgJgX2dRHieZVeENfTecORl7-8UaL0_2RXtnAJ82vZcEsWzk_3GhgvbQnWvN4n7O4lcVUUEz0"
+# Not secret — an account ID and database ID are both visible in the
+# dashboard/CLI output already. Needed as plain strings (not just the
+# DB binding above) because backupWorkflow.js calls the D1 REST export
+# API directly over fetch(), which takes these in the URL path — a D1
+# binding has no method for triggering an account-level export.
+CF_ACCOUNT_ID = "1febcddade5d9be987bb6b58ec08e8d2"
+D1_DATABASE_ID = "ac20c439-5029-4f9e-8e14-6c97c847d9ba"
+D1_DATABASE_NAME = "chilimba-db"
 
 [triggers]
 # Runs daily — reminders/reminders.js only actually sends on the day a
 # member's lead time matches an upcoming due date, so a daily check is
 # enough for a biweekly schedule. Adjust the hour to your timezone; this
 # is UTC (06:00 UTC ≈ 08:00 CAT).
-crons = ["0 6 * * *"]
+#
+# Second entry (02:30 UTC, a quiet hour clear of the 06:00 reminder
+# sweep) kicks off the daily D1 → R2 backup — scheduled() below
+# branches on event.cron and, for this one, just starts a Workflow
+# instance (D1_BACKUP_WORKFLOW.create()) rather than doing the export
+# inline. The export itself is a slow, multi-step, poll-until-done job
+# (see backupWorkflow.js's doc comment) — Workflows give each step its
+# own durable retry, which a bare scheduled() handler doing everything
+# itself wouldn't get. Wrangler 4.86's [[workflows]] block does NOT
+# support a `schedules` field yet (confirmed via `wrangler deploy
+# --dry-run`, which rejected it as an unexpected field) despite some
+# docs describing one — this cron + explicit .create() is the
+# currently-working way to run a Workflow on a schedule.
+crons = ["0 6 * * *", "30 2 * * *"]
+
+[[workflows]]
+name = "chilimba-d1-backup"
+binding = "D1_BACKUP_WORKFLOW"
+class_name = "D1BackupWorkflow"
 
 # Staging: a fully separate Worker + D1 database that Cloudflare Pages
 # preview builds (branch `staging`) talk to, so testing a change can
@@ -44,6 +70,9 @@ name = "chilimba-worker-staging"
 ALLOWED_ORIGIN = "https://staging.open-book-co1.pages.dev"
 VAPID_SUBJECT = "mailto:admin@example.com"
 VAPID_PUBLIC_KEY = "BHADhlX_-bRYZQ-H8yqICfupLxkR-XoZEqYYh3CbSnvaKxX-vy55-DBTbiRQ45OdTrM0tRNvCv6rK-wWKjpbW80"
+CF_ACCOUNT_ID = "1febcddade5d9be987bb6b58ec08e8d2"
+D1_DATABASE_ID = "b3be8e46-3899-4c3e-a915-8a8c14b010f6"
+D1_DATABASE_NAME = "chilimba-db-staging"
 
 [[env.staging.d1_databases]]
 binding = "DB"
@@ -54,10 +83,31 @@ database_id = "b3be8e46-3899-4c3e-a915-8a8c14b010f6"
 binding = "AVATARS"
 bucket_name = "chilimba-avatars-staging"
 
+[[env.staging.workflows]]
+name = "chilimba-d1-backup-staging"
+binding = "D1_BACKUP_WORKFLOW"
+class_name = "D1BackupWorkflow"
+
+# Only the backup cron, deliberately — staging has never had a
+# [triggers] block before this (no automatic reminder sends against
+# staging's test data), and adding the reminders cron string here too
+# would silently turn that on as a side effect of this change. Backups
+# are harmless to run automatically against staging as well, so that
+# one's included.
+[env.staging.triggers]
+crons = ["30 2 * * *"]
+
 # Set real secrets with, e.g.:
 #   npx wrangler secret put VAPID_PRIVATE_KEY
 #   npx wrangler secret put SMS_API_KEY
 #   npx wrangler secret put MOMO_API_KEY
+#   npx wrangler secret put D1_EXPORT_API_TOKEN            (production)
+#   npx wrangler secret put D1_EXPORT_API_TOKEN --env staging
+# D1_EXPORT_API_TOKEN is a Cloudflare API Token (My Profile > API
+# Tokens > Create Token > Custom Token), not the OAuth session
+# `wrangler login` uses — the Workflow calls the D1 export REST API at
+# runtime with nobody signed in, so it needs its own credential. Scope
+# it to "Account > D1 > Edit" for this account only; nothing broader.
 # Never put API keys in this file or in [vars] — [vars] is plaintext
 # in your repo. Secrets set via `wrangler secret put` are encrypted
 # and only readable at runtime by the Worker.

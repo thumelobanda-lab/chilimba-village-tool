@@ -2,6 +2,19 @@ import { HttpError } from "./httpError.js";
 import { corsHeaders, json } from "./responses.js";
 import { createRouter } from "./router.js";
 import { runReminderSweep } from "./reminders.js";
+import { D1BackupWorkflow } from "./backupWorkflow.js";
+
+// Cloudflare requires a Workflow class to be exported by name from the
+// same module `main` in wrangler.toml points at, regardless of how
+// instances of it get created — see scheduled() below, which starts one
+// on the backup cron via env.D1_BACKUP_WORKFLOW.create().
+export { D1BackupWorkflow };
+
+// The two [triggers].crons strings in wrangler.toml, matched against
+// event.cron below so one scheduled() handler can dispatch to either
+// job by exact string rather than guessing from time-of-day.
+const REMINDER_CRON = "0 6 * * *";
+const BACKUP_CRON = "30 2 * * *";
 
 import registerAuthRoutes from "./routes/auth.js";
 import registerProfileRoutes from "./routes/profile.js";
@@ -71,8 +84,17 @@ export default {
     }
   },
 
-  // Cron trigger — see [triggers] in wrangler.toml.
+  // Cron trigger — see [triggers] in wrangler.toml. event.cron tells us
+  // which of the two configured schedules just fired; staging only ever
+  // gets BACKUP_CRON (see [env.staging.triggers]), so REMINDER_CRON
+  // simply never matches there.
   async scheduled(event, env, ctx) {
-    ctx.waitUntil(runReminderSweep(env));
+    if (event.cron === BACKUP_CRON) {
+      ctx.waitUntil(env.D1_BACKUP_WORKFLOW.create());
+      return;
+    }
+    if (event.cron === REMINDER_CRON) {
+      ctx.waitUntil(runReminderSweep(env));
+    }
   },
 };
