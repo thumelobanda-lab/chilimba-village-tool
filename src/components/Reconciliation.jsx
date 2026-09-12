@@ -3,6 +3,7 @@ import { getReconciliation, confirmPayment, unconfirmPayment, getPendingPayments
 import { payeesLabel } from "../lib/scheduleUtils.js";
 import { useApiData } from "../lib/useApiData.js";
 import Receipt from "./Receipt.jsx";
+import Icon from "./Icon.jsx";
 
 const money = (n) => "K" + (Number(n) || 0).toLocaleString("en-ZM", { maximumFractionDigits: 0 });
 
@@ -253,7 +254,7 @@ export default function Reconciliation({ config, premiumActive, onOpenGroupSetup
                                       className="receipt-link"
                                       onClick={() => setReceiptFor({ payment: e, memberName: e.memberName })}
                                     >
-                                      🧾 Receipt
+                                      <Icon name="receipt" size={13} className="icon-inline" /> Receipt
                                     </button>
                                   )}
                                   <button

@@ -14,8 +14,8 @@ export default function registerAuthRoutes(router) {
   // number are both required; see joinGroup() in auth.js for why phone
   // is collected here and nowhere else in the login flow.
   router.post("/api/join", async ({ request, env, cors }) => {
-    const { groupSlug, name, phone, pin, termsAccepted } = await request.json();
-    const session = await joinGroup(env, groupSlug, name, phone, pin, termsAccepted);
+    const { groupSlug, name, phone, pin, termsAccepted, gender } = await request.json();
+    const session = await joinGroup(env, groupSlug, name, phone, pin, termsAccepted, gender);
     return json(session, 201, cors);
   });
 }

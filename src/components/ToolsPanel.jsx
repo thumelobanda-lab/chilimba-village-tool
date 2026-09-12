@@ -3,6 +3,7 @@ import { getNotepad, saveNotepad } from "../lib/api.js";
 import { useApiData } from "../lib/useApiData.js";
 import QuickCalculator from "./QuickCalculator.jsx";
 import Toast from "./Toast.jsx";
+import Icon from "./Icon.jsx";
 
 const MAX_LENGTH = 5000;
 
@@ -53,16 +54,16 @@ export default function ToolsPanel({ theme, onToggleTheme }) {
         A few small utilities — nothing here touches your group's payments or schedule.
       </p>
 
-      <h3 className="panel-subtitle">Calculator</h3>
+      <h3 className="panel-subtitle"><Icon name="calculator" size={16} className="icon-inline" /> Calculator</h3>
       <p className="muted tiny" style={{ marginBottom: 10 }}>
-        A genuine arithmetic calculator — the same one behind the 🧮 icon at the top of the app.
+        A genuine arithmetic calculator — the same one behind the calculator icon at the top of the app.
       </p>
       <button className="btn-ghost-dark" onClick={() => setShowCalculator(true)}>
         Open Calculator
       </button>
       {showCalculator && <QuickCalculator onClose={() => setShowCalculator(false)} />}
 
-      <h3 className="panel-subtitle" style={{ marginTop: 24 }}>Notepad</h3>
+      <h3 className="panel-subtitle" style={{ marginTop: 24 }}><Icon name="notebook" size={16} className="icon-inline" /> Notepad</h3>
       <p className="muted tiny" style={{ marginBottom: 10 }}>
         Private to you — nobody else in your group can see this, including admins.
       </p>

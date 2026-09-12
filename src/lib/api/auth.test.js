@@ -147,19 +147,19 @@ describe("createGroup (real-mode branch)", () => {
     vi.clearAllMocks();
   });
 
-  it("sends slug, groupName, adminName, and pin to the Worker", async () => {
+  it("sends groupName, adminName, and pin to the Worker — no client-chosen slug", async () => {
     realFetch.mockResolvedValue({
       name: "Harriet", role: "admin", token: "abc123", isNew: true,
       groupSlug: "hillcrest", groupName: "Hillcrest Chilimba",
     });
 
-    await createGroup({ slug: "hillcrest", groupName: "Hillcrest Chilimba", adminName: "Harriet", pin: "1234", termsAccepted: true });
+    await createGroup({ groupName: "Hillcrest Chilimba", adminName: "Harriet", pin: "1234", termsAccepted: true });
 
     expect(realFetch).toHaveBeenCalledWith(
       "/api/groups",
       expect.objectContaining({
         method: "POST",
-        body: JSON.stringify({ slug: "hillcrest", groupName: "Hillcrest Chilimba", adminName: "Harriet", pin: "1234", termsAccepted: true }),
+        body: JSON.stringify({ groupName: "Hillcrest Chilimba", adminName: "Harriet", pin: "1234", termsAccepted: true, gender: undefined }),
       })
     );
   });
@@ -170,7 +170,7 @@ describe("createGroup (real-mode branch)", () => {
       groupSlug: "hillcrest", groupName: "Hillcrest Chilimba",
     });
 
-    await createGroup({ slug: "hillcrest", groupName: "Hillcrest Chilimba", adminName: "Harriet", pin: "1234", termsAccepted: true });
+    await createGroup({ groupName: "Hillcrest Chilimba", adminName: "Harriet", pin: "1234", termsAccepted: true });
 
     expect(lsSet).toHaveBeenCalledWith("chilimba:session", {
       name: "Harriet", role: "admin", token: "xyz", groupSlug: "hillcrest", groupName: "Hillcrest Chilimba",
@@ -178,17 +178,22 @@ describe("createGroup (real-mode branch)", () => {
   });
 
   it("validates required fields locally before ever calling the Worker", async () => {
-    await expect(createGroup({ slug: "", groupName: "X", adminName: "Y", pin: "1234" })).rejects.toThrow(/group code/i);
-    await expect(createGroup({ slug: "x", groupName: "", adminName: "Y", pin: "1234" })).rejects.toThrow(/group name/i);
-    await expect(createGroup({ slug: "x", groupName: "X", adminName: "", pin: "1234" })).rejects.toThrow(/your name/i);
-    await expect(createGroup({ slug: "x", groupName: "X", adminName: "Y", pin: "12" })).rejects.toThrow(/pin/i);
+    await expect(createGroup({ groupName: "", adminName: "Y", pin: "1234" })).rejects.toThrow(/group name/i);
+    await expect(createGroup({ groupName: "X", adminName: "", pin: "1234" })).rejects.toThrow(/your name/i);
+    await expect(createGroup({ groupName: "X", adminName: "Y", pin: "12" })).rejects.toThrow(/pin/i);
     expect(realFetch).not.toHaveBeenCalled();
   });
 
   it("requires Terms & Conditions acceptance before ever calling the Worker", async () => {
-    await expect(createGroup({ slug: "x", groupName: "X", adminName: "Y", pin: "1234", termsAccepted: false }))
+    await expect(createGroup({ groupName: "X", adminName: "Y", pin: "1234", termsAccepted: false }))
       .rejects.toThrow(/terms/i);
-    await expect(createGroup({ slug: "x", groupName: "X", adminName: "Y", pin: "1234" })).rejects.toThrow(/terms/i);
+    await expect(createGroup({ groupName: "X", adminName: "Y", pin: "1234" })).rejects.toThrow(/terms/i);
     expect(realFetch).not.toHaveBeenCalled();
+  });
+
+  it("rejects an unrecognized gender value", async () => {
+    await expect(
+      createGroup({ groupName: "X", adminName: "Y", pin: "1234", termsAccepted: true, gender: "other" })
+    ).rejects.toThrow(/gender/i);
   });
 });

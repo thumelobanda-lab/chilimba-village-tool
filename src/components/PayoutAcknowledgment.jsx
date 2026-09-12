@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { payeesLabel } from "../lib/scheduleUtils.js";
+import Icon from "./Icon.jsx";
 
 function formatDate(dateISO) {
   const d = new Date(dateISO + "T00:00:00");
@@ -35,7 +36,7 @@ export default function PayoutAcknowledgment({ groupSlug, row }) {
   return (
     <div className="payout-ack" role="status">
       <span>
-        🎉 <strong>{payeesLabel(row)}</strong> received their payout on {formatDate(row.date)} —
+        <Icon name="sparkle" size={14} className="icon-inline" /> <strong>{payeesLabel(row)}</strong> received their payout on {formatDate(row.date)} —
         congratulations!
       </span>
       <button className="payout-ack-dismiss" onClick={handleDismiss} aria-label="Dismiss">✕</button>

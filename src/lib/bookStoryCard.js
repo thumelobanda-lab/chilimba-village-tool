@@ -54,8 +54,27 @@ export function drawBookStoryCard(canvas, stats) {
   ctx.font = "600 30px system-ui, sans-serif";
   ctx.fillText("OPENBOOK", w / 2, 100);
 
-  ctx.font = "160px system-ui, sans-serif";
-  ctx.fillText("📖", w / 2, 280);
+  // A simple open-book glyph, hand-drawn rather than an emoji fillText —
+  // canvas text rendering falls back to inconsistent (sometimes missing)
+  // glyphs for pictographic emoji depending on the OS's installed font
+  // stack, which is a real risk for an image meant to be downloaded/
+  // shared outside the app. Two curved "pages" meeting at a spine,
+  // mirroring OpenBookMark.jsx's line-art shape at a much larger size.
+  ctx.strokeStyle = "rgba(255,255,255,0.85)";
+  ctx.lineWidth = 6;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  const bookY = 220, bookHalfWidth = 90, bookHeight = 70;
+  ctx.beginPath();
+  ctx.moveTo(w / 2, bookY);
+  ctx.quadraticCurveTo(w / 2 - bookHalfWidth, bookY - bookHeight * 0.4, w / 2 - bookHalfWidth, bookY + bookHeight);
+  ctx.quadraticCurveTo(w / 2 - bookHalfWidth * 0.4, bookY + bookHeight * 0.7, w / 2, bookY + bookHeight * 0.85);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(w / 2, bookY);
+  ctx.quadraticCurveTo(w / 2 + bookHalfWidth, bookY - bookHeight * 0.4, w / 2 + bookHalfWidth, bookY + bookHeight);
+  ctx.quadraticCurveTo(w / 2 + bookHalfWidth * 0.4, bookY + bookHeight * 0.7, w / 2, bookY + bookHeight * 0.85);
+  ctx.stroke();
 
   ctx.fillStyle = "#FFFFFF";
   ctx.font = "700 54px system-ui, sans-serif";

@@ -30,7 +30,10 @@ import NotificationBell from "./components/NotificationBell.jsx";
 import OfflineBanner from "./components/OfflineBanner.jsx";
 import MyReceipts from "./components/MyReceipts.jsx";
 import OwnerDashboard from "./components/owner/OwnerDashboard.jsx";
+import Avatar from "./components/Avatar.jsx";
+import Icon from "./components/Icon.jsx";
 import { currentOwnerSession, ownerLogin } from "./lib/api/owner.js";
+import { getProfilePhotoUrl } from "./lib/api.js";
 import { useSession } from "./hooks/useSession.js";
 import { useGroupConfig } from "./hooks/useGroupConfig.js";
 import { useLedger } from "./hooks/useLedger.js";
@@ -41,7 +44,7 @@ import { useOfflineSync } from "./hooks/useOfflineSync.js";
 import { useReceipts } from "./hooks/useReceipts.js";
 import { useTheme } from "./hooks/useTheme.js";
 import { useApiData } from "./lib/useApiData.js";
-import { greeting } from "./lib/dashboardMath.js";
+import { greeting, genderedAddress } from "./lib/dashboardMath.js";
 import { findNextDue } from "./lib/scheduleUtils.js";
 import { getPendingPayments } from "./lib/api.js";
 
@@ -141,6 +144,32 @@ export default function App() {
   const [sessionEndedNotice, setSessionEndedNotice] = useState(false);
   const [showAddGroup, setShowAddGroup] = useState(false);
   const [payoutStatus, setPayoutStatus] = useState("");
+  // One fetch for the signed-in member's own photo, same pattern as
+  // Profile.jsx's own copy — this is always exactly one member, so
+  // there's no "wasted round trip for everyone with no photo" concern
+  // the way there would be fetching a whole roster speculatively.
+  // Header-only (not shared with Profile.jsx's own fetch): two small
+  // independent object-URL lifecycles are simpler and safer than lifting
+  // this into shared state that two unrelated components would both need
+  // to revoke correctly.
+  const [headerPhotoUrl, setHeaderPhotoUrl] = useState(null);
+  useEffect(() => {
+    if (!session) {
+      setHeaderPhotoUrl(null);
+      return;
+    }
+    let cancelled = false;
+    let objectUrl = null;
+    getProfilePhotoUrl(session.name).then((url) => {
+      if (cancelled) return;
+      objectUrl = url;
+      setHeaderPhotoUrl(url);
+    });
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [session?.name, session?.groupSlug]);
   // Set when "Log a Payment" is tapped from the dashboard CTA — tells
   // LedgerTable which row to auto-expand, scroll to, and focus so a
   // member never has to hunt for the right collapsed date entry
@@ -230,8 +259,8 @@ export default function App() {
     if (user.isNew) onboarding.trigger();
   };
 
-  const handleJoin = async (groupSlug, name, phone, pin, termsAccepted) => {
-    const user = await join(groupSlug, name, phone, pin, termsAccepted);
+  const handleJoin = async (groupSlug, name, phone, pin, termsAccepted, gender) => {
+    const user = await join(groupSlug, name, phone, pin, termsAccepted, gender);
     setSessionEndedNotice(false);
     if (user.isNew) onboarding.trigger();
   };
@@ -325,6 +354,15 @@ export default function App() {
         </div>
         {session && (
           <div className="header-right">
+            <button
+              type="button"
+              className="btn-ghost header-avatar-btn"
+              onClick={() => setTab("account")}
+              aria-label={`${session.name} — My Account`}
+              title={session.name}
+            >
+              <Avatar name={session.name} photoDataUrl={headerPhotoUrl} size={32} />
+            </button>
             <NotificationBell items={notifications.items} urgent={pendingConfirmCount > 0} />
             {session.role === "admin" && (
               <button
@@ -337,7 +375,7 @@ export default function App() {
                 }
                 title="Payment Review"
               >
-                ✅ <span className="calc-icon-label">Review</span>
+                <Icon name="check" size={16} className="icon-inline" /> <span className="calc-icon-label">Review</span>
                 {pendingConfirmCount > 0 && (
                   <span className="notification-bell-badge notification-bell-badge-urgent">
                     {pendingConfirmCount > 9 ? "9+" : pendingConfirmCount}
@@ -351,7 +389,7 @@ export default function App() {
               aria-label="Open calculator"
               title="Calculator"
             >
-              🧮 <span className="calc-icon-label">Calc</span>
+              <Icon name="calculator" size={16} className="icon-inline" /> <span className="calc-icon-label">Calc</span>
             </button>
           </div>
         )}
@@ -387,7 +425,7 @@ export default function App() {
           <>
             {tab !== "home" && (
               <div className="dashboard-greeting">
-                <span className="greeting-emoji">👋</span> {greeting()}, <strong>{session.name}</strong>
+                <span className="greeting-emoji">👋</span> {greeting()}, <strong>{genderedAddress(session.gender)}{session.name}</strong>
                 {session.role && (
                   <span className={"tag" + (session.role === "admin" ? " tag-rate" : "")} style={{ marginLeft: 8 }}>
                     {session.role}
@@ -544,7 +582,7 @@ export default function App() {
                 <h2 className="panel-title">Payment Summary</h2>
                 <p className="muted tiny" style={{ marginBottom: 14 }}>
                   A read-only summary of your own contribution totals — not the calculator
-                  (that's the 🧮 icon in the header).
+                  (that's the calculator icon in the header).
                 </p>
                 <div className="vital-primary">
                   <div className="vital-card-label">What You Still Owe</div>

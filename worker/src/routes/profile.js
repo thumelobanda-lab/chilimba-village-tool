@@ -30,6 +30,7 @@ export default function registerProfileRoutes(router) {
     return json({
       name: session.name,
       role: session.role,
+      gender: session.gender,
       groupSlug: session.groupSlug,
       groupName: session.groupName,
     }, 200, cors);

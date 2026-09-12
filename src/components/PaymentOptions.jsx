@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { saveSchedule } from "../lib/api.js";
 import PaymentMethodsEditor from "./PaymentMethodsEditor.jsx";
 import Toast from "./Toast.jsx";
+import Icon from "./Icon.jsx";
 
 /**
  * A dedicated, easy-to-find home for "how do I actually pay" — members
@@ -54,7 +55,10 @@ export default function PaymentOptions({ session, config, onSaved }) {
           <div className="payment-methods-list">
             {config.paymentMethods.map((m) => (
               <div className="payment-method-card" key={m.id}>
-                <div className="payment-method-type">{m.type === "bank" ? "🏦 Bank" : "📱 Mobile Money"}</div>
+                <div className="payment-method-type">
+                  <Icon name={m.type === "bank" ? "bank" : "phone"} size={14} className="icon-inline" />{" "}
+                  {m.type === "bank" ? "Bank" : "Mobile Money"}
+                </div>
                 <div className="payment-method-label">{m.label}</div>
                 <div className="muted small">{m.accountName}</div>
                 <div className="payment-method-number">{m.accountNumber}</div>

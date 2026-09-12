@@ -105,6 +105,39 @@ export function relativeDueLabel(days) {
 }
 
 /**
+ * How many whole days a still-unpaid date has been overdue — 0 for a
+ * date that's today or in the future, never negative. Split out from
+ * daysUntil()/relativeDueLabel() (which already do the "Nd overdue"
+ * phrasing for a single due card) because the ledger's payment-card list
+ * needs the bare number per row, not a sentence, to badge each missed
+ * date individually and to sum across every overdue row for a running
+ * "X days behind" figure.
+ *
+ * @param {string} dateISO - "YYYY-MM-DD"
+ * @param {string} [todayISO] - "YYYY-MM-DD", defaults to today
+ * @returns {number}
+ */
+export function daysLate(dateISO, todayISO = new Date().toISOString().slice(0, 10)) {
+  return Math.max(0, -daysUntil(dateISO, todayISO));
+}
+
+/**
+ * Running total of days-late across every still-overdue row — e.g. two
+ * payments, 3 and 11 days late each, reads as "14 days behind" overall.
+ * A blunt but honest single number for "how bad is it right now",
+ * distinct from `overdue.length` (how MANY payments are missed) which
+ * LedgerTable's hero already shows beside this.
+ *
+ * @param {Array<{date: string}>} overdueRows - already-filtered
+ *   balance>0 && date<today rows (LedgerTable's own `overdue` list)
+ * @param {string} [todayISO] - "YYYY-MM-DD", defaults to today
+ * @returns {number}
+ */
+export function totalDaysLate(overdueRows, todayISO = new Date().toISOString().slice(0, 10)) {
+  return (overdueRows || []).reduce((sum, r) => sum + daysLate(r.date, todayISO), 0);
+}
+
+/**
  * Bare relative-time phrase for a payout date, no subject or verb, so a
  * caller can compose "<Name> receives {phrase}" — the sentence-length
  * companion to compactReceiveLabel below. Mirrors relativeDueLabel's
@@ -284,6 +317,26 @@ export function greeting(hour = new Date().getHours()) {
   if (hour < 12) return "Good morning";
   if (hour < 17) return "Good afternoon";
   return "Good evening";
+}
+
+/**
+ * "brother "/"sister " to slot between greeting() and a member's name —
+ * kept as its own function rather than a param on greeting() above so
+ * the existing time-of-day tests/callers that don't care about gender
+ * stay untouched. Self-reported at sign-up (see worker/src/auth.js's
+ * normalizeGender, migration 021) and used ONLY here — no other part of
+ * the app reads it. Empty string (not "there", not a fallback pronoun)
+ * for an unset/declined gender, so `${greeting()}, ${genderedAddress(g)}${name}`
+ * reads as the plain old "Good morning, Chanda" for every account that
+ * predates this field or chose not to answer.
+ *
+ * @param {"male"|"female"|null|undefined} gender
+ * @returns {string}
+ */
+export function genderedAddress(gender) {
+  if (gender === "male") return "brother ";
+  if (gender === "female") return "sister ";
+  return "";
 }
 
 /**

@@ -104,7 +104,7 @@ describe("buildBookStoryStats", () => {
       totalActiveMembers: 5,
       longestStreak: 3,
       flawless: true,
-      closingLine: "Nobody missed a beat this round 🎉",
+      closingLine: "Nobody missed a beat this round.",
     });
   });
 

@@ -243,6 +243,8 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
      own narrow box, so its available width no longer depends on how
      many icons happen to sit to the bell's right. */
 .header-right { position: relative; display: flex; align-items: center; gap: 10px; margin-left: auto; }
+.header-avatar-btn { padding: 0; border-radius: 50%; min-height: auto; line-height: 0; }
+.header-avatar-btn .avatar-photo, .header-avatar-btn .avatar-fallback { border-color: var(--chrome-ink-faint); }
 /* .muted's own color rule (var(--ink-faint), themed) would otherwise win
    here — the pre-login "Your group's honest record." tagline sits
    directly on the always-dark header with no background of its own. */
@@ -260,7 +262,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   color: var(--ink);
   border-bottom: 1px solid var(--pending);
   padding: 8px 20px;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   font-weight: 600;
   text-align: center;
 }
@@ -270,7 +272,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 }
 
 .dashboard-greeting {
-  font-size: 1.15rem;
+  font-size: 1.1rem;
   font-weight: 600;
   color: var(--ink);
   padding: 4px 4px 14px;
@@ -278,6 +280,21 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .greeting-emoji { display: inline-block; }
 
 .app-main { max-width: 880px; margin: 0 auto; padding: 20px; width: 100%; }
+
+/* A brief fade/rise on whatever tab just mounted — every tab panel is a
+   plain conditional render (`{tab === "x" && <div role="tabpanel">…}`),
+   swapped instantly with no unmount animation of the outgoing one; this
+   only needs to animate the incoming panel, which a CSS animation on
+   the [role="tabpanel"] attribute already gets for free the moment it's
+   inserted into the DOM — no JS/React changes needed to trigger it. */
+[role="tabpanel"] { animation: tab-panel-in 0.22s ease-out; }
+@keyframes tab-panel-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  [role="tabpanel"] { animation: none; }
+}
 
 /* Nav menu — hamburger trigger + dropdown panel replacing the old
    always-visible tab bar. Everything that isn't the home dashboard
@@ -300,7 +317,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   background: var(--panel);
   color: var(--ink);
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.92rem;
   border-radius: 8px;
   cursor: pointer;
 }
@@ -364,7 +381,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   border: none;
   background: none;
   color: var(--ink);
-  font-size: 0.9rem;
+  font-size: 0.92rem;
   font-weight: 600;
   border-radius: 8px;
   cursor: pointer;
@@ -388,7 +405,15 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 /* Groups the admin-only items (Group Setup, Payment Review, Loans,
    Create a New Group) apart from the member-facing list above them —
    same flat menu, just no longer one undifferentiated list mixing two
-   different audiences' items together. See NavMenu.jsx. */
+   different audiences' items together. See NavMenu.jsx.
+   A divider now sits above this label (not just the uppercase/faint
+   styling below) — without one, this plain-text heading sat flush
+   against the last member item with near-identical padding, reading as
+   just another row in the same tappable list. An admin tapping it (it's
+   a <div>, not a button — no click handler, no hover/active feedback at
+   all) saw nothing happen and reported it as an unopenable "admin
+   tools" tab. cursor:default here makes clear it was never meant to be
+   interactive. */
 .nav-menu-section-label {
   font-size: 0.68rem;
   text-transform: uppercase;
@@ -396,6 +421,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   color: var(--ink-faint);
   font-weight: 700;
   padding: 8px 12px 2px;
+  cursor: default;
 }
 
 .back-link { display: inline-block; margin-bottom: 14px; }
@@ -441,7 +467,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   border: none;
   background: none;
   color: var(--ink-faint);
-  font-size: 0.65rem;
+  font-size: 0.68rem;
   font-weight: 600;
   cursor: pointer;
   border-radius: 8px;
@@ -498,7 +524,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   text-align: left;
 }
 .group-switcher-trigger:hover, .group-switcher-trigger:focus-visible { color: rgba(255,255,255,0.85); }
-.group-switcher-caret { font-size: 0.7rem; }
+.group-switcher-caret { font-size: 0.75rem; }
 .group-switcher-panel {
   position: absolute;
   top: calc(100% + 8px);
@@ -520,7 +546,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   flex-direction: column;
 }
 .group-switcher-heading {
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.03em;
   color: var(--ink-faint);
@@ -547,7 +573,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .group-switcher-item-info { min-width: 0; display: flex; flex-direction: column; gap: 2px; width: 100%; }
 .group-switcher-item-name {
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.92rem;
   color: var(--ink);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -569,7 +595,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   background: none;
   color: var(--accent);
   font-weight: 600;
-  font-size: 0.88rem;
+  font-size: 0.85rem;
   text-align: left;
 }
 .group-switcher-add:hover { background: var(--surface-hover); }
@@ -590,7 +616,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   border-radius: 10px;
   background: var(--red);
   color: white;
-  font-size: 0.62rem;
+  font-size: 0.68rem;
   font-weight: 700;
   line-height: 16px;
   text-align: center;
@@ -646,7 +672,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   flex-direction: column;
 }
 .notification-bell-heading {
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.03em;
   color: var(--ink-faint);
@@ -660,9 +686,9 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   border-radius: 8px;
 }
 .notification-item + .notification-item { border-top: 1px solid var(--line); }
-.notification-item-icon { flex-shrink: 0; font-size: 0.95rem; }
+.notification-item-icon { flex-shrink: 0; font-size: 0.92rem; }
 .notification-item-body { min-width: 0; flex: 1; }
-.notification-item-text { margin: 0; font-size: 0.86rem; color: var(--ink); }
+.notification-item-text { margin: 0; font-size: 0.85rem; color: var(--ink); }
 .notification-item-footer {
   display: flex;
   align-items: center;
@@ -685,6 +711,11 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 }
 
 .login-panel { max-width: 380px; margin: 40px auto; text-align: left; }
+/* OpenBookMark.jsx — a quiet, permanent brand mark above LoginScene's
+   own animated moment, not competing with it (see that component's doc
+   comment for why the two are split: one static identity mark, one big
+   animated welcome). */
+.open-book-mark { display: block; margin: 0 auto 8px; }
 
 /* LoginScene.jsx — a sunset scene four women converge on, drawn as one
    SVG (viewBox 0 0 400 160). Colors below are literal hex, not theme
@@ -881,7 +912,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   margin: -4px 0 16px;
   color: var(--accent);
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: 0.92rem;
 }
 /* Caption fades in once the scene has settled (~3s in) rather than
    sitting there fully legible while the women are still mid-walk — see
@@ -901,7 +932,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 }
 
 .panel-title { margin: 0 0 12px; font-size: 1.1rem; }
-.panel-subtitle { margin: 0 0 10px; font-size: 0.95rem; color: var(--ink-faint); }
+.panel-subtitle { margin: 0 0 10px; font-size: 0.92rem; color: var(--ink-faint); }
 /* Payment Review's expected/received/members-paid summary — used to be
    3 separate bordered MiniStat cards; one plain line carries the same
    3 numbers with far less visual chrome next to the "Still Owed"
@@ -927,7 +958,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   padding: 8px 10px;
   border: 1px solid var(--line);
   border-radius: 6px;
-  font-size: 0.95rem;
+  font-size: 0.92rem;
   color: var(--ink);
   background: var(--panel);
   box-sizing: border-box;
@@ -940,7 +971,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   padding: 10px 12px;
   border: 1px solid var(--line);
   border-radius: 6px;
-  font-size: 0.95rem;
+  font-size: 0.92rem;
   font-family: inherit;
   color: var(--ink);
   background: var(--panel);
@@ -985,7 +1016,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 
 /* Spreadsheet grid */
 .grid-wrap { overflow-x: auto; }
-.grid-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 0.88rem; }
+.grid-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 0.85rem; }
 .grid-table thead th {
   text-align: left;
   padding: 8px 10px;
@@ -1009,7 +1040,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .pos { color: var(--green); font-weight: 600; }
 .tag {
   margin-left: 6px;
-  font-size: 0.65rem;
+  font-size: 0.68rem;
   background: var(--surface-green);
   color: var(--green);
   padding: 2px 6px;
@@ -1027,7 +1058,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 }
 
 .payout-block { margin-top: 24px; padding-top: 16px; border-top: 1px dashed var(--line); }
-.summary-table { border-collapse: collapse; font-size: 0.9rem; margin-top: 10px; }
+.summary-table { border-collapse: collapse; font-size: 0.92rem; margin-top: 10px; }
 .summary-table td { padding: 5px 14px 5px 0; }
 .summary-table tr.neg td { color: var(--red); font-weight: 700; }
 .summary-table tr.pos td { color: var(--green); font-weight: 700; }
@@ -1079,11 +1110,11 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   padding: 16px 18px;
   margin-bottom: 16px;
 }
-.setup-hero-title { margin: 0; font-size: 1.15rem; font-weight: 700; color: #FAF7F0; }
+.setup-hero-title { margin: 0; font-size: 1.1rem; font-weight: 700; color: #FAF7F0; }
 .setup-hero-sub {
   margin: 6px 0 10px;
   color: rgba(250, 247, 240, 0.8);
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   max-width: 52ch;
 }
 .setup-hero-progress {
@@ -1093,7 +1124,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   background: rgba(250, 247, 240, 0.16);
   color: var(--chrome-accent);
   font-weight: 700;
-  font-size: 0.78rem;
+  font-size: 0.8rem;
 }
 
 /* Group Setup's collapsible sections — each expands independently so an
@@ -1131,7 +1162,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   background: var(--surface-gold);
   flex-shrink: 0;
 }
-.setup-section-title { font-weight: 700; color: var(--ink); font-size: 0.95rem; }
+.setup-section-title { font-weight: 700; color: var(--ink); font-size: 0.92rem; }
 .setup-section-badge { margin-bottom: 0; padding: 3px 10px; font-size: 0.68rem; white-space: nowrap; }
 .badge-todo { background: var(--surface-2); color: var(--ink-faint); border: 1px dashed var(--line); }
 .setup-section-summary {
@@ -1189,7 +1220,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   .grid-table td::before {
     content: attr(data-label);
     flex: 0 0 92px;
-    font-size: 0.7rem;
+    font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.02em;
     color: var(--ink-faint);
@@ -1220,7 +1251,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   .grid-table tr.history-row td::before { content: none; }
 }
 
-.btn-icon { background: none; border: none; color: var(--red); cursor: pointer; font-size: 0.9rem; }
+.btn-icon { background: none; border: none; color: var(--red); cursor: pointer; font-size: 0.92rem; }
 .btn-ghost-dark {
   background: transparent;
   border: 1px solid var(--line);
@@ -1338,7 +1369,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .free-tier-banner { padding: 12px 16px; margin-bottom: 14px; }
 .free-tier-banner-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 
-.privacy-row { margin-top: 16px; text-align: right; }
+.privacy-row { margin-top: 16px; text-align: right; display: flex; justify-content: flex-end; gap: 14px; }
 .account-signout-row { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--line); }
 .btn-link {
   background: none;
@@ -1366,7 +1397,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .card-warn { border-left-color: var(--red); }
 .card-highlight { border-left-color: var(--accent-2); }
 .card-highlight .card-value { color: var(--accent-2-light); }
-.card-label { font-size: 0.7rem; text-transform: uppercase; color: var(--ink-faint); letter-spacing: 0.03em; }
+.card-label { font-size: 0.75rem; text-transform: uppercase; color: var(--ink-faint); letter-spacing: 0.03em; }
 .card-value { font-size: 1.3rem; font-weight: 700; margin-top: 4px; }
 .card-warn .card-value { color: var(--red); }
 
@@ -1424,7 +1455,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   padding: 8px 10px;
   border: 1px solid var(--line);
   border-radius: 6px;
-  font-size: 0.9rem;
+  font-size: 0.92rem;
 }
 /* The "post to one member" picker (feature: direct notices) — its own
    class rather than reusing .cell-input, which is a narrow, right-
@@ -1464,14 +1495,14 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   color: var(--chrome-ink);
 }
 .platform-message-badge {
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--chrome-accent);
   margin-bottom: 6px;
 }
-.platform-message-body { font-size: 0.95rem; line-height: 1.4; white-space: pre-wrap; }
+.platform-message-body { font-size: 0.92rem; line-height: 1.4; white-space: pre-wrap; }
 .platform-message-footer {
   display: flex;
   align-items: center;
@@ -1503,7 +1534,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   min-width: 180px;
   flex: 1 1 200px;
 }
-.payment-method-type { font-size: 0.7rem; text-transform: uppercase; color: var(--ink-faint); letter-spacing: 0.03em; }
+.payment-method-type { font-size: 0.75rem; text-transform: uppercase; color: var(--ink-faint); letter-spacing: 0.03em; }
 .payment-method-label { font-weight: 700; color: var(--ink); margin-top: 2px; }
 .payment-method-number {
   font-family: "IBM Plex Mono", monospace;
@@ -1515,13 +1546,18 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 
 /* Calculator icon + modal */
 .calc-icon-btn { font-size: 1.1rem; padding: 6px 12px; min-height: 40px; }
+/* Vertical-align nudge for an inline <Icon> sitting next to text — SVGs
+   default to baseline alignment, which sits a hair low next to text's
+   own baseline; every caller that drops an Icon.jsx glyph inline with a
+   label uses this instead of repeating the same inline style. */
+.icon-inline { vertical-align: -3px; }
 /* Persistent header entry point for admins — Payment Review used to
    only be reachable via a conditional Dashboard banner (shown only when
    something's actually pending) or buried in Menu. Always visible now,
    same "reach for it constantly" treatment as the notification bell
    right next to it, with the same pending-count badge language. */
 .payment-review-icon-btn { position: relative; }
-.calc-icon-label { font-size: 0.7rem; font-weight: 600; margin-left: 2px; vertical-align: middle; }
+.calc-icon-label { font-size: 0.75rem; font-weight: 600; margin-left: 2px; vertical-align: middle; }
 
 .calc-modal-backdrop {
   position: fixed;
@@ -1625,7 +1661,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
    money arrive; grey while it's only self-reported. This is a trust
    indicator, not a gate — an unconfirmed payment still counts fully. */
 .confirm-bulb {
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   margin-right: 4px;
   display: inline-block;
 }
@@ -1641,7 +1677,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
    looked at it yet." */
 .confirm-bulb-syncing { color: var(--rose); }
 .pending-sync-tag {
-  font-size: 0.66rem;
+  font-size: 0.68rem;
   font-weight: 700;
   color: var(--red);
   background: #2C1714;
@@ -1675,7 +1711,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   gap: 2px;
   margin-left: 6px;
 }
-.streak-dot-row-inline .streak-dot { font-size: 0.65rem; }
+.streak-dot-row-inline .streak-dot { font-size: 0.68rem; }
 
 /* Group Reliability Score (GRS) — a single group-wide percentage, one
    slim strip, same "not a card" restraint as Group Pulse. Gold/red
@@ -1766,7 +1802,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 }
 .walkthrough-dot-active { background: var(--accent-2); width: 18px; border-radius: 6px; }
 .walkthrough-emoji { font-size: 2.4rem; margin-bottom: 8px; }
-.walkthrough-title { font-size: 1.15rem; font-weight: 700; color: var(--ink); margin: 0 0 10px; }
+.walkthrough-title { font-size: 1.1rem; font-weight: 700; color: var(--ink); margin: 0 0 10px; }
 .walkthrough-body { font-size: 0.92rem; color: var(--ink-faint); line-height: 1.5; margin: 0 0 20px; }
 .walkthrough-controls {
   display: flex;
@@ -1777,7 +1813,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 
 .row-flagged { background: var(--surface-danger); }
 .input-flagged { border-color: var(--red) !important; }
-.error-text.tiny { font-size: 0.7rem; margin-top: 2px; }
+.error-text.tiny { font-size: 0.75rem; margin-top: 2px; }
 
 .invite-card-wrap { display: flex; flex-direction: column; align-items: center; gap: 14px; }
 .invite-card-canvas {
@@ -1814,7 +1850,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 }
 .dashboard-strip-greeting { font-weight: 700; color: var(--ink); }
 .dashboard-strip-cycle { flex-basis: 100%; }
-.dashboard-strip-manage { margin-left: auto; font-size: 0.78rem; }
+.dashboard-strip-manage { margin-left: auto; font-size: 0.8rem; }
 
 /* "What I owe right now", when there's nothing to pay — a single quiet
    line, not a card, since there's no action to take here. */
@@ -1849,7 +1885,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 }
 .vital-ring-caption {
   margin-top: 2px;
-  font-size: 0.62rem;
+  font-size: 0.68rem;
   font-weight: 600;
   color: var(--ink-faint);
   text-align: center;
@@ -1876,7 +1912,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   width: 100%;
   table-layout: fixed;
   border-collapse: collapse;
-  font-size: 0.88rem;
+  font-size: 0.85rem;
 }
 .dashboard-stat-table td {
   padding: 7px 0;
@@ -1911,7 +1947,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 }
 .log-payment-cta-icon { font-size: 1.5rem; flex-shrink: 0; }
 .log-payment-cta-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
-.log-payment-cta-title { font-weight: 800; font-size: 1.05rem; color: var(--on-accent); }
+.log-payment-cta-title { font-weight: 800; font-size: 1rem; color: var(--on-accent); }
 .log-payment-cta-sub { font-size: 0.8rem; font-weight: 600; color: var(--on-accent); opacity: 0.82; }
 .log-payment-cta-arrow { margin-left: auto; font-size: 1.4rem; font-weight: 700; color: var(--on-accent); flex-shrink: 0; }
 
@@ -1935,7 +1971,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   letter-spacing: -0.01em;
   margin: 4px 0 6px;
 }
-.payment-hero-sub { font-size: 0.88rem; font-weight: 600; margin-bottom: 12px; }
+.payment-hero-sub { font-size: 0.85rem; font-weight: 600; margin-bottom: 12px; }
 .payment-hero .btn-pay { max-width: 320px; margin: 0 auto; }
 
 /* Factual, not alarming — amber (--pending/--surface-amber), never red.
@@ -1988,12 +2024,12 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   align-items: center;
   gap: 6px;
   color: var(--ink-faint);
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   margin-top: 2px;
 }
 
 .status-pill {
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   font-weight: 700;
   padding: 3px 10px;
   border-radius: 12px;
@@ -2023,14 +2059,14 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   color: var(--on-accent);
   border: none;
   border-radius: 10px;
-  font-size: 1.05rem;
+  font-size: 1rem;
   font-weight: 800;
   cursor: pointer;
   transition: background-color 0.2s ease, transform 0.1s ease;
 }
 .btn-pay:active { transform: scale(0.98); }
 .btn-pay:disabled { opacity: 0.7; cursor: default; }
-.btn-pay-hero { min-height: 56px; font-size: 1.15rem; }
+.btn-pay-hero { min-height: 56px; font-size: 1.1rem; }
 .btn-pay-confirmed {
   background: var(--green);
   animation: btn-confirmed-pop 0.4s ease;
@@ -2045,7 +2081,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   background: none;
   border: none;
   color: var(--ink-faint);
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   font-weight: 600;
   text-align: center;
   padding: 6px 0 0;
@@ -2061,12 +2097,12 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  font-size: 0.88rem;
+  font-size: 0.85rem;
   padding: 4px 0;
 }
 .payment-card-history { margin-top: 10px; }
 .payment-card-history-title {
-  font-size: 0.78rem;
+  font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.03em;
   color: var(--ink-faint);
@@ -2083,7 +2119,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
    pulled out of the strip below into its own headline, so it reads
    without having to decode the stepper's colors first. */
 .payout-avatar-headline {
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   color: var(--ink);
   margin: 0 0 8px;
 }
@@ -2106,7 +2142,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   gap: 3px;
 }
 .payout-avatar-step-label {
-  font-size: 0.6rem;
+  font-size: 0.68rem;
   color: var(--ink-faint);
   white-space: nowrap;
 }
@@ -2119,7 +2155,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.66rem;
+  font-size: 0.68rem;
   font-weight: 700;
   color: #FAF7F0;
   background: var(--accent-dark);
@@ -2137,7 +2173,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .payout-avatar-you {
   width: 42px;
   height: 42px;
-  font-size: 0.74rem;
+  font-size: 0.75rem;
   box-shadow: 0 0 0 3px rgba(212, 169, 74, 0.35);
 }
 
@@ -2157,7 +2193,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.66rem;
+  font-size: 0.68rem;
   font-weight: 700;
   color: #FAF7F0;
   background: var(--accent-dark);
@@ -2175,7 +2211,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   transform: translateY(-1px);
 }
 .vital-card-label {
-  font-size: 0.74rem;
+  font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--ink-faint);
@@ -2228,14 +2264,14 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
    word. font-variant-numeric/letter-spacing aren't inherited-and-wanted
    here the way they are for the number, so this resets both. */
 .vital-primary-value-suffix {
-  font-size: 1.05rem;
+  font-size: 1rem;
   font-weight: 700;
   font-variant-numeric: normal;
   letter-spacing: normal;
   opacity: 0.75;
 }
 .vital-primary-sub {
-  font-size: 0.86rem;
+  font-size: 0.85rem;
   font-weight: 600;
   color: var(--ink-faint);
 }
@@ -2245,7 +2281,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   border-radius: 12px;
   padding: 10px 14px;
   margin-top: 10px;
-  font-size: 0.88rem;
+  font-size: 0.85rem;
   color: var(--ink);
 }
 .dashboard-more-toggle {
@@ -2303,7 +2339,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   font-weight: 700;
   color: white;
   background: var(--line);
@@ -2317,7 +2353,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .cycle-node-future .cycle-node-dot { background: var(--panel); border: 2px solid var(--line); }
 .cycle-node-date { font-size: 0.68rem; color: var(--ink-faint); margin-top: 4px; }
 .cycle-node-payee {
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: var(--ink);
   margin-top: 1px;
@@ -2350,12 +2386,12 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   border-radius: 8px;
   padding: 6px 4px;
 }
-.upcoming-item-day { font-weight: 700; color: var(--ink); font-size: 0.86rem; }
+.upcoming-item-day { font-weight: 700; color: var(--ink); font-size: 0.85rem; }
 .upcoming-item-info { flex: 1; min-width: 0; }
 .upcoming-item-payee {
   font-weight: 600;
   color: var(--ink);
-  font-size: 0.9rem;
+  font-size: 0.92rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2404,7 +2440,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .quick-action-icon { font-size: 1.2rem; }
 .quick-action-label {
   font-weight: 600;
-  font-size: 0.66rem;
+  font-size: 0.68rem;
   color: var(--ink);
   text-align: center;
   transition: color 0.15s ease;
@@ -2423,7 +2459,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   background: var(--bg);
   border: 1px solid var(--line);
   border-radius: 10px;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   color: var(--ink);
 }
 .group-pulse-strip strong { font-variant-numeric: tabular-nums; }
@@ -2440,7 +2476,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   border-radius: 10px;
   padding: 10px 14px;
   margin-bottom: 14px;
-  font-size: 0.88rem;
+  font-size: 0.85rem;
   color: var(--ink);
 }
 .payout-ack-dismiss {
@@ -2448,7 +2484,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   border: none;
   color: var(--ink-faint);
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: 0.92rem;
   padding: 4px 8px;
   flex-shrink: 0;
 }
@@ -2462,7 +2498,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   align-items: center;
   justify-content: center;
 }
-.progress-ring-percent { font-size: 1.05rem; font-weight: 700; color: var(--ink); }
+.progress-ring-percent { font-size: 1rem; font-weight: 700; color: var(--ink); }
 .progress-ring-sublabel { margin-top: 6px; }
 /* Translucent gold disc behind the ring — the dashboard's hero placement
    (Dashboard.jsx's `filled` prop), giving it more visual weight than the
@@ -2507,7 +2543,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   background: none;
   border: none;
   color: var(--accent);
-  font-size: 0.78rem;
+  font-size: 0.8rem;
   font-weight: 600;
   text-decoration: underline;
   cursor: pointer;
@@ -2533,7 +2569,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 }
 .book-story-hero.book-story-revealed { opacity: 1; transform: translateY(0); }
 .book-story-group-name { font-size: 1.3rem; font-weight: 800; color: var(--ink); }
-.book-story-cycle-name { color: var(--accent-2); font-weight: 600; font-size: 0.86rem; margin-top: 2px; }
+.book-story-cycle-name { color: var(--accent-2); font-weight: 600; font-size: 0.85rem; margin-top: 2px; }
 
 .book-story-stats {
   display: grid;
@@ -2572,7 +2608,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 }
 .book-story-closing {
   text-align: center;
-  font-size: 1.05rem;
+  font-size: 1rem;
   font-weight: 700;
   color: var(--on-surface-gold);
   margin: 0 0 18px;

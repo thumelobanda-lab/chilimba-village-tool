@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { money } from "./LedgerTable.jsx";
 import { buildReferenceNumber } from "../lib/receipt.js";
 import Receipt from "./Receipt.jsx";
+import Icon from "./Icon.jsx";
 
 function formatDate(dateISO) {
   const d = new Date(dateISO + "T00:00:00");
@@ -11,7 +12,7 @@ function formatDate(dateISO) {
 
 /**
  * Every confirmed payment across the whole ledger, in one place — the
- * "🧾 Receipt" link buried in each date's expanded history in
+ * "Receipt" link buried in each date's expanded history in
  * LedgerTable.jsx still works the same way, this is just the dedicated,
  * discoverable list of the same underlying receipts (see useReceipts.js:
  * a receipt is a computed view of a confirmed entry, not a separate
@@ -55,7 +56,7 @@ export default function MyReceipts({ receipts, memberName, groupName, cycleName,
             </div>
             <div className="upcoming-item-amount">{money(entry.amount)}</div>
             <button className="receipt-link" onClick={() => setReceiptFor({ entry, row })}>
-              🧾 View
+              <Icon name="receipt" size={13} className="icon-inline" /> View
             </button>
           </div>
         ))}

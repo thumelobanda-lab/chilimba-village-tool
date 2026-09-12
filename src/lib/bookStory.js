@@ -86,9 +86,9 @@ export function isFlawlessCycle(dotsByMember) {
  * @returns {string}
  */
 export function closingMessage({ grs, flawless }) {
-  if (flawless) return "Nobody missed a beat this round 🎉";
+  if (flawless) return "Nobody missed a beat this round.";
   if (grs?.score == null) return "Your group's first rotation is complete — here's how it went.";
-  if (grs.score >= 80) return "A steady, reliable round — the group showed up for each other 💛";
+  if (grs.score >= 80) return "A steady, reliable round — the group showed up for each other.";
   if (grs.score >= 50) return "A few bumps along the way, but the group pulled through.";
   return "This round had its challenges — but the circle held, and everyone got paid.";
 }

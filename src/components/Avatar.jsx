@@ -9,16 +9,23 @@ function initials(name) {
 }
 
 /**
- * A member's photo if they have one, otherwise the same initials-circle
- * fallback used elsewhere (PayoutAvatarRow.jsx). `photoDataUrl` lets a
- * caller that already has the data URL in hand (mock mode's roster
+ * A member's photo if they have one, otherwise an initials-circle
+ * fallback — the one shared component every avatar spot in the app uses
+ * (roster rows, the app header, PayoutAvatarRow's rotation stepper,
+ * Profile's own preview). `photoDataUrl` lets a caller that already has
+ * the data URL in hand (mock mode's roster
  * response) skip the fetch entirely; otherwise, when `hasPhoto` is true,
  * this fetches lazily via getProfilePhotoUrl and cleans up its own blob
  * URL on unmount/name change. Never fetches when hasPhoto is false —
  * calling the photo endpoint for every photo-less member on a roster
  * would be a wasted round trip per member.
+ *
+ * `bordered` (default true) draws the usual 2px ring around the circle.
+ * Callers that already sit inside their own status-colored ring (e.g.
+ * PayoutAvatarRow's rotation stepper) pass `bordered={false}` and size
+ * this to fit just inside that ring instead of stacking two borders.
  */
-export default function Avatar({ name, hasPhoto, photoDataUrl, size = 36 }) {
+export default function Avatar({ name, hasPhoto, photoDataUrl, size = 36, bordered = true }) {
   const [fetchedUrl, setFetchedUrl] = useState(null);
 
   useEffect(() => {
@@ -37,7 +44,7 @@ export default function Avatar({ name, hasPhoto, photoDataUrl, size = 36 }) {
   }, [name, hasPhoto, photoDataUrl]);
 
   const src = photoDataUrl || fetchedUrl;
-  const style = { width: size, height: size };
+  const style = { width: size, height: size, ...(bordered ? {} : { border: "none" }) };
 
   if (src) {
     return <img className="avatar-photo" style={style} src={src} alt="" />;

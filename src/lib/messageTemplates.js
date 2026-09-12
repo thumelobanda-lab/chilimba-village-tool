@@ -28,7 +28,7 @@ export const MESSAGE_CATEGORIES = [
   {
     id: "fraud_warning",
     label: "Fraud Warning",
-    icon: "🚩",
+    icon: "flag",
     tagColor: "fraud",
     template:
       "We've noticed unusual activity connected to [Group Name] that doesn't match its usual pattern. " +
@@ -41,7 +41,7 @@ export const MESSAGE_CATEGORIES = [
   {
     id: "spam_abuse",
     label: "Spam/Abuse Notice",
-    icon: "⚠️",
+    icon: "warning",
     tagColor: "warning",
     template:
       "We wanted to flag some activity on [Group Name] that appears to go against OpenBook's platform terms: [Reason].\n\n" +
@@ -53,7 +53,7 @@ export const MESSAGE_CATEGORIES = [
   {
     id: "subscription_reminder",
     label: "Subscription Reminder",
-    icon: "💳",
+    icon: "card",
     tagColor: "billing",
     template:
       "This is a reminder that [Group Name]'s subscription is due for renewal as of [Date].\n\n" +
@@ -65,7 +65,7 @@ export const MESSAGE_CATEGORIES = [
   {
     id: "account_suspended",
     label: "Account Suspended",
-    icon: "🚫",
+    icon: "ban",
     tagColor: "suspended",
     template:
       "[Group Name] has been suspended as of [Date].\n\n" +
@@ -77,7 +77,7 @@ export const MESSAGE_CATEGORIES = [
   {
     id: "general_announcement",
     label: "General Announcement",
-    icon: "📣",
+    icon: "megaphone",
     tagColor: "general",
     template:
       "Hi [Group Name] — we wanted to let you know: [Announcement details].\n\n" +
@@ -86,7 +86,7 @@ export const MESSAGE_CATEGORIES = [
   {
     id: "payment_dispute",
     label: "Payment Dispute/Investigation",
-    icon: "🔍",
+    icon: "search",
     tagColor: "review",
     template:
       "We're currently reviewing a payment or complaint connected to [Group Name]: [Reason].\n\n" +

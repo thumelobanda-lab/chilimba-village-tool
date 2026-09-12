@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { getSupportContact } from "../lib/api.js";
+import Icon from "./Icon.jsx";
 
-export const TERMS_VERSION = "2026-08-22";
+export const TERMS_VERSION = "2026-09-11";
 
 /**
  * The actual Terms & Conditions text — rendered both inside TermsModal.jsx
@@ -32,7 +33,7 @@ export default function TermsContent() {
   return (
     <div className="terms-content">
       <div className="terms-legal-warning">
-        ⚠️ <strong>This is not legal advice.</strong> These terms were written for a small
+        <Icon name="warning" size={16} className="icon-inline" /> <strong>This is not legal advice.</strong> These terms were written for a small
         community savings tool and have <strong>not been reviewed by a lawyer</strong>. If
         you're relying on this document for real users and real money, have it reviewed by
         a qualified lawyer in your jurisdiction before launch — see "A note on this
@@ -61,7 +62,10 @@ export default function TermsContent() {
         a payment that never happened, or a group leader confirms one in error or in bad faith,
         the app has no way to detect or reverse that on its own — the record only reflects
         what was entered, and disputes are resolved between members, with the process in
-        Section 6 below.
+        Section 6 below. This also applies to any feature OpenBook adds in the future for
+        members to post to or arrange things with each other directly (for example, a group
+        noticeboard) — OpenBook is not a party to any transaction between members, whether
+        it happens through the payout schedule, the community fund, or a feature like that.
       </p>
 
       <h3 className="panel-subtitle">3. Data We Collect</h3>
@@ -120,11 +124,22 @@ export default function TermsContent() {
         We may mark a complaint as under review and follow up with you through an in-app
         message — you'll see it as a notice the next time you open the app. OpenBook
         can look into a complaint and, where appropriate, act on a group's access (Section
-        7), but — per Section 2 — cannot recover money that was exchanged outside the app,
+        8), but — per Section 2 — cannot recover money that was exchanged outside the app,
         since it was never in the app's possession to begin with.
       </p>
 
-      <h3 className="panel-subtitle">7. Account Suspension &amp; Fraud Policy</h3>
+      <h3 className="panel-subtitle">7. Refunds</h3>
+      <p className="small">
+        Because OpenBook never holds, transfers, or has possession of any money (Section 2),
+        there is no OpenBook-side refund process — there's nothing held by the app to refund.
+        If you paid the wrong amount, paid twice, or a payout went to the wrong person,
+        that's resolved directly between the members involved, the same way any other
+        payment dispute is (Section 6): by agreement between members, with your group's
+        leader able to correct the record (e.g. voiding a mistaken entry) once it's sorted
+        out, and OpenBook reachable per Section 6 if you need help escalating it.
+      </p>
+
+      <h3 className="panel-subtitle">8. Account Suspension &amp; Fraud Policy</h3>
       <p className="small">
         OpenBook's platform owner may suspend a group's access — meaning every member
         of that group is signed out and can't sign back in — if we detect activity that
@@ -138,14 +153,14 @@ export default function TermsContent() {
         cause further harm.
       </p>
 
-      <h3 className="panel-subtitle">8. Changes to These Terms</h3>
+      <h3 className="panel-subtitle">9. Changes to These Terms</h3>
       <p className="small">
         We may update these terms as the app changes. Continuing to use OpenBook
         after an update means you accept the current version, which is always reachable
         from My Account.
       </p>
 
-      <h3 className="panel-subtitle">9. A Note on This Document</h3>
+      <h3 className="panel-subtitle">10. A Note on This Document</h3>
       <p className="small">
         This Terms &amp; Conditions document was drafted to plainly describe how OpenBook
         actually works, in particular that it is record-keeping only and never holds

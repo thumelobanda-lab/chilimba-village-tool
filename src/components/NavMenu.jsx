@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from "react";
+import Icon from "./Icon.jsx";
 
 /**
  * Hamburger nav menu — everything that isn't one of BottomTabBar's 3
@@ -74,7 +75,8 @@ export default function NavMenu({ items, activeId, onSelect, onOpenWalkthrough, 
           {memberItems.map(renderItem)}
           {adminItems.length > 0 && (
             <>
-              <div className="nav-menu-section-label">Admin Tools</div>
+              <div className="nav-menu-divider" />
+              <div className="nav-menu-section-label" role="presentation">Admin Tools</div>
               {adminItems.map(renderItem)}
             </>
           )}
@@ -88,7 +90,8 @@ export default function NavMenu({ items, activeId, onSelect, onOpenWalkthrough, 
                 onClose();
               }}
             >
-              {theme === "dark" ? "☀️ Switch to Light Mode" : "🌙 Switch to Dark Mode"}
+              <Icon name={theme === "dark" ? "sun" : "moon"} size={14} className="icon-inline" />{" "}
+              {theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
             </button>
           )}
           <button

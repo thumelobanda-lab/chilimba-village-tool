@@ -1,11 +1,14 @@
 import React, { useState } from "react";
 import TermsModal from "./TermsModal.jsx";
+import PrivacyModal from "./PrivacyModal.jsx";
 
 export default function CreateGroup({ onCreate, onBackToLogin }) {
   const [groupName, setGroupName] = useState("");
-  const [slug, setSlug] = useState("");
   const [adminName, setAdminName] = useState("");
   const [pin, setPin] = useState("");
+  // Optional, greeting-phrasing-only — same field as Login.jsx's sign-up
+  // form (see dashboardMath.js's genderedAddress).
+  const [gender, setGender] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   // Creating a group also creates a brand-new admin account — this is
@@ -13,19 +16,13 @@ export default function CreateGroup({ onCreate, onBackToLogin }) {
   // it gets the same unchecked-by-default gate.
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
-
-  const normalizeSlugInput = (value) => value.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-
-  const suggestSlug = (name) => {
-    setGroupName(name);
-    if (!slug) setSlug(normalizeSlugInput(name));
-  };
+  const [showPrivacy, setShowPrivacy] = useState(false);
 
   const submit = async () => {
     setError("");
     if (busy) return;
-    if (!groupName.trim() || !slug.trim() || !adminName.trim()) {
-      setError("Fill in the group name, group code, and your name.");
+    if (!groupName.trim() || !adminName.trim()) {
+      setError("Fill in the group name and your name.");
       return;
     }
     if (!termsAccepted) {
@@ -34,7 +31,12 @@ export default function CreateGroup({ onCreate, onBackToLogin }) {
     }
     setBusy(true);
     try {
-      await onCreate({ slug: slug.trim(), groupName: groupName.trim(), adminName: adminName.trim(), pin, termsAccepted });
+      // No group code here — the backend generates one and hands it
+      // back in the response (see onCreate's caller: CreateAnotherGroup.jsx
+      // shows it, Login.jsx's dev-only path signs straight in). A
+      // human-chosen code trades away the one thing that matters most
+      // for a shared login secret: not being guessable.
+      await onCreate({ groupName: groupName.trim(), adminName: adminName.trim(), pin, termsAccepted, gender });
     } catch (e) {
       setError(e.message || "Could not create the group.");
     } finally {
@@ -49,29 +51,19 @@ export default function CreateGroup({ onCreate, onBackToLogin }) {
       <h2 className="panel-title">Create a Chilimba group</h2>
       <p className="muted small" style={{ marginBottom: 14 }}>
         You'll be the group's first group leader — you can promote a co-leader later by asking
-        them to sign up, then setting their role directly in the database.
+        them to sign up, then setting their role directly in the database. A group code for
+        members to sign in with is generated automatically once you create the group.
       </p>
 
       <label className="field">
         Group name
         <input
           value={groupName}
-          onChange={(e) => suggestSlug(e.target.value)}
+          onChange={(e) => setGroupName(e.target.value)}
           onKeyDown={onEnter}
           placeholder="e.g. Hillcrest Chilimba"
           autoComplete="organization"
           autoFocus
-          disabled={busy}
-        />
-      </label>
-      <label className="field">
-        Group code (what members type to sign in)
-        <input
-          value={slug}
-          onChange={(e) => setSlug(e.target.value)}
-          onBlur={(e) => setSlug(normalizeSlugInput(e.target.value))}
-          onKeyDown={onEnter}
-          placeholder="e.g. hillcrest"
           disabled={busy}
         />
       </label>
@@ -85,6 +77,14 @@ export default function CreateGroup({ onCreate, onBackToLogin }) {
           autoComplete="username"
           disabled={busy}
         />
+      </label>
+      <label className="field">
+        How should we address you? (optional)
+        <select value={gender} onChange={(e) => setGender(e.target.value)} disabled={busy}>
+          <option value="">Prefer not to say</option>
+          <option value="female">Sister</option>
+          <option value="male">Brother</option>
+        </select>
       </label>
       <label className="field">
         Choose a PIN (4+ digits)
@@ -110,6 +110,10 @@ export default function CreateGroup({ onCreate, onBackToLogin }) {
         I agree to the{" "}
         <button type="button" className="btn-link" onClick={() => setShowTerms(true)}>
           Terms &amp; Conditions
+        </button>{" "}
+        and{" "}
+        <button type="button" className="btn-link" onClick={() => setShowPrivacy(true)}>
+          Privacy Policy
         </button>
       </label>
 
@@ -125,6 +129,7 @@ export default function CreateGroup({ onCreate, onBackToLogin }) {
       )}
 
       {showTerms && <TermsModal onClose={() => setShowTerms(false)} />}
+      {showPrivacy && <PrivacyModal onClose={() => setShowPrivacy(false)} />}
     </div>
   );
 }

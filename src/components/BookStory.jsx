@@ -3,6 +3,7 @@ import { money } from "./LedgerTable.jsx";
 import { useCountUp } from "../hooks/useCountUp.js";
 import { drawBookStoryCard } from "../lib/bookStoryCard.js";
 import { buildWhatsAppShareUrl } from "../lib/inviteCard.js";
+import Icon from "./Icon.jsx";
 
 const CARD_WIDTH = 1080;
 const CARD_HEIGHT = 1080;
@@ -48,11 +49,11 @@ export default function BookStory({ stats, onClose }) {
     `book-story-${(stats.groupName || "group").toLowerCase().replace(/[^a-z0-9]+/g, "-")}.png`;
 
   const shareMessage = () =>
-    `📖 ${stats.groupName}'s Book's Story\n\n${stats.closingLine}\n\n` +
-    `💰 ${money(stats.totalContributed)} moved through the group\n` +
-    `👥 ${stats.totalActiveMembers} members\n` +
-    `${stats.grs?.score != null ? `✅ ${stats.grs.score}% on-time rate\n` : ""}` +
-    `🔥 Longest streak: ${stats.longestStreak} in a row`;
+    `${stats.groupName}'s Book's Story\n\n${stats.closingLine}\n\n` +
+    `${money(stats.totalContributed)} moved through the group\n` +
+    `${stats.totalActiveMembers} members\n` +
+    `${stats.grs?.score != null ? `${stats.grs.score}% on-time rate\n` : ""}` +
+    `Longest streak: ${stats.longestStreak} in a row`;
 
   const download = async () => {
     const blob = await getBlob();
@@ -88,7 +89,7 @@ export default function BookStory({ stats, onClose }) {
     <div className="calc-modal-backdrop book-story-backdrop" onClick={onClose}>
       <div className="calc-modal book-story-modal" onClick={(e) => e.stopPropagation()}>
         <div className="calc-modal-header">
-          <span>📖 Your Book's Story</span>
+          <span><Icon name="book" size={16} className="icon-inline" /> Your Book's Story</span>
           <button className="calc-close-btn" onClick={onClose} aria-label="Close">✕</button>
         </div>
 
@@ -126,11 +127,11 @@ export default function BookStory({ stats, onClose }) {
           <canvas ref={canvasRef} width={CARD_WIDTH} height={CARD_HEIGHT} className="book-story-canvas" />
           <div className="invite-card-actions">
             <button className="btn-primary" style={{ width: "auto" }} onClick={share}>
-              📤 Share Your Book's Story
+              <Icon name="share" size={16} className="icon-inline" /> Share Your Book's Story
             </button>
             <button className="btn-ghost-dark" onClick={download}>Download image</button>
             <a className="btn-ghost-dark" href={whatsappTextUrl} target="_blank" rel="noopener noreferrer">
-              💬 Text-only WhatsApp link
+              <Icon name="message" size={16} className="icon-inline" /> Text-only WhatsApp link
             </a>
           </div>
           {status && <p className="muted small" style={{ marginTop: 8 }}>{status}</p>}

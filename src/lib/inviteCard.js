@@ -23,7 +23,7 @@ export function buildInviteMessage({ groupName, groupSlug, appUrl }) {
     throw new Error("groupName, groupSlug, and appUrl are all required.");
   }
   return (
-    `Join our savings circle, ${groupName}! 🤝\n\n` +
+    `Join our savings circle, ${groupName}!\n\n` +
     `See everyone's contributions, get reminders, no more paper books.\n\n` +
     `Group code: ${groupSlug}\n` +
     `Join here: ${buildJoinUrl(appUrl, groupSlug)}`

@@ -1,4 +1,5 @@
 import React from "react";
+import Icon from "./Icon.jsx";
 
 // The wide-screen counterpart to BottomTabBar.jsx's 3 pinned destinations
 // (Dashboard/Payments/Community) — that component only renders at
@@ -10,9 +11,9 @@ import React from "react";
 // styles.css: .bottom-tab-bar's max-width:640px vs. .desktop-tab-bar's
 // min-width:641px).
 const PRIMARY_TABS = [
-  { id: "home", label: "Dashboard", icon: "🏠" },
-  { id: "ledger", label: "Payments", icon: "💳" },
-  { id: "community", label: "Community", icon: "🤝" },
+  { id: "home", label: "Dashboard", icon: "home" },
+  { id: "ledger", label: "Payments", icon: "card" },
+  { id: "community", label: "Community", icon: "people" },
 ];
 
 export default function DesktopTabBar({ activeId, onSelect }) {
@@ -26,7 +27,7 @@ export default function DesktopTabBar({ activeId, onSelect }) {
           onClick={() => onSelect(t.id)}
           aria-current={activeId === t.id ? "page" : undefined}
         >
-          <span aria-hidden="true">{t.icon}</span> {t.label}
+          <span aria-hidden="true"><Icon name={t.icon} size={16} className="icon-inline" /></span> {t.label}
         </button>
       ))}
     </nav>

@@ -3,6 +3,7 @@ import { issueLoan, repayLoan, editLoan, voidRepayment, getGroupFunds } from "..
 import { useApiData } from "../lib/useApiData.js";
 import { useMemberRoster } from "../hooks/useMemberRoster.js";
 import Toast from "./Toast.jsx";
+import Icon from "./Icon.jsx";
 
 const money = (n) => "K" + (Number(n) || 0).toLocaleString("en-ZM", { maximumFractionDigits: 0 });
 
@@ -226,7 +227,7 @@ export default function Loans() {
                   <td className="al muted small" data-label="Issued">
                     {new Date(l.issuedAt).toLocaleDateString()}
                     <button className="btn-link tiny" style={{ marginLeft: 6 }} onClick={() => startEditLoan(l)} title="Correct the amount or borrower name">
-                      ✏️ edit
+                      <Icon name="edit" size={12} className="icon-inline" /> edit
                     </button>
                   </td>
                 </tr>

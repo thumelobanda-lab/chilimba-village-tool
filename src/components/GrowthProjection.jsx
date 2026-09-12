@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { buildProjectionSchedule } from "../lib/interestMath.js";
+import Icon from "./Icon.jsx";
 
 const money = (n) => "K" + (Number(n) || 0).toLocaleString("en-ZM", { maximumFractionDigits: 0 });
 
@@ -22,7 +23,7 @@ export default function GrowthProjection({ fundTotal }) {
 
   return (
     <div style={{ marginTop: 24, marginBottom: 20 }}>
-      <h3 className="panel-subtitle">📈 Growth Projection</h3>
+      <h3 className="panel-subtitle"><Icon name="chart" size={15} className="icon-inline" /> Growth Projection</h3>
       <p className="muted tiny" style={{ marginBottom: 10 }}>
         A projection only — this does not add interest to the fund or change any balance.
         It's simple interest (not compounded) on today's fund total of {money(fundTotal)}, for

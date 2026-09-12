@@ -107,6 +107,10 @@ CREATE TABLE IF NOT EXISTS users (
                                      -- NULL/empty both mean "nothing written yet"
   photo_key TEXT,                   -- reference into R2 (migration 020), not the image
                                      -- itself — NULL means no photo. See routes/profilePhoto.js.
+  gender TEXT,                      -- 'male' | 'female' | NULL (migration 021). Used ONLY for
+                                     -- greeting phrasing (dashboardMath.js's greeting()) — never
+                                     -- read anywhere else. NULL (declined/unset) falls back to
+                                     -- the same name-only greeting used before this existed.
   UNIQUE(group_id, name)
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_group_phone ON users(group_id, phone);

@@ -6,6 +6,7 @@ import { buildWhatsAppDirectUrl } from "../../lib/inviteCard.js";
 import {
   MESSAGE_CATEGORIES, getMessageCategory, applyTemplatePlaceholders, buildContactLabel,
 } from "../../lib/messageTemplates.js";
+import Icon from "../Icon.jsx";
 
 const TARGET_LABELS = {
   user: "A specific person",
@@ -25,7 +26,7 @@ function CategoryTag({ categoryId }) {
   if (!category) return <span className="muted tiny">—</span>;
   return (
     <span className={`category-tag category-tag-${category.tagColor}`}>
-      {category.icon} {category.label}
+      <Icon name={category.icon} size={12} className="icon-inline" /> {category.label}
     </span>
   );
 }
@@ -262,7 +263,7 @@ export default function OwnerMessaging({ groups }) {
         <select value={category} onChange={(e) => handleCategoryChange(e.target.value)}>
           <option value="">No template — write freely</option>
           {MESSAGE_CATEGORIES.map((c) => (
-            <option key={c.id} value={c.id}>{c.icon} {c.label}</option>
+            <option key={c.id} value={c.id}>{c.label}</option>
           ))}
         </select>
       </label>
@@ -320,7 +321,7 @@ export default function OwnerMessaging({ groups }) {
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  💬 {r.name}
+                  <Icon name="message" size={13} className="icon-inline" /> {r.name}
                 </a>
               ))}
               {lastSend.recipients.every((r) => !r.phone) && (

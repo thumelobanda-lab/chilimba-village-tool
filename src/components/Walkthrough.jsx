@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { groupScopedKey } from "../lib/api/core.js";
+import Icon from "./Icon.jsx";
 
 // Used before anyone's signed in — there's no group/account yet to scope
 // a key to, so this is a single, universal "have they seen the generic
@@ -28,37 +29,37 @@ function buildSteps(session) {
 
   const steps = [
     {
-      emoji: "🤝",
+      icon: "people",
       title: "Welcome to your Chilimba",
       body: "A Chilimba is a rotating savings circle — everyone contributes on a shared schedule, and each date one or more members receive the payout. This app tracks who's paid, who's next, and where the money goes.",
     },
     {
-      emoji: "📒",
+      icon: "notebook",
       title: "My Payment History",
       body: "Tap \"Paid\" on any date to log a payment or see its history. Tap \"Due\" if your agreed rate is different from the group default — not everyone contributes the same amount. Nothing is ever overwritten; corrections happen by voiding an entry and logging a new one.",
     },
     {
-      emoji: "💚",
+      icon: "check",
       title: "Confirmed payments",
       body: "Every payment you log shows a small dot next to it: amber means it's waiting on a group leader to check it (it won't count toward your balance yet), green means a group leader has confirmed the money arrived, and red means it was rejected, with a reason shown.",
     },
     {
-      emoji: "📱",
+      icon: "phone",
       title: "Where to Pay",
       body: "Your Payment History shows the mobile money or bank details your group's leader has set up — that's where your contribution actually goes.",
     },
     {
-      emoji: "🔔",
+      icon: "bell",
       title: "Reminders",
       body: "Turn on push or SMS reminders so you get a nudge a few days before each due date.",
     },
     {
-      emoji: "👥",
+      icon: "people",
       title: "Community",
       body: "See the group's shared funds and overall totals. If anyone's borrowed from a fund that's open for borrowing, the amount and status are shown — names stay private.",
     },
     {
-      emoji: "🧮",
+      icon: "calculator",
       title: "Calculator",
       body: "Need to work out a number while you're in the app? Tap the calculator icon in the header any time — it's separate from your payment history totals.",
     },
@@ -66,19 +67,19 @@ function buildSteps(session) {
 
   if (isAdmin) {
     steps.push({
-      emoji: "⚙️",
+      icon: "tools",
       title: "Group Setup (you're a group leader)",
       body: "Edit the payout schedule, group savings funds, and payment details here. The \"Members & Group Leaders\" section shows every member, when they joined, and who's due next — and lets you promote, demote, or remove someone.",
     });
     steps.push({
-      emoji: "📢",
+      icon: "megaphone",
       title: "Post a notice",
       body: "Anything the whole group needs to know? Post it from the notice board at the top of the dashboard — every member sees it.",
     });
   }
 
   steps.push({
-    emoji: "✅",
+    icon: "check",
     title: "That's it",
     body: "You can reopen this walkthrough any time from the ? icon in the header.",
   });
@@ -111,7 +112,9 @@ export default function Walkthrough({ session, onClose }) {
           ))}
         </div>
 
-        <div className="walkthrough-emoji">{step.emoji}</div>
+        <div className="walkthrough-emoji">
+          {step.icon === "bell" ? "🔔" : <Icon name={step.icon} size={32} />}
+        </div>
         <h3 className="walkthrough-title">{step.title}</h3>
         <p className="walkthrough-body">{step.body}</p>
 

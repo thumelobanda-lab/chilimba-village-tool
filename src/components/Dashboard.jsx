@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { money } from "./LedgerTable.jsx";
-import { getGroupFunds, getGroupPulse, getPendingPayments, getGroupMembers } from "../lib/api.js";
+import { getGroupFunds, getGroupPulse, getPendingPayments, getGroupMembers, getGroupRoster } from "../lib/api.js";
 import { useApiData } from "../lib/useApiData.js";
 import { findNextDue, myNextDueDates, payeesLabel, cycleEndDate, getPayees, unassignedMembers } from "../lib/scheduleUtils.js";
 import {
@@ -12,6 +12,7 @@ import {
   isMemberTurnSoon,
   isCycleNearingCompletion,
   greeting,
+  genderedAddress,
   myOutstandingLoanTotal,
   buildPayoutAvatarRow,
 } from "../lib/dashboardMath.js";
@@ -26,6 +27,7 @@ import PayoutAvatarRow from "./PayoutAvatarRow.jsx";
 import DashboardStatBlock from "./DashboardStatBlock.jsx";
 import MyNextPaymentsTable from "./MyNextPaymentsTable.jsx";
 import NoticeBoard from "./NoticeBoard.jsx";
+import Icon from "./Icon.jsx";
 
 function formatDate(dateISO) {
   const d = new Date(dateISO + "T00:00:00");
@@ -76,6 +78,10 @@ export default function Dashboard({
 }) {
   const { data: fundsData } = useApiData(getGroupFunds, []);
   const { data: pulseData, loading: pulseLoading } = useApiData(getGroupPulse, []);
+  // Every signed-in member can see this (unlike getGroupMembers below,
+  // admin-only) — just name + hasPhoto/photoDataUrl, enough to put real
+  // photos on the rotation stepper instead of initials-only circles.
+  const { data: rosterData } = useApiData(getGroupRoster, []);
   // Admin-only — a regular member has no access to this endpoint (see
   // getPendingPayments in reconciliation.js), so this only ever fetches
   // for an admin session, same gating as the "Reconciliation" tab itself.
@@ -139,7 +145,13 @@ export default function Dashboard({
   // rather than being a constant, meaningless decoration.
   const ringGlow =
     isMemberTurnSoon(timelineRows, session?.name) || isCycleNearingCompletion(cycle) || Boolean(recentPayout);
-  const payoutAvatarRows = buildPayoutAvatarRow(timelineRows, session?.name);
+  const photoByName = new Map(
+    (rosterData?.members || []).map((m) => [m.name.trim().toLowerCase(), m])
+  );
+  const payoutAvatarRows = buildPayoutAvatarRow(timelineRows, session?.name).map((r) => {
+    const match = photoByName.get(r.name.trim().toLowerCase());
+    return { ...r, hasPhoto: match?.hasPhoto || false, photoDataUrl: match?.photoDataUrl || null };
+  });
   const myStreak = computeMemberStreak(totals.rowsComputed);
 
   // "Still owing" and "Paid all time" stay lifetime figures (summed
@@ -186,7 +198,7 @@ export default function Dashboard({
           (see the module doc comment above for where the ring went). */}
       <div className="dashboard-strip">
         <span className="dashboard-strip-greeting">
-          👋 {greeting()}, <strong>{session?.name}</strong>
+          👋 {greeting()}, <strong>{genderedAddress(session?.gender)}{session?.name}</strong>
         </span>
         {session?.role && (
           <span className={"tag" + (session.role === "admin" ? " tag-rate" : "")}>{session.role}</span>
@@ -200,7 +212,7 @@ export default function Dashboard({
         )}
         {session?.role === "admin" && onOpenGroupSetup && (
           <button className="btn-link dashboard-strip-manage" onClick={onOpenGroupSetup}>
-            ⚙ Manage
+            <Icon name="tools" size={12} className="icon-inline" /> Manage
           </button>
         )}
       </div>
@@ -209,7 +221,7 @@ export default function Dashboard({
       {nextDue ? (
         onLogPayment && (
           <button type="button" className="log-payment-cta" onClick={onLogPayment}>
-            <span className="log-payment-cta-icon" aria-hidden="true">💸</span>
+            <span className="log-payment-cta-icon" aria-hidden="true"><Icon name="money" size={20} /></span>
             <span className="log-payment-cta-text">
               <span className="log-payment-cta-title">You Owe {money(nextDue.balance)}</span>
               <span className="log-payment-cta-sub">Due {formatDate(nextDue.row.date)}</span>
@@ -237,10 +249,14 @@ export default function Dashboard({
         <div className="vital-primary-body">
           <div className="vital-card-label">This Round</div>
           <div className="vital-primary-value vital-card-value-ok">
-            {money(paidDisplay)} <span className="vital-primary-value-suffix">contributed 🎉</span>
+            {money(paidDisplay)} <span className="vital-primary-value-suffix">contributed <Icon name="sparkle" size={13} className="icon-inline" /></span>
           </div>
           <div className={"vital-primary-sub" + ((roundRow?.balance ?? 0) > 0 ? " vital-card-value-warn" : " vital-card-value-ok")}>
-            {(roundRow?.balance ?? 0) > 0 ? `${money(balanceDisplay)} remaining` : "All caught up 🎉"}
+            {(roundRow?.balance ?? 0) > 0 ? (
+              `${money(balanceDisplay)} remaining`
+            ) : (
+              <>All caught up <Icon name="sparkle" size={13} className="icon-inline" /></>
+            )}
           </div>
         </div>
       </div>
@@ -255,7 +271,7 @@ export default function Dashboard({
 
       {session?.role === "admin" && unassigned.length > 0 && (
         <p className="inline-alert">
-          ⚠️ <strong>{unassigned.length}</strong> member{unassigned.length === 1 ? "" : "s"} not on the payout
+          <Icon name="warning" size={14} className="icon-inline" /> <strong>{unassigned.length}</strong> member{unassigned.length === 1 ? "" : "s"} not on the payout
           schedule —{" "}
           {onOpenGroupSetup ? (
             <button type="button" className="inline-alert-link" onClick={onOpenGroupSetup}>
@@ -269,7 +285,7 @@ export default function Dashboard({
 
       {myLoanTotal > 0 && (
         <div className="loan-alert-banner">
-          <span>⚠️ You owe <strong>{money(loanTotalDisplay)}</strong> on a loan from the group fund</span>
+          <span><Icon name="warning" size={14} className="icon-inline" /> You owe <strong>{money(loanTotalDisplay)}</strong> on a loan from the group fund</span>
         </div>
       )}
 

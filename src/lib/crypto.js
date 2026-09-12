@@ -32,3 +32,14 @@ export function maskPhone(phone) {
   if (digits.length <= 3) return "***";
   return "*".repeat(digits.length - 3) + digits.slice(-3);
 }
+
+// Mirrors worker/src/crypto.js's generateGroupCode exactly (same
+// alphabet, same length) — mock mode's createGroup() uses this instead
+// of a client-typed slug, same as the real backend.
+const GROUP_CODE_ALPHABET = "abcdefghjkmnpqrstuvwxyz23456789";
+
+export function generateGroupCode(length = 6) {
+  const bytes = new Uint8Array(length);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (b) => GROUP_CODE_ALPHABET[b % GROUP_CODE_ALPHABET.length]).join("");
+}

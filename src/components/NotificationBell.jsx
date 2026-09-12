@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { parseServerTimestamp } from "../lib/serverTime.js";
+import Icon from "./Icon.jsx";
 
 function timeAgo(serverTimestamp) {
   if (!serverTimestamp) return "";
@@ -12,7 +13,12 @@ function timeAgo(serverTimestamp) {
   return `${Math.floor(hours / 24)}d ago`;
 }
 
-const KIND_ICON = { owner: "✦", notice: "📢", payment: "💸", reminder: "🔔" };
+const KIND_ICON = {
+  owner: "✦",
+  notice: <Icon name="megaphone" size={13} className="icon-inline" />,
+  payment: <Icon name="money" size={13} className="icon-inline" />,
+  reminder: "🔔",
+};
 
 /**
  * The header's notification indicator — visible on every tab, not just

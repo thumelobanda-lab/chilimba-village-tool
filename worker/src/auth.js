@@ -1,4 +1,4 @@
-import { hashPin, verifyPin, isLegacyHash, randomSalt, newToken, uid } from "./crypto.js";
+import { hashPin, verifyPin, isLegacyHash, randomSalt, newToken, uid, generateGroupCode } from "./crypto.js";
 import { HttpError } from "./httpError.js";
 import { isSubscriptionActive, FREE_TIER_MAX_MEMBERS } from "./subscriptionUtils.js";
 
@@ -21,7 +21,7 @@ export async function getSessionUser(request, env) {
   if (!token) return null;
 
   const row = await env.DB.prepare(
-    `SELECT s.expires_at, u.id, u.display_name, u.role, u.active,
+    `SELECT s.expires_at, u.id, u.display_name, u.role, u.active, u.gender,
             u.group_id as groupId, g.slug as groupSlug, g.group_name as groupName,
             g.suspended_at as groupSuspendedAt
      FROM sessions s
@@ -52,6 +52,7 @@ export async function getSessionUser(request, env) {
     id: row.id,
     name: row.display_name,
     role: row.role,
+    gender: row.gender || null,
     groupId: row.groupId,
     groupSlug: row.groupSlug,
     groupName: row.groupName,
@@ -86,6 +87,20 @@ export async function resolveGroupBySlug(env, slug) {
   if (!group) throw new HttpError(404, "Unknown group code.");
   if (group.suspendedAt) throw new HttpError(403, "This group has been suspended. Contact support.");
   return group;
+}
+
+// Optional, self-reported, used only for greeting phrasing (see
+// dashboardMath.js's greeting()) — never gates anything, so an omitted
+// or empty value just means "no preference," not an error. Rejects
+// anything other than the two offered options rather than silently
+// storing free text, since greeting() only knows how to branch on
+// exactly these two.
+function normalizeGender(gender) {
+  if (gender === undefined || gender === null || gender === "") return null;
+  if (gender !== "male" && gender !== "female") {
+    throw new HttpError(400, "Gender must be 'male' or 'female' (or left unset).");
+  }
+  return gender;
 }
 
 // Strips everything but digits (and a leading "+", if given) so
@@ -167,6 +182,7 @@ export async function login(env, groupSlug, identifier, pin) {
   return {
     name: user.display_name,
     role: user.role,
+    gender: user.gender || null,
     token,
     isNew: false,
     groupSlug: group.slug,
@@ -184,7 +200,7 @@ export async function login(env, groupSlug, identifier, pin) {
 // all — same reasoning as createGroup() below (a failure between two
 // separate writes here previously risked an orphaned account with no
 // session, on a much smaller scale than that bug, but the same fix).
-export async function joinGroup(env, groupSlug, name, phone, pin, termsAccepted) {
+export async function joinGroup(env, groupSlug, name, phone, pin, termsAccepted, gender) {
   if (!name || !name.trim()) throw new HttpError(400, "Full name is required.");
   const phoneKey = normalizePhone(phone);
   if (phoneKey.replace(/^\+/, "").length < 7) throw new HttpError(400, "Enter a valid phone number.");
@@ -194,6 +210,7 @@ export async function joinGroup(env, groupSlug, name, phone, pin, termsAccepted)
   // the client alone for something that matters" rule every other
   // validation in this file already follows.
   if (!termsAccepted) throw new HttpError(400, "You must accept the Terms & Conditions to continue.");
+  const genderValue = normalizeGender(gender);
 
   const group = await resolveGroupBySlug(env, groupSlug);
 
@@ -225,9 +242,9 @@ export async function joinGroup(env, groupSlug, name, phone, pin, termsAccepted)
   try {
     await env.DB.batch([
       env.DB.prepare(
-        `INSERT INTO users (id, group_id, name, display_name, phone, pin_salt, pin_hash, terms_accepted_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))`
-      ).bind(id, group.id, key, name.trim(), phoneKey, salt, hash),
+        `INSERT INTO users (id, group_id, name, display_name, phone, pin_salt, pin_hash, gender, terms_accepted_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`
+      ).bind(id, group.id, key, name.trim(), phoneKey, salt, hash, genderValue),
       env.DB.prepare(`INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)`)
         .bind(token, id, expiresAt),
     ]);
@@ -241,6 +258,7 @@ export async function joinGroup(env, groupSlug, name, phone, pin, termsAccepted)
   return {
     name: name.trim(),
     role: "member",
+    gender: genderValue,
     token,
     isNew: true,
     groupSlug: group.slug,
@@ -257,8 +275,25 @@ export async function joinGroup(env, groupSlug, name, phone, pin, termsAccepted)
  * existing admin can promote a member — see /api/admin/promote in
  * routes/admin.js), never requiring database access anymore.
  */
-export async function createGroup(env, { slug, groupName, adminName, pin, phone, createdIp, termsAccepted }) {
-  if (!slug || !slug.trim()) throw new HttpError(400, "Group code is required.");
+// Group codes are always system-generated, never admin-typed — a
+// human-chosen code (an early group on this platform picked "0000")
+// trades away the one thing that matters most for a shared login
+// secret: not being guessable. generateGroupCode()'s alphabet (crypto.js)
+// already excludes visually ambiguous characters, so this stays easy to
+// read aloud and retype despite being random. A collision is astronomically
+// unlikely (~1 billion possible codes) but checked and retried anyway,
+// same caution as every other uniqueness check in this file.
+const MAX_CODE_ATTEMPTS = 5;
+async function generateUniqueGroupCode(env) {
+  for (let i = 0; i < MAX_CODE_ATTEMPTS; i++) {
+    const candidate = generateGroupCode();
+    const existing = await env.DB.prepare(`SELECT id FROM groups WHERE slug = ?`).bind(candidate).first();
+    if (!existing) return candidate;
+  }
+  throw new HttpError(500, "Could not generate a group code — please try again.");
+}
+
+export async function createGroup(env, { groupName, adminName, pin, phone, gender, createdIp, termsAccepted }) {
   if (!groupName || !groupName.trim()) throw new HttpError(400, "Group name is required.");
   if (!adminName || !adminName.trim()) throw new HttpError(400, "Your name is required.");
   if (!pin || pin.length < 4) throw new HttpError(400, "Choose a PIN of at least 4 digits.");
@@ -266,10 +301,9 @@ export async function createGroup(env, { slug, groupName, adminName, pin, phone,
   // brand-new admin account, so it's a "new member/admin registering"
   // moment too, not just an existing admin's routine action.
   if (!termsAccepted) throw new HttpError(400, "You must accept the Terms & Conditions to continue.");
+  const genderValue = normalizeGender(gender);
 
-  const normalizedSlug = slug.trim().toLowerCase().replace(/\s+/g, "-");
-  const existing = await env.DB.prepare(`SELECT id FROM groups WHERE slug = ?`).bind(normalizedSlug).first();
-  if (existing) throw new HttpError(409, "That group code is already taken.");
+  const normalizedSlug = await generateUniqueGroupCode(env);
 
   const groupId = uid();
   const userId = uid();
@@ -306,15 +340,15 @@ export async function createGroup(env, { slug, groupName, adminName, pin, phone,
          VALUES (?, ?, ?, 'Cycle 1', 1, '[]', '[]', ?, ?)`
       ).bind(groupId, normalizedSlug, groupName.trim(), createdIp || null, normalizedPhone),
       env.DB.prepare(
-        `INSERT INTO users (id, group_id, name, display_name, phone, pin_salt, pin_hash, role, terms_accepted_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, 'admin', datetime('now'))`
-      ).bind(userId, groupId, key, adminName.trim(), normalizedPhone, salt, hash),
+        `INSERT INTO users (id, group_id, name, display_name, phone, pin_salt, pin_hash, gender, role, terms_accepted_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'admin', datetime('now'))`
+      ).bind(userId, groupId, key, adminName.trim(), normalizedPhone, salt, hash, genderValue),
       env.DB.prepare(`INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)`)
         .bind(token, userId, expiresAt),
     ]);
   } catch (e) {
     if (String(e?.message || e).includes("UNIQUE constraint failed")) {
-      throw new HttpError(409, "That group code is already taken.");
+      throw new HttpError(409, "Could not generate a group code — please try again.");
     }
     throw e;
   }
@@ -322,6 +356,7 @@ export async function createGroup(env, { slug, groupName, adminName, pin, phone,
   return {
     name: adminName.trim(),
     role: "admin",
+    gender: genderValue,
     token,
     isNew: true,
     groupSlug: normalizedSlug,

@@ -1,4 +1,5 @@
 import React from "react";
+import Icon from "./Icon.jsx";
 
 /**
  * Shows where members should actually send their biweekly contribution
@@ -15,7 +16,10 @@ export default function PaymentInfo({ paymentMethods }) {
       <div className="payment-methods-list">
         {paymentMethods.map((m) => (
           <div className="payment-method-card" key={m.id}>
-            <div className="payment-method-type">{m.type === "bank" ? "🏦 Bank" : "📱 Mobile Money"}</div>
+            <div className="payment-method-type">
+              <Icon name={m.type === "bank" ? "bank" : "phone"} size={14} className="icon-inline" />{" "}
+              {m.type === "bank" ? "Bank" : "Mobile Money"}
+            </div>
             <div className="payment-method-label">{m.label}</div>
             <div className="muted small">{m.accountName}</div>
             <div className="payment-method-number">{m.accountNumber}</div>

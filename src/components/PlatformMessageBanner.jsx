@@ -4,7 +4,7 @@ import { getMyMessages, markMessageRead } from "../lib/api.js";
 /**
  * The signed-in member/admin's own inbox for a platform-owner direct
  * message (see worker/src/routes/messages.js) — deliberately styled and
- * worded distinctly from NoticeBoard.jsx's "📢 posted by <admin>" feed,
+ * worded distinctly from NoticeBoard.jsx's own posted-notice feed,
  * so there's no way to mistake a platform-level message for something
  * their own group's admin said. One-shot: dismissing marks it read
  * server-side, so — unlike NoticeBoard, which keeps showing history —

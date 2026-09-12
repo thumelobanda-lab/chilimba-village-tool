@@ -2,6 +2,9 @@ import React, { useEffect, useState } from "react";
 import TermsModal from "./TermsModal.jsx";
 import CreateGroup from "./CreateGroup.jsx";
 import LoginScene from "./LoginScene.jsx";
+import OpenBookMark from "./OpenBookMark.jsx";
+import PrivacyModal from "./PrivacyModal.jsx";
+import Icon from "./Icon.jsx";
 import { MOCK_MODE } from "../lib/api/core.js";
 
 const LAST_GROUP_KEY = "chilimba:last-group-slug";
@@ -41,6 +44,12 @@ export default function Login({ onLogin, onJoin, onCreateGroup, onOwnerLogin, se
   // sitting in the other's field.
   const [joinName, setJoinName] = useState("");
   const [phone, setPhone] = useState("");
+  // Optional — used only for greeting phrasing (dashboardMath.js's
+  // genderedAddress), never validated against/required the way name and
+  // phone are. "" (not asked yet) is a valid, permanent choice, not just
+  // an in-progress state — see normalizeGender in lib/api/auth.js, which
+  // treats it the same as never having answered.
+  const [gender, setGender] = useState("");
   const [signinIdentifier, setSigninIdentifier] = useState("");
   const [pin, setPin] = useState("");
   // Owner sign-in is a structurally different credential (real email +
@@ -55,6 +64,7 @@ export default function Login({ onLogin, onJoin, onCreateGroup, onOwnerLogin, se
   // deliberately starts unchecked (not pre-checked) every time.
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
+  const [showPrivacy, setShowPrivacy] = useState(false);
 
   // Drop ?join=... from the address bar once it's been read, so it
   // doesn't linger there or get shared/bookmarked with someone else's
@@ -86,7 +96,7 @@ export default function Login({ onLogin, onJoin, onCreateGroup, onOwnerLogin, se
         return;
       }
       if (isJoin) {
-        await onJoin(groupSlug.trim(), joinName.trim(), phone.trim(), pin, termsAccepted);
+        await onJoin(groupSlug.trim(), joinName.trim(), phone.trim(), pin, termsAccepted, gender);
       } else {
         await onLogin(groupSlug.trim(), signinIdentifier.trim(), pin);
       }
@@ -109,6 +119,7 @@ export default function Login({ onLogin, onJoin, onCreateGroup, onOwnerLogin, se
 
   return (
     <div className="panel login-panel">
+      <OpenBookMark />
       <LoginScene />
       <p className="login-tagline">Your group's honest record.</p>
       {sessionEndedNotice && (
@@ -163,7 +174,7 @@ export default function Login({ onLogin, onJoin, onCreateGroup, onOwnerLogin, se
           onClick={() => setMode("devCreateGroup")}
           disabled={busy}
         >
-          🛠 DEV ONLY — create a new group for local testing (never shown in production)
+          <Icon name="tools" size={12} className="icon-inline" /> DEV ONLY — create a new group for local testing (never shown in production)
         </button>
       )}
 
@@ -259,6 +270,14 @@ export default function Login({ onLogin, onJoin, onCreateGroup, onOwnerLogin, se
                   disabled={busy}
                 />
               </label>
+              <label className="field">
+                How should we address you? (optional)
+                <select value={gender} onChange={(e) => setGender(e.target.value)} disabled={busy}>
+                  <option value="">Prefer not to say</option>
+                  <option value="female">Sister</option>
+                  <option value="male">Brother</option>
+                </select>
+              </label>
             </>
           ) : (
             <label className="field">
@@ -311,6 +330,10 @@ export default function Login({ onLogin, onJoin, onCreateGroup, onOwnerLogin, se
           I agree to the{" "}
           <button type="button" className="btn-link" onClick={() => setShowTerms(true)}>
             Terms &amp; Conditions
+          </button>{" "}
+          and{" "}
+          <button type="button" className="btn-link" onClick={() => setShowPrivacy(true)}>
+            Privacy Policy
           </button>
         </label>
       )}
@@ -321,6 +344,7 @@ export default function Login({ onLogin, onJoin, onCreateGroup, onOwnerLogin, se
       </button>
 
       {showTerms && <TermsModal onClose={() => setShowTerms(false)} />}
+      {showPrivacy && <PrivacyModal onClose={() => setShowPrivacy(false)} />}
 
       {isOwner ? (
         <p className="muted tiny">

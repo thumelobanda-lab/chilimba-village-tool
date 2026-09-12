@@ -1,4 +1,4 @@
-import { randomSalt, hashPin, verifyPin } from "../crypto.js";
+import { randomSalt, hashPin, verifyPin, generateGroupCode } from "../crypto.js";
 import { isAdminName } from "../adminConfig.js";
 import { MOCK_MODE, lsGet, lsSet, realFetch } from "./core.js";
 import { FREE_TIER_MAX_MEMBERS } from "./subscription.js";
@@ -25,6 +25,18 @@ function normalizePhone(phone) {
   const trimmed = (phone || "").trim();
   const digits = trimmed.replace(/\D/g, "");
   return trimmed.startsWith("+") ? `+${digits}` : digits;
+}
+
+// Mirrors normalizeGender() in worker/src/auth.js — optional, greeting-
+// phrasing-only (see dashboardMath.js's genderedAddress), so an omitted
+// value is fine but an unrecognized one isn't silently stored as free
+// text.
+function normalizeGender(gender) {
+  if (gender === undefined || gender === null || gender === "") return null;
+  if (gender !== "male" && gender !== "female") {
+    throw new Error("Gender must be 'male' or 'female' (or left unset).");
+  }
+  return gender;
 }
 
 // Mock mode has no separate phone-indexed lookup table — accounts are
@@ -89,6 +101,7 @@ export async function login(groupSlug, identifier, pin) {
     const session = {
       name: sessionName,
       role: existing.role,
+      gender: existing.gender || null,
       groupSlug: slug,
       groupName: group.groupName,
       token: `mock-${Date.now()}`,
@@ -117,12 +130,13 @@ export async function login(groupSlug, identifier, pin) {
 // termsAccepted mirrors the server-side check in joinGroup() — checked
 // here too so mock mode enforces the same rule real users hit, not just
 // the Login.jsx checkbox disabling the submit button.
-export async function join(groupSlug, name, phone, pin, termsAccepted) {
+export async function join(groupSlug, name, phone, pin, termsAccepted, gender) {
   if (!name || !name.trim()) throw new Error("Full name is required.");
   const phoneKey = normalizePhone(phone);
   if (phoneKey.replace(/^\+/, "").length < 7) throw new Error("Enter a valid phone number.");
   if (!pin || pin.length < 4) throw new Error("Choose a PIN of at least 4 digits.");
   if (!termsAccepted) throw new Error("You must accept the Terms & Conditions to continue.");
+  const genderValue = normalizeGender(gender);
 
   if (MOCK_MODE) {
     const slug = normalizeSlug(groupSlug);
@@ -162,13 +176,14 @@ export async function join(groupSlug, name, phone, pin, termsAccepted) {
     // reproduce the create-group flow just to reach the admin-only tabs.
     const role = isAdminName(name) ? "admin" : "member";
     lsSet(key, {
-      salt, hash, role, phone: phoneKey, displayName: name.trim(), active: true,
+      salt, hash, role, phone: phoneKey, gender: genderValue, displayName: name.trim(), active: true,
       joinedAt: new Date().toISOString(), termsAcceptedAt: new Date().toISOString(),
     });
 
     const session = {
       name: name.trim(),
       role,
+      gender: genderValue,
       groupSlug: slug,
       groupName: group.groupName,
       token: `mock-${Date.now()}`,
@@ -177,7 +192,7 @@ export async function join(groupSlug, name, phone, pin, termsAccepted) {
     return { ...session, isNew: true };
   }
 
-  return realFetch("/api/join", { method: "POST", body: JSON.stringify({ groupSlug, name, phone, pin, termsAccepted }) }).then(
+  return realFetch("/api/join", { method: "POST", body: JSON.stringify({ groupSlug, name, phone, pin, termsAccepted, gender }) }).then(
     (session) => {
       const { isNew, ...toPersist } = session;
       lsSet("chilimba:session", toPersist);
@@ -192,16 +207,28 @@ export async function join(groupSlug, name, phone, pin, termsAccepted) {
 // ONLY self-service way to become an admin; every other promotion still
 // requires a direct database write (see schema.sql), which stays true
 // for groups that already exist.
-export async function createGroup({ slug, groupName, adminName, pin, termsAccepted }) {
-  if (!slug || !slug.trim()) throw new Error("Group code is required.");
+// Generates its own unique code rather than taking one from the caller
+// — same reasoning as the real backend's generateUniqueGroupCode
+// (worker/src/auth.js): a human-chosen code trades away the one thing
+// that matters for a shared login secret, being hard to guess.
+function generateUniqueGroupCode() {
+  const MAX_ATTEMPTS = 5;
+  for (let i = 0; i < MAX_ATTEMPTS; i++) {
+    const candidate = generateGroupCode();
+    if (!lsGet(groupKey(candidate), null)) return candidate;
+  }
+  throw new Error("Could not generate a group code — please try again.");
+}
+
+export async function createGroup({ groupName, adminName, pin, termsAccepted, gender }) {
   if (!groupName || !groupName.trim()) throw new Error("Group name is required.");
   if (!adminName || !adminName.trim()) throw new Error("Your name is required.");
   if (!pin || pin.length < 4) throw new Error("Choose a PIN of at least 4 digits.");
   if (!termsAccepted) throw new Error("You must accept the Terms & Conditions to continue.");
+  const genderValue = normalizeGender(gender);
 
   if (MOCK_MODE) {
-    const normalizedSlug = normalizeSlug(slug);
-    if (lsGet(groupKey(normalizedSlug), null)) throw new Error("That group code is already taken.");
+    const normalizedSlug = generateUniqueGroupCode();
 
     lsSet(groupKey(normalizedSlug), {
       groupName: groupName.trim(),
@@ -214,13 +241,14 @@ export async function createGroup({ slug, groupName, adminName, pin, termsAccept
     const salt = randomSalt();
     const hash = await hashPin(pin, salt);
     lsSet(accountKey(normalizedSlug, adminName), {
-      salt, hash, role: "admin", active: true,
+      salt, hash, role: "admin", gender: genderValue, active: true,
       joinedAt: new Date().toISOString(), termsAcceptedAt: new Date().toISOString(),
     });
 
     const session = {
       name: adminName.trim(),
       role: "admin",
+      gender: genderValue,
       groupSlug: normalizedSlug,
       groupName: groupName.trim(),
       token: `mock-${Date.now()}`,
@@ -229,7 +257,7 @@ export async function createGroup({ slug, groupName, adminName, pin, termsAccept
     return { ...session, isNew: true };
   }
 
-  return realFetch("/api/groups", { method: "POST", body: JSON.stringify({ slug, groupName, adminName, pin, termsAccepted }) }).then(
+  return realFetch("/api/groups", { method: "POST", body: JSON.stringify({ groupName, adminName, pin, termsAccepted, gender }) }).then(
     (session) => {
       const { isNew, ...toPersist } = session;
       lsSet("chilimba:session", toPersist);

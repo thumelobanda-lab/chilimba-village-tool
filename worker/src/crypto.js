@@ -85,3 +85,18 @@ export function maskPhone(phone) {
 export function uid() {
   return crypto.randomUUID();
 }
+
+// Excludes 0/O, 1/I/l — a group code gets read aloud and retyped by
+// every member who joins, so visual/phonetic ambiguity is a real
+// support-burden risk here in a way it isn't for a session token. 6
+// chars from this 32-symbol alphabet is ~1 billion combinations —
+// nowhere near cryptographic strength, but plenty to make a group code
+// unguessable and collisions practically impossible at this app's scale
+// (createGroup still retries on the rare collision — see auth.js).
+const GROUP_CODE_ALPHABET = "abcdefghjkmnpqrstuvwxyz23456789";
+
+export function generateGroupCode(length = 6) {
+  const bytes = new Uint8Array(length);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (b) => GROUP_CODE_ALPHABET[b % GROUP_CODE_ALPHABET.length]).join("");
+}

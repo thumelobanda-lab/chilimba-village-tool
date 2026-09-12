@@ -1,6 +1,7 @@
 import React from "react";
 import { money } from "./LedgerTable.jsx";
 import { useCountUp } from "../hooks/useCountUp.js";
+import Icon from "./Icon.jsx";
 
 /**
  * The group-wide layer of the dashboard — deliberately aggregate-only
@@ -22,7 +23,7 @@ export default function GroupPulse({ data, loading }) {
 
   return (
     <div className="group-pulse-strip">
-      👥 <strong>{money(totalDisplay)}</strong> contributed this round · <strong>{data.membersPaidThisWeek}</strong> of {data.totalActiveMembers} members paid this week
+      <Icon name="people" size={14} className="icon-inline" /> <strong>{money(totalDisplay)}</strong> contributed this round · <strong>{data.membersPaidThisWeek}</strong> of {data.totalActiveMembers} members paid this week
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { getNotices, deleteNotice } from "../lib/api.js";
 import { useApiData } from "../lib/useApiData.js";
+import Icon from "./Icon.jsx";
 
 function timeAgo(iso) {
   const diff = Date.now() - new Date(iso).getTime();
@@ -40,7 +41,7 @@ export default function NoticeBoard({ isAdmin }) {
       {visible.map((n) => (
         <div className="notice-item" key={n.id}>
           <div className="notice-message">
-            {n.targetMemberName ? "📬" : "📢"} {n.message}
+            <Icon name={n.targetMemberName ? "mail" : "megaphone"} size={14} className="icon-inline" /> {n.message}
           </div>
           <div className="notice-meta">
             <span className="muted tiny">{n.postedBy} · {timeAgo(n.postedAt)}</span>

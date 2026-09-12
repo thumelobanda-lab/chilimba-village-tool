@@ -6,6 +6,7 @@ import AdminManagement from "./AdminManagement.jsx";
 import CollapsibleSection from "./CollapsibleSection.jsx";
 import InviteCard from "./InviteCard.jsx";
 import Toast from "./Toast.jsx";
+import Icon from "./Icon.jsx";
 
 function formatDate(dateISO) {
   const d = new Date(dateISO + "T00:00:00");
@@ -223,7 +224,7 @@ export default function GroupSetup({ config, onSaved, session, premiumActive, on
       </div>
 
       <CollapsibleSection
-        icon="🏷️"
+        icon={<Icon name="tag" size={16} />}
         title="Group Basics"
         summary={`${draft.groupName || "Untitled group"} · ${draft.cycleName || "no round name set"}`}
         done={basicsDone}
@@ -250,7 +251,7 @@ export default function GroupSetup({ config, onSaved, session, premiumActive, on
       </CollapsibleSection>
 
       <CollapsibleSection
-        icon="📅"
+        icon={<Icon name="calendar" size={16} />}
         title="Payout Schedule"
         summary={
           (dateCount === 0
@@ -306,7 +307,7 @@ export default function GroupSetup({ config, onSaved, session, premiumActive, on
         {genError && <div className="error-text" role="alert">{genError}</div>}
         {projectedEndDate && (
           <p className="muted small" style={{ marginTop: 6 }}>
-            📅 Anticipated cycle-end date: <strong>{formatDate(projectedEndDate)}</strong>{" "}
+            <Icon name="calendar" size={13} className="icon-inline" /> Anticipated cycle-end date: <strong>{formatDate(projectedEndDate)}</strong>{" "}
             ({genCount} date{Number(genCount) === 1 ? "" : "s"}, {SCHEDULE_FREQUENCIES[genFrequency]?.label.toLowerCase()})
           </p>
         )}
@@ -354,7 +355,7 @@ export default function GroupSetup({ config, onSaved, session, premiumActive, on
       </CollapsibleSection>
 
       <CollapsibleSection
-        icon="💰"
+        icon={<Icon name="money" size={16} />}
         title="Group Savings Funds"
         summary={fundCount === 0 ? "None set up" : `${fundCount} fund${fundCount === 1 ? "" : "s"}`}
         done={fundsDone}
@@ -441,7 +442,7 @@ export default function GroupSetup({ config, onSaved, session, premiumActive, on
       </CollapsibleSection>
 
       <CollapsibleSection
-        icon="📱"
+        icon={<Icon name="phone" size={16} />}
         title="Payment Details"
         summary={paymentCount === 0 ? "Not set up" : `${paymentCount} method${paymentCount === 1 ? "" : "s"}`}
         done={paymentDetailsDone}
@@ -455,7 +456,10 @@ export default function GroupSetup({ config, onSaved, session, premiumActive, on
           <div className="payment-methods-list">
             {config.paymentMethods.map((m) => (
               <div className="payment-method-card" key={m.id}>
-                <div className="payment-method-type">{m.type === "bank" ? "🏦 Bank" : "📱 Mobile Money"}</div>
+                <div className="payment-method-type">
+                  <Icon name={m.type === "bank" ? "bank" : "phone"} size={14} className="icon-inline" />{" "}
+                  {m.type === "bank" ? "Bank" : "Mobile Money"}
+                </div>
                 <div className="payment-method-label">{m.label}</div>
                 <div className="muted small">{m.accountName}</div>
                 <div className="payment-method-number">{m.accountNumber}</div>
@@ -472,7 +476,7 @@ export default function GroupSetup({ config, onSaved, session, premiumActive, on
         )}
       </CollapsibleSection>
 
-      <CollapsibleSection icon="📣" title="Invite Members" summary="WhatsApp-ready invite card">
+      <CollapsibleSection icon={<Icon name="megaphone" size={16} />} title="Invite Members" summary="WhatsApp-ready invite card">
         <p className="muted tiny" style={{ marginBottom: 10 }}>
           A shareable card with your group's name and code — post it straight to WhatsApp,
           or download it to send however you like.
@@ -480,7 +484,7 @@ export default function GroupSetup({ config, onSaved, session, premiumActive, on
         <InviteCard groupName={config.groupName} groupSlug={session?.groupSlug} cycleName={config.cycleName} />
       </CollapsibleSection>
 
-      <CollapsibleSection icon="👥" title="Members & Group Leaders" summary="Members, roles, next due dates">
+      <CollapsibleSection icon={<Icon name="people" size={16} />} title="Members & Group Leaders" summary="Members, roles, next due dates">
         <AdminManagement schedule={draft.schedule} />
       </CollapsibleSection>
 

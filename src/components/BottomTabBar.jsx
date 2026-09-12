@@ -1,4 +1,5 @@
 import React from "react";
+import Icon from "./Icon.jsx";
 
 // The 3 destinations members actually reach for constantly, plus a
 // catch-all Menu tab that opens the same NavMenu panel the header
@@ -10,9 +11,9 @@ import React from "react";
 // there's already room for the hamburger to be a low-friction "everything
 // lives in one place" affordance.
 const PRIMARY_TABS = [
-  { id: "home", label: "Dashboard", icon: "🏠" },
-  { id: "ledger", label: "Payments", icon: "💳" },
-  { id: "community", label: "Community", icon: "🤝" },
+  { id: "home", label: "Dashboard", icon: "home" },
+  { id: "ledger", label: "Payments", icon: "card" },
+  { id: "community", label: "Community", icon: "people" },
 ];
 
 export default function BottomTabBar({ activeId, onSelect, onOpenMenu, menuOpen, hasMenuBadge }) {
@@ -26,7 +27,7 @@ export default function BottomTabBar({ activeId, onSelect, onOpenMenu, menuOpen,
           onClick={() => onSelect(t.id)}
           aria-current={activeId === t.id ? "page" : undefined}
         >
-          <span className="bottom-tab-icon" aria-hidden="true">{t.icon}</span>
+          <span className="bottom-tab-icon" aria-hidden="true"><Icon name={t.icon} size={20} /></span>
           <span className="bottom-tab-label">{t.label}</span>
         </button>
       ))}

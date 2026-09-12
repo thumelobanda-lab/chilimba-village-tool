@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import TermsModal from "./TermsModal.jsx";
+import PrivacyModal from "./PrivacyModal.jsx";
 
 /**
  * Join or sign into a second (or third...) group without losing your
@@ -24,12 +25,16 @@ export default function AddGroupModal({ onJoin, onLogin, onClose }) {
   const [groupSlug, setGroupSlug] = useState("");
   const [joinName, setJoinName] = useState("");
   const [phone, setPhone] = useState("");
+  // Optional, greeting-phrasing-only — same field as Login.jsx's sign-up
+  // form (see dashboardMath.js's genderedAddress).
+  const [gender, setGender] = useState("");
   const [signinIdentifier, setSigninIdentifier] = useState("");
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
+  const [showPrivacy, setShowPrivacy] = useState(false);
 
   const isJoin = mode === "join";
   const canSubmit = isJoin
@@ -42,7 +47,7 @@ export default function AddGroupModal({ onJoin, onLogin, onClose }) {
     setBusy(true);
     try {
       if (isJoin) {
-        await onJoin(groupSlug.trim(), joinName.trim(), phone.trim(), pin, termsAccepted);
+        await onJoin(groupSlug.trim(), joinName.trim(), phone.trim(), pin, termsAccepted, gender);
       } else {
         await onLogin(groupSlug.trim(), signinIdentifier.trim(), pin);
       }
@@ -130,6 +135,14 @@ export default function AddGroupModal({ onJoin, onLogin, onClose }) {
                   disabled={busy}
                 />
               </label>
+              <label className="field">
+                How should we address you? (optional)
+                <select value={gender} onChange={(e) => setGender(e.target.value)} disabled={busy}>
+                  <option value="">Prefer not to say</option>
+                  <option value="female">Sister</option>
+                  <option value="male">Brother</option>
+                </select>
+              </label>
             </>
           ) : (
             <label className="field">
@@ -170,6 +183,10 @@ export default function AddGroupModal({ onJoin, onLogin, onClose }) {
               I agree to the{" "}
               <button type="button" className="btn-link" onClick={() => setShowTerms(true)}>
                 Terms &amp; Conditions
+              </button>{" "}
+              and{" "}
+              <button type="button" className="btn-link" onClick={() => setShowPrivacy(true)}>
+                Privacy Policy
               </button>
             </label>
           )}
@@ -181,6 +198,7 @@ export default function AddGroupModal({ onJoin, onLogin, onClose }) {
         </div>
 
         {showTerms && <TermsModal onClose={() => setShowTerms(false)} />}
+        {showPrivacy && <PrivacyModal onClose={() => setShowPrivacy(false)} />}
       </div>
     </div>
   );

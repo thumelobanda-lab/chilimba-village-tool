@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import { payeesLabel } from "../lib/scheduleUtils.js";
+import { daysLate, totalDaysLate } from "../lib/dashboardMath.js";
 import Receipt from "./Receipt.jsx";
+import Icon from "./Icon.jsx";
 
 const money = (n) => "K" + (Number(n) || 0).toLocaleString("en-ZM", { maximumFractionDigits: 0 });
 
@@ -113,14 +115,15 @@ function PaymentHero({ overdue, nextUnpaid, nextUpcomingRow, onAddPayment }) {
   if (overdue.length > 0) {
     const totalOverdue = overdue.reduce((sum, r) => sum + r.balance, 0);
     const earliest = overdue[0];
+    const behindDays = totalDaysLate(overdue);
     return (
       <div className="payment-hero payment-hero-behind">
         <div className="payment-hero-label">You're behind</div>
         <div className="payment-hero-amount">{money(totalOverdue)}</div>
         <div className="payment-hero-sub">
           {overdue.length === 1
-            ? `1 payment overdue — ${formatDate(earliest.date)}`
-            : `${overdue.length} payments overdue — earliest ${formatDate(earliest.date)}`}
+            ? `1 payment overdue — ${formatDate(earliest.date)} (${daysLate(earliest.date)}d late)`
+            : `${overdue.length} payments overdue — earliest ${formatDate(earliest.date)} — ${behindDays} days behind combined`}
         </div>
         <PayButton row={earliest} onAddPayment={onAddPayment} size="hero" />
       </div>
@@ -140,7 +143,7 @@ function PaymentHero({ overdue, nextUnpaid, nextUpcomingRow, onAddPayment }) {
 
   return (
     <div className="payment-hero payment-hero-ok">
-      <div className="payment-hero-label">🎉 You're all paid up</div>
+      <div className="payment-hero-label"><Icon name="sparkle" size={14} className="icon-inline" /> You're all paid up</div>
       <div className="payment-hero-sub">
         {nextUpcomingRow
           ? `Next payment: ${formatDate(nextUpcomingRow.date)} · ${money(nextUpcomingRow.due)}`
@@ -184,10 +187,10 @@ function PayButton({ row, onAddPayment, size }) {
   );
 }
 
-function StatusPill({ isPaid, isOverdue, nothingDue }) {
+function StatusPill({ isPaid, isOverdue, nothingDue, lateDays }) {
   if (nothingDue) return <span className="status-pill status-pill-due">Nothing due</span>;
   if (isPaid) return <span className="status-pill status-pill-paid">✓ Paid</span>;
-  if (isOverdue) return <span className="status-pill status-pill-behind">Behind</span>;
+  if (isOverdue) return <span className="status-pill status-pill-behind">Behind — {lateDays}d late</span>;
   return <span className="status-pill status-pill-due">Due</span>;
 }
 
@@ -425,7 +428,7 @@ function PaymentCard({
                         <>
                           {/* Receipts are a premium feature — see FreeTierBanner.jsx */}
                           {e.confirmedAt && premiumActive && (
-                            <button className="receipt-link" onClick={() => onViewReceipt(e)}>🧾 Receipt</button>
+                            <button className="receipt-link" onClick={() => onViewReceipt(e)}><Icon name="receipt" size={13} className="icon-inline" /> Receipt</button>
                           )}
                           <button className="btn-link" onClick={() => onVoidPayment(e.id)}>void</button>
                         </>

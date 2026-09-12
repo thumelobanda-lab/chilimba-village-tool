@@ -3,6 +3,7 @@ import { updateProfile, uploadProfilePhoto, removeProfilePhoto, getProfilePhotoU
 import { resizeImageForUpload } from "../lib/imageResize.js";
 import Avatar from "./Avatar.jsx";
 import TermsModal from "./TermsModal.jsx";
+import PrivacyModal from "./PrivacyModal.jsx";
 import Toast from "./Toast.jsx";
 
 // Self-service editing of the signed-in member's own account. Deliberately
@@ -20,6 +21,7 @@ export default function Profile({ session, onRenamed, onLogout }) {
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
+  const [showPrivacy, setShowPrivacy] = useState(false);
   const [photoUrl, setPhotoUrl] = useState(null);
   const [photoBusy, setPhotoBusy] = useState(false);
   const [photoError, setPhotoError] = useState("");
@@ -252,8 +254,10 @@ export default function Profile({ session, onRenamed, onLogout }) {
 
       <div className="privacy-row">
         <button className="btn-link" onClick={() => setShowTerms(true)}>Terms &amp; Conditions</button>
+        <button className="btn-link" onClick={() => setShowPrivacy(true)}>Privacy Policy</button>
       </div>
       {showTerms && <TermsModal onClose={() => setShowTerms(false)} />}
+      {showPrivacy && <PrivacyModal onClose={() => setShowPrivacy(false)} />}
 
       {onLogout && (
         <div className="account-signout-row">

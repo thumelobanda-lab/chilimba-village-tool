@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { hashPin, verifyPin, isLegacyHash, randomSalt } from "./crypto.js";
+import { hashPin, verifyPin, isLegacyHash, randomSalt, generateGroupCode } from "./crypto.js";
 
 describe("hashPin / verifyPin (PBKDF2)", () => {
   it("produces a hash tagged with the pbkdf2 prefix and iteration count", async () => {
@@ -31,6 +31,33 @@ describe("hashPin / verifyPin (PBKDF2)", () => {
     expect(isLegacyHash(hash)).toBe(false);
   });
 }, 20000); // PBKDF2 at 100k iterations takes real time — give the suite room
+
+describe("generateGroupCode", () => {
+  it("defaults to a 6-character code", () => {
+    expect(generateGroupCode()).toHaveLength(6);
+  });
+
+  it("respects a custom length", () => {
+    expect(generateGroupCode(10)).toHaveLength(10);
+  });
+
+  it("never includes visually ambiguous characters (0/O, 1/I/l)", () => {
+    // Generate a lot of codes rather than trust one sample — this is
+    // exactly the kind of off-by-one-in-the-alphabet bug that a single
+    // lucky/unlucky draw wouldn't catch.
+    const codes = Array.from({ length: 500 }, () => generateGroupCode(12)).join("");
+    expect(codes).not.toMatch(/[01ilo]/i);
+  });
+
+  it("only uses lowercase letters and digits", () => {
+    expect(generateGroupCode(20)).toMatch(/^[a-z0-9]+$/);
+  });
+
+  it("produces different codes across calls", () => {
+    const codes = new Set(Array.from({ length: 20 }, () => generateGroupCode()));
+    expect(codes.size).toBeGreaterThan(1);
+  });
+});
 
 describe("legacy hash backward compatibility", () => {
   // Simulates an account created before the PBKDF2 switch: single-round

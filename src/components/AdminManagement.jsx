@@ -3,6 +3,7 @@ import { getGroupMembers, promoteMember, demoteMember, removeMember, resetMember
 import { useApiData } from "../lib/useApiData.js";
 import { cycleEndDate } from "../lib/scheduleUtils.js";
 import Toast from "./Toast.jsx";
+import Icon from "./Icon.jsx";
 
 const money = (n) => "K" + (Number(n) || 0).toLocaleString("en-ZM", { maximumFractionDigits: 0 });
 
@@ -101,7 +102,7 @@ export default function AdminManagement({ schedule }) {
       <h3 className="panel-subtitle">Members & Group Leaders</h3>
       {endDate && (
         <p className="muted small" style={{ marginBottom: 4 }}>
-          📅 This round is on track to end <strong>{formatDate(endDate)}</strong>
+          <Icon name="calendar" size={14} className="icon-inline" /> This round is on track to end <strong>{formatDate(endDate)}</strong>
         </p>
       )}
       <p className="muted tiny" style={{ marginBottom: 10 }}>

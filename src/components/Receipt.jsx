@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { buildReceiptData, buildReceiptMessage, buildReceiptFilename } from "../lib/receipt.js";
 import { buildWhatsAppShareUrl } from "../lib/inviteCard.js";
+import Icon from "./Icon.jsx";
 
 const CARD_WIDTH = 900;
 const CARD_HEIGHT = 1200; // default/initial height before the first draw computes the real one
@@ -58,7 +59,7 @@ function drawReceipt(canvas, data) {
   ctx.fillText(data.groupName, w / 2, 90);
   ctx.font = "600 24px system-ui, sans-serif";
   ctx.fillStyle = "rgba(255,255,255,0.82)";
-  ctx.fillText("🧾 Payment Receipt", w / 2, 140);
+  ctx.fillText("Payment Receipt", w / 2, 140);
 
   // Rows: label left, value right, divider beneath (rows computed above,
   // before sizing the canvas)
@@ -104,7 +105,7 @@ function drawReceipt(canvas, data) {
  * shareable to WhatsApp with the same image-attach-with-text-fallback
  * pattern as InviteCard.jsx's "Share invite card". Only ever rendered
  * for a confirmed entry (see LedgerTable.jsx / Reconciliation.jsx, which
- * gate the "🧾 Receipt" button on e.confirmedAt) — buildReceiptData
+ * gate the "Receipt" button on e.confirmedAt) — buildReceiptData
  * throws otherwise, as a defensive backstop.
  */
 export default function Receipt({ payment, memberName, groupName, cycleName, scheduleRow, onClose }) {
@@ -161,11 +162,11 @@ export default function Receipt({ payment, memberName, groupName, cycleName, sch
         <canvas ref={canvasRef} width={CARD_WIDTH} height={CARD_HEIGHT} className="receipt-card-canvas" />
         <div className="invite-card-actions">
           <button className="btn-primary" style={{ width: "auto" }} onClick={share}>
-            📤 Share receipt
+            <Icon name="share" size={16} className="icon-inline" /> Share receipt
           </button>
           <button className="btn-ghost-dark" onClick={download}>Download image</button>
           <a className="btn-ghost-dark" href={whatsappTextUrl} target="_blank" rel="noopener noreferrer">
-            💬 Text-only WhatsApp link
+            <Icon name="message" size={16} className="icon-inline" /> Text-only WhatsApp link
           </a>
         </div>
         {status && <p className="muted small" style={{ marginTop: 8 }}>{status}</p>}

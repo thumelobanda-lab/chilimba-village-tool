@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { buildInviteMessage, buildWhatsAppShareUrl, buildInviteCardFilename, buildCardContent } from "../lib/inviteCard.js";
+import Icon from "./Icon.jsx";
 
 const CARD_WIDTH = 1080;
 const CARD_HEIGHT = 1080;
@@ -35,9 +36,19 @@ function drawCard(canvas, content) {
   ctx.font = "600 34px system-ui, sans-serif";
   ctx.fillText(content.brand.toUpperCase(), w / 2, 130);
 
-  // Emoji flourish
-  ctx.font = "120px system-ui, sans-serif";
-  ctx.fillText("🤝", w / 2, 320);
+  // Flourish — two overlapping circles standing in for "people/community",
+  // hand-drawn rather than an emoji fillText (canvas text rendering falls
+  // back to inconsistent glyphs for pictographic emoji depending on the
+  // OS's font stack, a real risk for an image meant to be shared outside
+  // the app).
+  ctx.strokeStyle = "rgba(255,255,255,0.85)";
+  ctx.lineWidth = 6;
+  ctx.beginPath();
+  ctx.arc(w / 2 - 40, 280, 52, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(w / 2 + 40, 280, 52, 0, Math.PI * 2);
+  ctx.stroke();
 
   // Group name — wraps onto a second line if it's long
   ctx.fillStyle = "#FFFFFF";
@@ -154,11 +165,11 @@ export default function InviteCard({ groupName, groupSlug, cycleName }) {
       <canvas ref={canvasRef} width={CARD_WIDTH} height={CARD_HEIGHT} className="invite-card-canvas" />
       <div className="invite-card-actions">
         <button className="btn-primary" style={{ width: "auto" }} onClick={share}>
-          📤 Share invite card
+          <Icon name="share" size={16} className="icon-inline" /> Share invite card
         </button>
         <button className="btn-ghost-dark" onClick={download}>Download image</button>
         <a className="btn-ghost-dark" href={whatsappTextUrl} target="_blank" rel="noopener noreferrer">
-          💬 Text-only WhatsApp link
+          <Icon name="message" size={16} className="icon-inline" /> Text-only WhatsApp link
         </a>
       </div>
       {status && <p className="muted small" style={{ marginTop: 8 }}>{status}</p>}
