@@ -5,6 +5,7 @@ import Avatar from "./Avatar.jsx";
 import TermsModal from "./TermsModal.jsx";
 import PrivacyModal from "./PrivacyModal.jsx";
 import Toast from "./Toast.jsx";
+import FreeTierBanner from "./FreeTierBanner.jsx";
 
 // Self-service editing of the signed-in member's own account. Deliberately
 // scoped to just two things: a cosmetic display-name fix (spelling/
@@ -12,7 +13,7 @@ import Toast from "./Toast.jsx";
 // rename isn't offered here) and changing your own PIN. Nothing here can
 // touch another member's account — updateProfile() always acts on the
 // signed-in session, never a name passed in from outside.
-export default function Profile({ session, onRenamed, onLogout }) {
+export default function Profile({ session, onRenamed, onLogout, subscriptionStatus, onUpgrade }) {
   const [displayName, setDisplayName] = useState(session.name);
   const [currentPin, setCurrentPin] = useState("");
   const [newPin, setNewPin] = useState("");
@@ -137,6 +138,18 @@ export default function Profile({ session, onRenamed, onLogout }) {
         Update how your name is shown, or change your PIN. This only ever affects your own
         account — nobody else's info is touched.
       </p>
+
+      {/* Moved off the dashboard — it was permanent, always-visible real
+          estate for a state (free tier) that's true indefinitely until an
+          admin upgrades, competing with the four things Dashboard.jsx's
+          own doc comment says are meant to fit one screen. My Account is
+          still somewhere every member passes through, just not the very
+          first thing they see every time. */}
+      <FreeTierBanner
+        status={subscriptionStatus}
+        isAdmin={session.role === "admin"}
+        onUpgrade={onUpgrade}
+      />
 
       <h3 className="panel-subtitle">Your Photo</h3>
       <p className="muted tiny" style={{ marginBottom: 10 }}>

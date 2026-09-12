@@ -195,8 +195,9 @@ export default function App() {
 
   // Auto-opens once per account, the first time the dashboard is actually
   // reached (after login and onboarding) — a free-tier group reaches the
-  // dashboard immediately now (see FreeTierBanner below), so this no
-  // longer waits on subscription status at all. Reopenable any time from
+  // dashboard immediately now (see FreeTierBanner, rendered from
+  // Profile.jsx's "My Account" rather than the dashboard itself), so this
+  // no longer waits on subscription status at all. Reopenable any time from
   // "How this app works" in the nav menu, which is why "seen" is tracked
   // separately from whether this effect has fired.
   useEffect(() => {
@@ -455,11 +456,6 @@ export default function App() {
             {tab === "home" && (
               <>
                 <PlatformMessageBanner />
-                <FreeTierBanner
-                  status={subscription.status}
-                  isAdmin={session.role === "admin"}
-                  onUpgrade={() => setTab("subscription")}
-                />
                 <SubscriptionExpiryBanner
                   status={subscription.status}
                   isAdmin={session.role === "admin"}
@@ -654,7 +650,13 @@ export default function App() {
 
             {tab === "account" && (
               <div role="tabpanel" id="panel-account" aria-labelledby="tab-account">
-                <Profile session={session} onRenamed={renameSession} onLogout={handleLogout} />
+                <Profile
+                  session={session}
+                  onRenamed={renameSession}
+                  onLogout={handleLogout}
+                  subscriptionStatus={subscription.status}
+                  onUpgrade={() => setTab("subscription")}
+                />
               </div>
             )}
 
