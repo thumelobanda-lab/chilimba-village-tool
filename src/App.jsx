@@ -169,6 +169,21 @@ export default function App() {
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
   }, [session?.name, session?.groupSlug]);
+  // Profile.jsx fetches/revokes its own copy of the photo for its inline
+  // preview (see the comment above), so a change made there wouldn't
+  // otherwise reach this header copy until the next full session change —
+  // a member could edit their photo, see it update on the Account page,
+  // and still see the *old* one (or no-photo initials) in the header
+  // badge, with nothing telling them whether the save actually took.
+  // Profile.jsx calls this with its own freshly-created object URL (or
+  // null after a removal) right after a successful save, so the header
+  // updates in the same instant as the inline preview.
+  const handleHeaderPhotoChanged = (url) => {
+    setHeaderPhotoUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return url;
+    });
+  };
   // Set when "Log a Payment" is tapped from the dashboard CTA — tells
   // LedgerTable which row to auto-expand, scroll to, and focus so a
   // member never has to hunt for the right collapsed date entry
@@ -655,6 +670,7 @@ export default function App() {
                   onLogout={handleLogout}
                   subscriptionStatus={subscription.status}
                   onUpgrade={() => setTab("subscription")}
+                  onPhotoChanged={handleHeaderPhotoChanged}
                 />
               </div>
             )}

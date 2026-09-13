@@ -13,7 +13,7 @@ import FreeTierBanner from "./FreeTierBanner.jsx";
 // rename isn't offered here) and changing your own PIN. Nothing here can
 // touch another member's account — updateProfile() always acts on the
 // signed-in session, never a name passed in from outside.
-export default function Profile({ session, onRenamed, onLogout, subscriptionStatus, onUpgrade }) {
+export default function Profile({ session, onRenamed, onLogout, subscriptionStatus, onUpgrade, onPhotoChanged }) {
   const [displayName, setDisplayName] = useState(session.name);
   const [currentPin, setCurrentPin] = useState("");
   const [newPin, setNewPin] = useState("");
@@ -60,6 +60,7 @@ export default function Profile({ session, onRenamed, onLogout, subscriptionStat
         if (prev) URL.revokeObjectURL(prev);
         return URL.createObjectURL(resized);
       });
+      onPhotoChanged?.(URL.createObjectURL(resized));
       setStatus("Saved");
     } catch (err) {
       setPhotoError(err.message || "Could not upload your photo.");
@@ -78,6 +79,7 @@ export default function Profile({ session, onRenamed, onLogout, subscriptionStat
         if (prev) URL.revokeObjectURL(prev);
         return null;
       });
+      onPhotoChanged?.(null);
       setStatus("Saved");
     } catch (err) {
       setPhotoError(err.message || "Could not remove your photo.");

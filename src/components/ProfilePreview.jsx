@@ -47,7 +47,7 @@ export default function ProfilePreview({ session, photoUrl, onChangePhoto }) {
         title={session.name}
         onClick={() => setOpen((o) => !o)}
       >
-        <Avatar name={session.name} photoDataUrl={photoUrl} size={28} />
+        <Avatar name={session.name} photoDataUrl={photoUrl} size={48} />
       </button>
       {open && (
         <div className="profile-preview-panel" role="menu">
