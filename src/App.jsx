@@ -4,7 +4,6 @@ import CreateAnotherGroup from "./components/CreateAnotherGroup.jsx";
 import Onboarding from "./components/Onboarding.jsx";
 import Subscription from "./components/Subscription.jsx";
 import SubscriptionGate from "./components/SubscriptionGate.jsx";
-import FreeTierBanner from "./components/FreeTierBanner.jsx";
 import SubscriptionExpiryBanner from "./components/SubscriptionExpiryBanner.jsx";
 import LedgerTable, { money } from "./components/LedgerTable.jsx";
 import GroupSetup from "./components/GroupSetup.jsx";
