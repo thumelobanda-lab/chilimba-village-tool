@@ -522,4 +522,30 @@ describe("buildPayoutAvatarRow", () => {
     const rows = buildPayoutAvatarRow(futureOnly, "Someone Else");
     expect(rows.map((r) => r.status)).toEqual(["next", "upcoming"]);
   });
+
+  describe("rowsComputed (cycle-completion trigger)", () => {
+    it("treats the current round as received once fully paid, ahead of its calendar date", () => {
+      const rowsComputed = [{ id: "d4", due: 100, paid: 100, balance: 0 }];
+      const rows = buildPayoutAvatarRow(timeline, "Someone Else", { rowsComputed });
+      expect(rows.map((r) => r.name)).toEqual(["Carol", "Dorothy", "Elizabeth", "Fridah", "Grace"]);
+      expect(rows.map((r) => r.status)).toEqual(["received", "received", "next", "upcoming", "upcoming"]);
+    });
+
+    it("leaves status untouched when the current round still has a balance", () => {
+      const rowsComputed = [{ id: "d4", due: 100, paid: 40, balance: 60 }];
+      const rows = buildPayoutAvatarRow(timeline, "Someone Else", { rowsComputed });
+      expect(rows.map((r) => r.status)).toEqual(["received", "received", "next", "upcoming", "upcoming"]);
+    });
+
+    it("ignores a zero-due row (e.g. a recipient-exempt date) rather than treating it as paid", () => {
+      const rowsComputed = [{ id: "d4", due: 0, paid: 0, balance: 0 }];
+      const rows = buildPayoutAvatarRow(timeline, "Someone Else", { rowsComputed });
+      expect(rows.map((r) => r.status)).toEqual(["received", "received", "next", "upcoming", "upcoming"]);
+    });
+
+    it("without rowsComputed, behaves exactly as the pure calendar version (no regression)", () => {
+      const rows = buildPayoutAvatarRow(timeline, "Someone Else");
+      expect(rows.map((r) => r.status)).toEqual(["received", "received", "next", "upcoming", "upcoming"]);
+    });
+  });
 });

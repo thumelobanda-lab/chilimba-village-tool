@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { money } from "./LedgerTable.jsx";
 import { getGroupFunds, getGroupPulse, getPendingPayments, getGroupMembers, getGroupRoster } from "../lib/api.js";
 import { useApiData } from "../lib/useApiData.js";
@@ -75,6 +75,7 @@ export default function Dashboard({
   onOpenPaymentOptions,
   onOpenCommunity,
   onLogPayment,
+  onSendReminder,
 }) {
   const { data: fundsData } = useApiData(getGroupFunds, []);
   const { data: pulseData, loading: pulseLoading } = useApiData(getGroupPulse, []);
@@ -148,11 +149,52 @@ export default function Dashboard({
   const photoByName = new Map(
     (rosterData?.members || []).map((m) => [m.name.trim().toLowerCase(), m])
   );
-  const payoutAvatarRows = buildPayoutAvatarRow(timelineRows, session?.name).map((r) => {
+  const payoutAvatarRows = buildPayoutAvatarRow(timelineRows, session?.name, {
+    rowsComputed: totals.rowsComputed,
+  }).map((r) => {
     const match = photoByName.get(r.name.trim().toLowerCase());
     return { ...r, hasPhoto: match?.hasPhoto || false, photoDataUrl: match?.photoDataUrl || null };
   });
   const myStreak = computeMemberStreak(totals.rowsComputed);
+
+  // Cycle-completion trigger for the rotation strip's pop/checkmark/
+  // travel-dot animation: fires once, the moment this round's balance
+  // reads 0 (i.e. buildPayoutAvatarRow's rowsComputed option already
+  // promoted it to "received" above), by comparing against the last
+  // round id this browser recorded as animated. Deliberately
+  // localStorage, not React state alone — the confirming action usually
+  // happens on the Reconciliation tab, a different mount of this
+  // component entirely, so there's no in-memory "previous roundRow" to
+  // diff against; persisting the last-seen id is what makes this survive
+  // the tab switch. Scoped per-group, not per-member: this celebrates a
+  // group-level event (the round is fully collected), not a personal one,
+  // so whichever member happens to open the dashboard first after
+  // confirmation is the one who sees it play.
+  const [animateTransition, setAnimateTransition] = useState(null);
+  useEffect(() => {
+    if (!session?.groupSlug || !roundRow || roundRow.due <= 0 || roundRow.balance > 0) return;
+    const key = `chilimba:lastAnimatedRound:${session.groupSlug}`;
+    const lastId = localStorage.getItem(key);
+    if (lastId === String(roundRow.id)) return;
+    const isFirstEverCheck = lastId === null;
+    localStorage.setItem(key, String(roundRow.id));
+    // A brand-new browser/device that's never recorded anything yet would
+    // otherwise "animate" every already-completed historical round on its
+    // very first load — only play it once there's something to actually
+    // compare against.
+    if (isFirstEverCheck) return;
+    const completedNames = payoutAvatarRows.filter((r) => r.date === roundRow.date).map((r) => r.name);
+    const nextNames = payoutAvatarRows.filter((r) => r.status === "next").map((r) => r.name);
+    if (completedNames.length === 0) return;
+    setAnimateTransition({ completedNames, nextNames });
+    // Safety-net clear in case the connector's onAnimationEnd never fires
+    // (e.g. the two avatars aren't adjacent in the strip, so no connector
+    // is even rendered) — the localStorage marker above already prevents
+    // a replay regardless, this just tidies up the transient pop classes.
+    const t = setTimeout(() => setAnimateTransition(null), 1500);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.groupSlug, roundRow?.id, roundRow?.balance]);
 
   // "Still owing" and "Paid all time" stay lifetime figures (summed
   // across every row in config.schedule, which just keeps growing —
@@ -262,7 +304,12 @@ export default function Dashboard({
       </div>
 
       {/* A3 — who's next in the payout rotation */}
-      <PayoutAvatarRow rows={payoutAvatarRows} />
+      <PayoutAvatarRow
+        rows={payoutAvatarRows}
+        animateTransition={animateTransition}
+        onAnimationDone={() => setAnimateTransition(null)}
+        onSendReminder={session?.role === "admin" ? onSendReminder : undefined}
+      />
 
       {/* A4 — one-line group snapshot */}
       <GroupPulse data={pulseData} loading={pulseLoading} />

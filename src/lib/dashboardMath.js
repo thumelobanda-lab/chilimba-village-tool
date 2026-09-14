@@ -362,6 +362,36 @@ export function myOutstandingLoanTotal(loans, name) {
 }
 
 /**
+ * Promotes the calendar-tagged "next" row to "past" (and the row right
+ * after it to "next") when that round's contributions are already fully
+ * confirmed — i.e. lets the rotation strip treat a round as received the
+ * moment it's actually paid out in practice, not only once its scheduled
+ * date happens to have passed too. Only ever touches the single row
+ * buildCycleTimeline already marked "next" (there's always exactly one)
+ * and its immediate successor — deliberately not a general
+ * "re-derive every row's status" pass, since chronologically a later
+ * round shouldn't be able to read as received while an earlier one is
+ * still outstanding.
+ *
+ * @param {Array<object>} timelineRows - output of buildCycleTimeline
+ * @param {Array<{id: string|number, due: number, balance: number}>} rowsComputed
+ * @returns {Array<object>}
+ */
+function withPayoutCompletion(timelineRows, rowsComputed) {
+  const byId = new Map((rowsComputed || []).map((r) => [r.id, r]));
+  const nextIdx = timelineRows.findIndex((r) => r.status === "next");
+  if (nextIdx === -1) return timelineRows;
+  const computed = byId.get(timelineRows[nextIdx].id);
+  const fullyPaid = !!computed && computed.due > 0 && computed.balance <= 0;
+  if (!fullyPaid) return timelineRows;
+  return timelineRows.map((row, i) => {
+    if (i === nextIdx) return { ...row, status: "past" };
+    if (i === nextIdx + 1) return { ...row, status: "next" };
+    return row;
+  });
+}
+
+/**
  * The compact "where the rotation is right now" avatar strip: the last
  * couple of members who already received their payout this schedule,
  * then the next few coming up — always including the signed-in member
@@ -377,15 +407,23 @@ export function myOutstandingLoanTotal(loans, name) {
  * @param {Array<object>} timelineRows - output of buildCycleTimeline,
  *   each row {..., payees: string[], status: 'past'|'next'|'future'}
  * @param {string} currentMemberName
- * @param {{lastReceivedCount?: number, upcomingCount?: number}} [opts]
+ * @param {{lastReceivedCount?: number, upcomingCount?: number, rowsComputed?: Array}} [opts]
+ *   `rowsComputed` (ledgerMath's per-row due/paid/balance, matched by
+ *   row id) is optional and, when given, lets the *current* round read as
+ *   "received" the moment its contributions are fully confirmed — not
+ *   only once its calendar date has actually passed. Without it this
+ *   stays pure calendar-driven, exactly as before (existing callers/tests
+ *   that don't pass it see no change).
  * @returns {Array<{name: string, status: 'received'|'next'|'upcoming', date: string, isCurrentUser: boolean}>}
  */
 export function buildPayoutAvatarRow(timelineRows, currentMemberName, opts = {}) {
-  const { lastReceivedCount = 2, upcomingCount = 3 } = opts;
+  const { lastReceivedCount = 2, upcomingCount = 3, rowsComputed = null } = opts;
   if (!timelineRows || timelineRows.length === 0) return [];
 
+  const effectiveRows = rowsComputed ? withPayoutCompletion(timelineRows, rowsComputed) : timelineRows;
+
   const flat = [];
-  for (const row of timelineRows) {
+  for (const row of effectiveRows) {
     for (const name of row.payees || []) {
       flat.push({ name, date: row.date, rowStatus: row.status });
     }

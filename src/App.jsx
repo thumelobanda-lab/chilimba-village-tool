@@ -45,7 +45,7 @@ import { useTheme } from "./hooks/useTheme.js";
 import { useApiData } from "./lib/useApiData.js";
 import { greeting, genderedAddress } from "./lib/dashboardMath.js";
 import { findNextDue } from "./lib/scheduleUtils.js";
-import { getPendingPayments } from "./lib/api.js";
+import { getPendingPayments, sendReminderNow } from "./lib/api.js";
 
 const TABS = [
   { id: "ledger", label: "My Payment History" },
@@ -143,6 +143,7 @@ export default function App() {
   const [sessionEndedNotice, setSessionEndedNotice] = useState(false);
   const [showAddGroup, setShowAddGroup] = useState(false);
   const [payoutStatus, setPayoutStatus] = useState("");
+  const [reminderStatus, setReminderStatus] = useState("");
   // One fetch for the signed-in member's own photo, same pattern as
   // Profile.jsx's own copy — this is always exactly one member, so
   // there's no "wasted round trip for everyone with no photo" concern
@@ -341,6 +342,25 @@ export default function App() {
     await clearMyData();
   };
 
+  // Dashboard's rotation-strip long-press shortcut (admin-only — see
+  // Dashboard.jsx's own onSendReminder prop, only ever wired for an
+  // admin session). Confirms first since a long-press is easy to trigger
+  // by accident (a slightly-too-long tap while scrolling the strip), then
+  // reports back plainly whether anything actually went out — the member
+  // may not have push/SMS enabled at all, which isn't an error, just
+  // nothing to report success for.
+  const handleSendReminder = async (memberName) => {
+    if (!window.confirm(`Send ${memberName} a reminder now?`)) return;
+    try {
+      const result = await sendReminderNow(memberName);
+      setReminderStatus(result.ok ? `Reminder sent to ${memberName}` : result.reason || "Could not send a reminder.");
+    } catch (e) {
+      setReminderStatus(e.message || "Could not send a reminder.");
+    } finally {
+      setTimeout(() => setReminderStatus(""), 2500);
+    }
+  };
+
   // Renders standalone, not nested inside this component's own app-shell
   // below — OwnerDashboard already renders its own header/shell (same
   // structural isolation the old separate OwnerApp.jsx tree had), it's
@@ -487,7 +507,9 @@ export default function App() {
                   onOpenPaymentOptions={() => setTab("payment-options")}
                   onOpenCommunity={() => setTab("community")}
                   onLogPayment={openLedgerToPay}
+                  onSendReminder={handleSendReminder}
                 />
+                <Toast message={reminderStatus} />
               </>
             )}
 

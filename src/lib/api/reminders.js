@@ -57,6 +57,30 @@ export async function setReminderDateOverride(scheduleRowId, { leadDays, muted }
   });
 }
 
+// Admin-only, on-demand single reminder — Dashboard.jsx's rotation-strip
+// long-press shortcut. See worker/src/routes/reminders.js's send-now
+// route for why this is deliberately not subscription-gated the way the
+// automated sweep is. Mock mode has no other member's real device to
+// send anything to, so it simulates the same "only sends through
+// channels the member opted into" rule using their locally-stored
+// reminder prefs (almost always the defaults, since nobody but the
+// signed-in session ever writes to their own prefs in mock mode) —
+// realistic enough for local dev without pretending to deliver anything.
+export async function sendReminderNow(memberName) {
+  const session = currentSession();
+  if (!session) throw new Error("Not signed in.");
+  if (MOCK_MODE) {
+    const prefs = lsGet(groupScopedKey(session, "reminders", memberName.toLowerCase()), {
+      pushEnabled: false, smsEnabled: false, phone: "", leadDays: 2,
+    });
+    if (!prefs.pushEnabled && !prefs.smsEnabled) {
+      return { ok: false, reason: "This member hasn't enabled push or SMS reminders yet." };
+    }
+    return { ok: true };
+  }
+  return realFetch("/api/reminders/send-now", { method: "POST", body: JSON.stringify({ memberName }) });
+}
+
 export async function registerPushSubscription(subscription) {
   if (MOCK_MODE) return { ok: true }; // nothing to send server-side in mock mode
   return realFetch("/api/push/subscribe", { method: "POST", body: JSON.stringify(subscription.toJSON()) });

@@ -1,5 +1,8 @@
-import { requireSession } from "../auth.js";
+import { requireSession, requireAdmin } from "../auth.js";
 import { json } from "../responses.js";
+import { HttpError } from "../httpError.js";
+import { sendPush } from "../push.js";
+import { sendSms } from "../sms.js";
 
 export default function registerReminderRoutes(router) {
   router.get("/api/reminders/prefs", async ({ request, env, cors }) => {
@@ -63,6 +66,72 @@ export default function registerReminderRoutes(router) {
       `INSERT INTO reminder_date_overrides (user_id, group_id, schedule_row_id, lead_days, muted) VALUES (?,?,?,?,?)
        ON CONFLICT(user_id, schedule_row_id) DO UPDATE SET lead_days=excluded.lead_days, muted=excluded.muted, updated_at=datetime('now')`
     ).bind(user.id, user.groupId, params.rowId, leadDays, muted ? 1 : 0).run();
+    return json({ ok: true }, 200, cors);
+  });
+
+  // Admin-only, on-demand single reminder — the dashboard's rotation
+  // strip long-press shortcut, distinct from the automated daily sweep
+  // (runReminderSweep in reminders.js) in two ways: it's one member, sent
+  // right now, and deliberately NOT gated behind an active subscription
+  // the way the automated sweep is (subscriptionUtils.js's
+  // isSubscriptionActive) — that gate exists to keep a free-tier group
+  // from getting the recurring, ongoing automated feature for free, which
+  // doesn't apply to an admin manually nudging one person once. Still
+  // only ever sends through channels the member themselves opted into
+  // (reminder_prefs) — an admin can prompt a send, not choose the
+  // member's channel or bypass their preferences.
+  router.post("/api/reminders/send-now", async ({ request, env, cors }) => {
+    const admin = await requireAdmin(request, env);
+    const body = await request.json();
+    const memberName = (body.memberName || "").trim();
+    if (!memberName) throw new HttpError(400, "memberName is required.");
+
+    const target = await env.DB.prepare(
+      `SELECT u.id, r.push_enabled as pushEnabled, r.sms_enabled as smsEnabled, r.phone
+       FROM users u LEFT JOIN reminder_prefs r ON r.user_id = u.id
+       WHERE u.group_id = ? AND u.name = ?`
+    ).bind(admin.groupId, memberName).first();
+    if (!target) throw new HttpError(404, "Member not found.");
+
+    let sent = false;
+
+    if (target.pushEnabled) {
+      const subs = await env.DB.prepare(
+        `SELECT id, endpoint, p256dh, auth FROM push_subscriptions WHERE user_id = ?`
+      ).bind(target.id).all();
+      const expiredSubIds = [];
+      for (const sub of subs.results || []) {
+        try {
+          const result = await sendPush(env, sub, {
+            title: "Chilimba reminder",
+            body: "A group leader sent you a nudge about your upcoming Chilimba payment.",
+            url: "/",
+          });
+          if (result.expired) expiredSubIds.push(sub.id);
+          else sent = true;
+        } catch (e) {
+          console.error("send-now push failed", e);
+        }
+      }
+      if (expiredSubIds.length) {
+        await env.DB.batch(
+          expiredSubIds.map((id) => env.DB.prepare(`DELETE FROM push_subscriptions WHERE id = ?`).bind(id))
+        );
+      }
+    }
+
+    if (target.smsEnabled && target.phone) {
+      try {
+        const result = await sendSms(env, target.phone, "Chilimba: a group leader sent you a reminder about your upcoming payment.");
+        if (result?.ok !== false) sent = true;
+      } catch (e) {
+        console.error("send-now sms failed", e);
+      }
+    }
+
+    if (!sent) {
+      return json({ ok: false, reason: "This member hasn't enabled push or SMS reminders yet." }, 200, cors);
+    }
     return json({ ok: true }, 200, cors);
   });
 }

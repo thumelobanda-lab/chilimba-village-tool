@@ -2206,6 +2206,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 }
 .payout-avatar-step-label-next { color: var(--accent-2); font-weight: 700; }
 .payout-avatar {
+  position: relative;
   flex: 0 0 auto;
   width: 36px;
   height: 36px;
@@ -2219,13 +2220,20 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   background: var(--accent-dark);
   border: 2px solid var(--line);
   transition: transform 0.15s ease;
+  cursor: pointer;
 }
 .payout-avatar-received { border-color: var(--green); }
 .payout-avatar-next {
   border-color: var(--accent-2);
   box-shadow: 0 0 0 2px rgba(212, 169, 74, 0.25);
+  animation: payout-avatar-pulse 2.2s ease-in-out infinite;
 }
-.payout-avatar-upcoming { border-style: dashed; border-color: var(--tan); }
+/* "Plain gray" per the design ask — this app has no true achromatic
+   gray in its palette (it's green/gold throughout), so "plain" here
+   means the same neutral --line tone Avatar.jsx's own default,
+   no-status border already uses, not a colored/dashed accent the way
+   the old tan dashes read as a (meaningless) third color. */
+.payout-avatar-upcoming { border-style: solid; border-color: var(--line); }
 /* The signed-in member — larger and gold-glowing so they're
    unmistakable no matter which status ring they otherwise have. */
 .payout-avatar-you {
@@ -2233,6 +2241,72 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   height: 42px;
   font-size: 0.75rem;
   box-shadow: 0 0 0 3px rgba(212, 169, 74, 0.35);
+}
+@keyframes payout-avatar-pulse {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(212, 169, 74, 0.25); }
+  50% { box-shadow: 0 0 0 6px rgba(212, 169, 74, 0.12); }
+}
+/* One-shot transition when a payment confirmation completes the
+   current round — the freshly-"received" avatar pops and its ring
+   settles from amber to green as .payout-avatar-received's own color
+   takes over post-animation. Understated on purpose (a single ease-out
+   pop, no bounce/confetti) — see PayoutAvatarRow.jsx's doc comment. */
+.payout-avatar-pop { animation: payout-avatar-pop 0.6s ease-out; }
+@keyframes payout-avatar-pop {
+  0% { transform: scale(1); border-color: var(--accent-2); box-shadow: 0 0 0 2px rgba(212, 169, 74, 0.25); }
+  45% { transform: scale(1.16); box-shadow: 0 0 0 4px rgba(63, 107, 46, 0.18); }
+  100% { transform: scale(1); border-color: var(--green); box-shadow: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .payout-avatar-next { animation: none; }
+  .payout-avatar-pop { animation: none; }
+}
+/* Small checkmark badge on a received avatar — pairs the green ring
+   with a shape, not just a color, per the same colorblind-legibility
+   rule the confirm-bulb icons follow (see LedgerTable.jsx). */
+.payout-avatar-check-badge {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--green);
+  color: #FAF7F0;
+  border: 2px solid var(--panel);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+/* The traveling dot between a just-completed avatar and the new
+   next-up one — only rendered as a real flex sibling between those two
+   .payout-avatar-step elements (see PayoutAvatarRow.jsx), so it always
+   sits in the right spot with no manual position measuring. */
+.payout-avatar-connector {
+  position: relative;
+  flex: 0 0 auto;
+  width: 18px;
+  align-self: flex-start;
+  height: 36px;
+}
+.payout-avatar-connector-dot {
+  position: absolute;
+  top: 16px;
+  left: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-2);
+  animation: payout-avatar-dot-travel 0.7s ease-in-out both;
+}
+@keyframes payout-avatar-dot-travel {
+  0% { left: 0; opacity: 0; }
+  15% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { left: calc(100% - 6px); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .payout-avatar-connector-dot { display: none; }
 }
 
 /* Avatar.jsx — a member's photo, or the same initials-circle language
