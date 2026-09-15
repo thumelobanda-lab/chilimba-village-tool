@@ -15,6 +15,7 @@ import {
   genderedAddress,
   myOutstandingLoanTotal,
   buildPayoutAvatarRow,
+  membersMissingMomo,
 } from "../lib/dashboardMath.js";
 import { useCountUp } from "../hooks/useCountUp.js";
 import { computeMemberStreak } from "../lib/streakMath.js";
@@ -140,6 +141,13 @@ export default function Dashboard({
   const timelineRows = buildCycleTimeline(config.schedule);
   const nextUpRow = timelineRows.find((r) => r.status === "next");
   const recentPayout = findRecentPayout(config.schedule);
+  // Admin-only heads-up, same gating/data source as `unassigned` above —
+  // surfaced during the countdown to the next payout, not discovered
+  // only once the group actually tries to pay someone.
+  const missingMomo =
+    session?.role === "admin" && membersData && nextUpRow
+      ? membersMissingMomo(getPayees(nextUpRow), membersData.members)
+      : [];
   // Golden ring glow: only when something's actually worth highlighting —
   // the viewer's own turn is close, the cycle's in its final stretch, or
   // someone was just paid out — so it draws the eye when it lights up
@@ -326,6 +334,21 @@ export default function Dashboard({
             </button>
           ) : (
             "add them in Group Setup"
+          )}
+        </p>
+      )}
+
+      {session?.role === "admin" && missingMomo.length > 0 && (
+        <p className="inline-alert">
+          <Icon name="warning" size={14} className="icon-inline" /> <strong>{missingMomo.join(", ")}</strong>{" "}
+          {missingMomo.length === 1 ? "hasn't" : "haven't"} set a mobile money payout number yet, and{" "}
+          {missingMomo.length === 1 ? "is" : "are"} next up on {formatDate(nextUpRow.date)} —{" "}
+          {onOpenGroupSetup ? (
+            <button type="button" className="inline-alert-link" onClick={onOpenGroupSetup}>
+              check in Group Setup
+            </button>
+          ) : (
+            "check with them"
           )}
         </p>
       )}

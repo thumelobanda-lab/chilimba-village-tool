@@ -6,6 +6,7 @@ import TermsModal from "./TermsModal.jsx";
 import PrivacyModal from "./PrivacyModal.jsx";
 import Toast from "./Toast.jsx";
 import FreeTierBanner from "./FreeTierBanner.jsx";
+import MomoRecipientEditor from "./MomoRecipientEditor.jsx";
 
 // Self-service editing of the signed-in member's own account. Deliberately
 // scoped to just two things: a cosmetic display-name fix (spelling/
@@ -192,6 +193,8 @@ export default function Profile({ session, onRenamed, onLogout, subscriptionStat
         </div>
       </div>
       {photoError && <div className="error-text" role="alert">{photoError}</div>}
+
+      <MomoRecipientEditor />
 
       <label className="field">
         Display name

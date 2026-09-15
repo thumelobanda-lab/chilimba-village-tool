@@ -111,6 +111,13 @@ CREATE TABLE IF NOT EXISTS users (
                                      -- greeting phrasing (dashboardMath.js's greeting()) — never
                                      -- read anywhere else. NULL (declined/unset) falls back to
                                      -- the same name-only greeting used before this existed.
+  momo_provider TEXT,                -- 'MTN' | 'Airtel' | NULL (migration 022) — where this
+                                      -- member's payout should go, separate from `phone` above
+                                      -- (their login number, which may differ). Self-service,
+                                      -- editable any time — see routes/profile.js's /api/me/momo.
+  momo_phone TEXT,                   -- full number, alongside momo_provider; masked to everyone
+                                      -- except the account owner themselves at the API layer
+                                      -- (see maskPhone() in crypto.js), never masked at rest.
   UNIQUE(group_id, name)
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_group_phone ON users(group_id, phone);
@@ -499,7 +506,9 @@ INSERT OR IGNORE INTO schema_migrations (filename) VALUES
   ('017_payment_interval.sql'),
   ('018_notice_target_member.sql'),
   ('019_notepad.sql'),
-  ('020_profile_photo.sql');
+  ('020_profile_photo.sql'),
+  ('021_gender.sql'),
+  ('022_momo_recipient.sql');
 
 -- Seed one example group so the app is usable immediately after a fresh
 -- deploy. Real groups are created via POST /api/groups (see routes/groups.js)

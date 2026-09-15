@@ -1,6 +1,6 @@
 import { requireAdmin, requireSession } from "../auth.js";
 import { HttpError } from "../httpError.js";
-import { uid } from "../crypto.js";
+import { uid, maskPhone } from "../crypto.js";
 import { json } from "../responses.js";
 import { isRecipient as isRecipientHelper, resolveDue, findNextDue } from "../scheduleUtils.js";
 import { wouldLeaveZeroAdmins } from "../adminUtils.js";
@@ -34,7 +34,8 @@ export default function registerAdminRoutes(router) {
     const recipientExempt = !!config?.recipient_exempt;
 
     const membersResult = await env.DB.prepare(
-      `SELECT display_name as name, role, created_at as joinedAt, photo_key as photoKey
+      `SELECT display_name as name, role, created_at as joinedAt, photo_key as photoKey,
+              momo_provider as momoProvider, momo_phone as momoPhone
        FROM users WHERE group_id = ? AND active = 1 ORDER BY created_at DESC`
     ).bind(admin.groupId).all();
     const members = membersResult.results || [];
@@ -92,6 +93,11 @@ export default function registerAdminRoutes(router) {
         currentStreak: streak.currentStreak,
         streakDots: streak.dots,
         hasPhoto: !!m.photoKey,
+        // Masked — an admin gets enough to confirm it's set (last 3
+        // digits), never the full number. See /api/me/momo for the
+        // owner's own full-detail view of their own recipient info.
+        momoProvider: m.momoProvider || null,
+        momoPhoneMasked: m.momoPhone ? maskPhone(m.momoPhone) : null,
       };
     });
 

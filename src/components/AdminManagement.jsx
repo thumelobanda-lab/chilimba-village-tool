@@ -128,6 +128,7 @@ export default function AdminManagement({ schedule }) {
                   <th className="al">Role</th>
                   <th className="al">Joined</th>
                   <th className="al">Next Due</th>
+                  <th className="al">MoMo Payout</th>
                   <th className="al">Streak</th>
                   <th></th>
                 </tr>
@@ -149,6 +150,17 @@ export default function AdminManagement({ schedule }) {
                       {m.nextDueDate
                         ? <>{m.nextDueDate} <span className="muted tiny">({money(m.nextDueAmount)})</span></>
                         : <span className="muted tiny">settled</span>}
+                    </td>
+                    <td className="al small" data-label="MoMo Payout">
+                      {m.momoProvider ? (
+                        <span className="muted small">
+                          <Icon name="check" size={12} className="icon-inline" /> {m.momoProvider} ({m.momoPhoneMasked})
+                        </span>
+                      ) : (
+                        <span className="muted tiny">
+                          <Icon name="warning" size={12} className="icon-inline" /> not set
+                        </span>
+                      )}
                     </td>
                     <td className="al small" data-label="Streak">
                       {m.streakDots && m.streakDots.length > 0 ? (
@@ -182,7 +194,7 @@ export default function AdminManagement({ schedule }) {
                   </tr>
                 ))}
                 {data.members.length === 0 && (
-                  <tr><td colSpan={6} className="muted small">No members yet.</td></tr>
+                  <tr><td colSpan={7} className="muted small">No members yet.</td></tr>
                 )}
               </tbody>
             </table>

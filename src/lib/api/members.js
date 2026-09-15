@@ -3,6 +3,7 @@ import { wouldLeaveZeroAdmins } from "../adminUtils.js";
 import { findNextDue } from "../scheduleUtils.js";
 import { effectiveContribution, computeLedgerTotals } from "../ledgerMath.js";
 import { computeMemberStreak } from "../streakMath.js";
+import { maskPhone } from "../crypto.js";
 
 // Every ACTIVE member of the signed-in admin's OWN group, with role,
 // when they joined, and the next date they still owe something on —
@@ -50,6 +51,10 @@ export async function getGroupMembers() {
         currentStreak: streak.currentStreak,
         streakDots: streak.dots,
         hasPhoto: !!account.photoDataUrl,
+        // Masked, same rule as the real Worker's /api/admin/members —
+        // an admin gets enough to confirm it's set, never the full number.
+        momoProvider: account.momoProvider || null,
+        momoPhoneMasked: account.momoPhone ? maskPhone(account.momoPhone) : null,
       });
     }
     // Newest-joined first, matching the real backend (see admin.js's

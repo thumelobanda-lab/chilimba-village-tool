@@ -479,3 +479,25 @@ export function buildPayoutAvatarRow(timelineRows, currentMemberName, opts = {})
     isCurrentUser: !!currentMemberName && r.name.trim().toLowerCase() === currentMemberName.trim().toLowerCase(),
   }));
 }
+
+/**
+ * Which of the upcoming payout's recipient(s) haven't set a mobile
+ * money payout number yet — powers the admin-only heads-up on
+ * Dashboard.jsx so this gets noticed during the countdown to their
+ * payout date, not discovered only once the group actually tries to
+ * pay them. A name not found in `members` at all counts as missing
+ * too (defensive — shouldn't happen since payees come from the same
+ * roster, but "unknown" is not "confirmed set").
+ *
+ * @param {Array<string>} payeeNames - nextUpRow's payees
+ * @param {Array<{name: string, momoProvider: string|null}>} members - getGroupMembers() output
+ * @returns {Array<string>}
+ */
+export function membersMissingMomo(payeeNames, members) {
+  if (!payeeNames || payeeNames.length === 0) return [];
+  const byName = new Map((members || []).map((m) => [m.name.trim().toLowerCase(), m]));
+  return payeeNames.filter((name) => {
+    const m = byName.get(name.trim().toLowerCase());
+    return !m || !m.momoProvider;
+  });
+}

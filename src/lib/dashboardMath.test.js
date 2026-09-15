@@ -16,6 +16,7 @@ import {
   greeting,
   myOutstandingLoanTotal,
   buildPayoutAvatarRow,
+  membersMissingMomo,
 } from "./dashboardMath.js";
 
 describe("computeCycleProgress", () => {
@@ -547,5 +548,38 @@ describe("buildPayoutAvatarRow", () => {
       const rows = buildPayoutAvatarRow(timeline, "Someone Else");
       expect(rows.map((r) => r.status)).toEqual(["received", "received", "next", "upcoming", "upcoming"]);
     });
+  });
+});
+
+describe("membersMissingMomo", () => {
+  const members = [
+    { name: "Alice", momoProvider: "MTN" },
+    { name: "Bob", momoProvider: null },
+    { name: "Carol", momoProvider: "Airtel" },
+  ];
+
+  it("returns an empty array when there are no payees", () => {
+    expect(membersMissingMomo([], members)).toEqual([]);
+    expect(membersMissingMomo(null, members)).toEqual([]);
+  });
+
+  it("flags a payee with no momoProvider set", () => {
+    expect(membersMissingMomo(["Bob"], members)).toEqual(["Bob"]);
+  });
+
+  it("does not flag a payee with a momoProvider set", () => {
+    expect(membersMissingMomo(["Alice"], members)).toEqual([]);
+  });
+
+  it("matches names case-insensitively and ignoring surrounding whitespace", () => {
+    expect(membersMissingMomo([" alice ", "BOB"], members)).toEqual(["BOB"]);
+  });
+
+  it("treats a payee not found in the roster as missing too", () => {
+    expect(membersMissingMomo(["Ghost"], members)).toEqual(["Ghost"]);
+  });
+
+  it("handles multiple payees on the same payout date", () => {
+    expect(membersMissingMomo(["Alice", "Bob"], members)).toEqual(["Bob"]);
   });
 });

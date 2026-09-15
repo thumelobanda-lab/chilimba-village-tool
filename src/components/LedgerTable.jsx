@@ -52,6 +52,12 @@ export default function LedgerTable({
   const nextUpcomingRow = rowsComputed
     .filter((r) => r.date >= today)
     .sort((a, b) => (a.date < b.date ? -1 : 1))[0] || null;
+  // True only for a member who has never logged a single payment (active
+  // or voided) anywhere on this ledger — distinct from the ordinary
+  // per-date empty history every future row also has. Used to swap in an
+  // encouraging first-timer prompt on just the one card that's actually
+  // actionable right now (nextUnpaid), not on every empty future date.
+  const isFirstEverPayment = rowsComputed.every((r) => r.entries.length === 0);
 
   return (
     <div className="payment-cards-wrap">
@@ -78,6 +84,7 @@ export default function LedgerTable({
             premiumActive={premiumActive}
             autoOpen={r.id === focusRowId}
             onAutoOpened={onFocusHandled}
+            firstPaymentPrompt={isFirstEverPayment && nextUnpaid && r.id === nextUnpaid.id}
           />
         ))}
       </div>
@@ -207,6 +214,7 @@ function PaymentCard({
   premiumActive,
   autoOpen,
   onAutoOpened,
+  firstPaymentPrompt,
 }) {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [editingDue, setEditingDue] = useState(false);
@@ -366,7 +374,14 @@ function PaymentCard({
           <div className="payment-card-history">
             <div className="payment-card-history-title">Payment history</div>
             {activeEntries.length === 0 && voidedEntries.length === 0 && (
-              <p className="muted tiny">No payments logged for this date yet.</p>
+              firstPaymentPrompt ? (
+                <p className="muted small first-payment-prompt">
+                  <Icon name="sparkle" size={13} className="icon-inline" /> Your first payment shows up here as
+                  soon as you tap "Pay" above — nothing logged yet.
+                </p>
+              ) : (
+                <p className="muted tiny">No payments logged for this date yet.</p>
+              )
             )}
             {[...activeEntries, ...voidedEntries]
               .sort((a, b) => new Date(b.recordedAt) - new Date(a.recordedAt))

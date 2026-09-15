@@ -3,6 +3,8 @@ import { hashPin, verifyPin, randomSalt } from "../crypto.js";
 import { HttpError } from "../httpError.js";
 import { json } from "../responses.js";
 
+const MOMO_PROVIDERS = ["MTN", "Airtel"];
+
 // Self-service editing of a member's own account — the two things
 // changing here (display name, PIN) both live on the `users` row keyed
 // by user.id from the session, so unlike group-scoped data there's no
@@ -77,5 +79,31 @@ export default function registerProfileRoutes(router) {
     ).bind(nextDisplayName, pinSalt, pinHash, user.id).run();
 
     return json({ name: nextDisplayName }, 200, cors);
+  });
+
+  // Full mobile money recipient details — self only, never returned to
+  // anyone else (see /api/admin/members for the masked, admin-facing
+  // view of the same data). Data field and UI only, per
+  // docs/momo-integration-scope.md — nothing here triggers a real
+  // charge or payout.
+  router.get("/api/me/momo", async ({ request, env, cors }) => {
+    const session = await requireSession(request, env);
+    const row = await env.DB.prepare(`SELECT momo_provider as provider, momo_phone as phone FROM users WHERE id = ?`)
+      .bind(session.id).first();
+    return json({ provider: row?.provider || null, phone: row?.phone || null }, 200, cors);
+  });
+
+  router.put("/api/me/momo", async ({ request, env, cors }) => {
+    const session = await requireSession(request, env);
+    const { provider, phone } = await request.json();
+    if (!MOMO_PROVIDERS.includes(provider)) {
+      throw new HttpError(400, "Choose MTN or Airtel.");
+    }
+    if (!phone || !phone.trim()) {
+      throw new HttpError(400, "A mobile money number is required.");
+    }
+    await env.DB.prepare(`UPDATE users SET momo_provider = ?, momo_phone = ? WHERE id = ?`)
+      .bind(provider, phone.trim(), session.id).run();
+    return json({ ok: true }, 200, cors);
   });
 }
