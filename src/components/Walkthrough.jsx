@@ -113,7 +113,7 @@ export default function Walkthrough({ session, onClose }) {
         </div>
 
         <div className="walkthrough-emoji">
-          {step.icon === "bell" ? "🔔" : <Icon name={step.icon} size={32} />}
+          <Icon name={step.icon} size={32} />
         </div>
         <h3 className="walkthrough-title">{step.title}</h3>
         <p className="walkthrough-body">{step.body}</p>

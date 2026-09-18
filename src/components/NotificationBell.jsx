@@ -14,10 +14,10 @@ function timeAgo(serverTimestamp) {
 }
 
 const KIND_ICON = {
-  owner: "✦",
+  owner: <Icon name="sparkle" size={13} className="icon-inline" />,
   notice: <Icon name="megaphone" size={13} className="icon-inline" />,
   payment: <Icon name="money" size={13} className="icon-inline" />,
-  reminder: "🔔",
+  reminder: <Icon name="bell" size={13} className="icon-inline" />,
 };
 
 /**
@@ -71,7 +71,7 @@ export default function NotificationBell({ items, urgent }) {
         title={urgent ? "A payment confirmation is waiting for review" : "Notifications"}
         onClick={() => setOpen((o) => !o)}
       >
-        🔔
+        <Icon name="bell" size={18} />
         {(count > 0 || urgent) && (
           <span className={"notification-bell-badge" + (urgent ? " notification-bell-badge-urgent" : "")}>
             {count > 0 ? (count > 9 ? "9+" : count) : "!"}

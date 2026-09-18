@@ -214,6 +214,12 @@ const PATHS = {
       <circle cx="8.5" cy="8.5" r="1.5" />
     </>
   ),
+  bell: (
+    <>
+      <path d="M6 10a6 6 0 0 1 12 0c0 4 1.5 5.5 2 6.5H4c.5-1 2-2.5 2-6.5Z" />
+      <path d="M10 19.5a2 2 0 0 0 4 0" />
+    </>
+  ),
 };
 
 export default function Icon({ name, size = 16, className, title }) {
