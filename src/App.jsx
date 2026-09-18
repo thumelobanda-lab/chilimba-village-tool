@@ -27,6 +27,7 @@ import GroupSwitcher from "./components/GroupSwitcher.jsx";
 import AddGroupModal from "./components/AddGroupModal.jsx";
 import NotificationBell from "./components/NotificationBell.jsx";
 import OfflineBanner from "./components/OfflineBanner.jsx";
+import HelpModal from "./components/HelpModal.jsx";
 import MyReceipts from "./components/MyReceipts.jsx";
 import OwnerDashboard from "./components/owner/OwnerDashboard.jsx";
 import ProfilePreview from "./components/ProfilePreview.jsx";
@@ -142,7 +143,11 @@ export default function App() {
   const [showWalkthrough, setShowWalkthrough] = useState(false);
   const [sessionEndedNotice, setSessionEndedNotice] = useState(false);
   const [showAddGroup, setShowAddGroup] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
+  const [deletingData, setDeletingData] = useState(false);
+  const [deleteDataError, setDeleteDataError] = useState("");
   const [payoutStatus, setPayoutStatus] = useState("");
+  const [payoutError, setPayoutError] = useState("");
   const [reminderStatus, setReminderStatus] = useState("");
   // One fetch for the signed-in member's own photo, same pattern as
   // Profile.jsx's own copy — this is always exactly one member, so
@@ -197,15 +202,22 @@ export default function App() {
   // field is a native picker whose onChange only fires on a discrete
   // selection, so it can toast immediately.
   const updatePayoutAndConfirm = async (field, value) => {
-    await updatePayout(field, value);
-    if (field === "date") {
-      setPayoutStatus("Saved");
-      setTimeout(() => setPayoutStatus(""), 1500);
+    try {
+      await updatePayout(field, value);
+      setPayoutError("");
+      if (field === "date") {
+        setPayoutStatus("Saved");
+        setTimeout(() => setPayoutStatus(""), 1500);
+      }
+    } catch (e) {
+      setPayoutError(e.message || "Couldn't save that — check your connection and try again.");
     }
   };
   const confirmPayoutAmountSaved = () => {
-    setPayoutStatus("Saved");
-    setTimeout(() => setPayoutStatus(""), 1500);
+    if (!payoutError) {
+      setPayoutStatus("Saved");
+      setTimeout(() => setPayoutStatus(""), 1500);
+    }
   };
 
   // Auto-opens once per account, the first time the dashboard is actually
@@ -339,7 +351,15 @@ export default function App() {
 
   const handleDeleteData = async () => {
     if (!window.confirm("Delete all your saved contributions and subscription data? This can't be undone.")) return;
-    await clearMyData();
+    setDeletingData(true);
+    setDeleteDataError("");
+    try {
+      await clearMyData();
+    } catch (e) {
+      setDeleteDataError(e.message || "Couldn't delete your data — check your connection and try again.");
+    } finally {
+      setDeletingData(false);
+    }
   };
 
   // Dashboard's rotation-strip long-press shortcut (admin-only — see
@@ -396,39 +416,50 @@ export default function App() {
             <div className="muted small">Your group's honest record.</div>
           )}
         </div>
-        {session && (
-          <div className="header-right">
-            <NotificationBell items={notifications.items} urgent={pendingConfirmCount > 0} />
-            {session.role === "admin" && (
+        <div className="header-right">
+          {session && (
+            <>
+              <NotificationBell items={notifications.items} urgent={pendingConfirmCount > 0} />
+              {session.role === "admin" && (
+                <button
+                  className="btn-ghost calc-icon-btn payment-review-icon-btn"
+                  onClick={() => setTab("reconciliation")}
+                  aria-label={
+                    pendingConfirmCount > 0
+                      ? `Payment Review — ${pendingConfirmCount} pending confirmation${pendingConfirmCount === 1 ? "" : "s"}`
+                      : "Payment Review"
+                  }
+                  title="Payment Review"
+                >
+                  <Icon name="check" size={16} className="icon-inline" /> <span className="calc-icon-label">Review</span>
+                  {pendingConfirmCount > 0 && (
+                    <span className="notification-bell-badge notification-bell-badge-urgent">
+                      {pendingConfirmCount > 9 ? "9+" : pendingConfirmCount}
+                    </span>
+                  )}
+                </button>
+              )}
               <button
-                className="btn-ghost calc-icon-btn payment-review-icon-btn"
-                onClick={() => setTab("reconciliation")}
-                aria-label={
-                  pendingConfirmCount > 0
-                    ? `Payment Review — ${pendingConfirmCount} pending confirmation${pendingConfirmCount === 1 ? "" : "s"}`
-                    : "Payment Review"
-                }
-                title="Payment Review"
+                type="button"
+                className="btn-ghost header-icon-btn"
+                onClick={() => setShowCalculator(true)}
+                aria-label="Open calculator"
+                title="Calculator"
               >
-                <Icon name="check" size={16} className="icon-inline" /> <span className="calc-icon-label">Review</span>
-                {pendingConfirmCount > 0 && (
-                  <span className="notification-bell-badge notification-bell-badge-urgent">
-                    {pendingConfirmCount > 9 ? "9+" : pendingConfirmCount}
-                  </span>
-                )}
+                <Icon name="calculator" size={18} />
               </button>
-            )}
-            <button
-              type="button"
-              className="btn-ghost header-icon-btn"
-              onClick={() => setShowCalculator(true)}
-              aria-label="Open calculator"
-              title="Calculator"
-            >
-              <Icon name="calculator" size={18} />
-            </button>
-          </div>
-        )}
+            </>
+          )}
+          <button
+            type="button"
+            className="btn-ghost header-icon-btn"
+            onClick={() => setShowHelp(true)}
+            aria-label="Need help?"
+            title="Need help?"
+          >
+            <Icon name="message" size={18} />
+          </button>
+        </div>
       </header>
 
       <OfflineBanner online={online} pending={pendingSyncCount} syncing={syncing} />
@@ -440,6 +471,7 @@ export default function App() {
       {showAddGroup && (
         <AddGroupModal onJoin={join} onLogin={login} onClose={() => setShowAddGroup(false)} />
       )}
+      {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
 
       <main className="app-main">
         {!session ? (
@@ -557,7 +589,7 @@ export default function App() {
                       <input
                         type="number"
                         value={ledger.payoutInfo?.amount || 0}
-                        onChange={(e) => updatePayout("amount", e.target.value)}
+                        onChange={(e) => updatePayoutAndConfirm("amount", e.target.value)}
                         onBlur={confirmPayoutAmountSaved}
                       />
                     </label>
@@ -571,6 +603,7 @@ export default function App() {
                     </label>
                   </div>
                   <Toast message={payoutStatus} />
+                  {payoutError && <div className="error-text tiny" role="alert">{payoutError}</div>}
 
                   <table className="summary-table">
                     <tbody>
@@ -585,7 +618,10 @@ export default function App() {
                 </div>
 
                 <div className="privacy-row">
-                  <button className="btn-link" onClick={handleDeleteData}>Delete my data</button>
+                  <button className="btn-link" disabled={deletingData} onClick={handleDeleteData}>
+                    {deletingData ? "Deleting…" : "Delete my data"}
+                  </button>
+                  {deleteDataError && <div className="error-text tiny" role="alert">{deleteDataError}</div>}
                 </div>
               </div>
             )}

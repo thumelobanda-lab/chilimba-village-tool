@@ -72,7 +72,7 @@ export default function Reminders({ config, premiumActive }) {
       await saveReminderPrefs(prefs);
       flashSaved();
     } catch (e) {
-      setError(e.message);
+      setError(e.message || "Could not save reminder settings.");
     } finally {
       setBusy(false);
     }
@@ -101,7 +101,7 @@ export default function Reminders({ config, premiumActive }) {
         This Chilimba runs on a set schedule — get a nudge a few days before each due date so nothing gets missed.
       </p>
 
-      <div className="field checkbox-field" style={{ marginTop: 14 }}>
+      <label className="field checkbox-field" style={{ marginTop: 14 }}>
         <input
           type="checkbox"
           checked={prefs.pushEnabled}
@@ -110,16 +110,16 @@ export default function Reminders({ config, premiumActive }) {
         />
         Push notifications on this device
         {!pushSupported() && <span className="muted tiny"> (not supported on this browser)</span>}
-      </div>
+      </label>
 
-      <div className="field checkbox-field">
+      <label className="field checkbox-field">
         <input
           type="checkbox"
           checked={prefs.smsEnabled}
           onChange={(e) => updateField("smsEnabled", e.target.checked)}
         />
         SMS reminders
-      </div>
+      </label>
 
       {prefs.smsEnabled && (
         <label className="field">

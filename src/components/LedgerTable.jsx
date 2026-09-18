@@ -167,30 +167,37 @@ function PaymentHero({ overdue, nextUnpaid, nextUpcomingRow, onAddPayment }) {
 function PayButton({ row, onAddPayment, size }) {
   const [busy, setBusy] = useState(false);
   const [justLogged, setJustLogged] = useState(false);
+  const [error, setError] = useState("");
   const timeoutRef = useRef();
   useEffect(() => () => clearTimeout(timeoutRef.current), []);
 
   const pay = async () => {
     setBusy(true);
+    setError("");
     try {
       await onAddPayment(row.id, row.balance, "");
       setJustLogged(true);
       clearTimeout(timeoutRef.current);
       timeoutRef.current = setTimeout(() => setJustLogged(false), 1800);
+    } catch (e) {
+      setError(e.message || "Couldn't save that payment — check your connection and try again.");
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <button
-      type="button"
-      className={"btn-pay" + (size === "hero" ? " btn-pay-hero" : "") + (justLogged ? " btn-pay-confirmed" : "")}
-      disabled={busy}
-      onClick={pay}
-    >
-      {busy ? "Saving…" : justLogged ? "✓ Logged" : `Pay ${money(row.balance)}`}
-    </button>
+    <>
+      <button
+        type="button"
+        className={"btn-pay" + (size === "hero" ? " btn-pay-hero" : "") + (justLogged ? " btn-pay-confirmed" : "")}
+        disabled={busy}
+        onClick={pay}
+      >
+        {busy ? "Saving…" : justLogged ? "✓ Logged" : `Pay ${money(row.balance)}`}
+      </button>
+      {error && <div className="error-text" role="alert">{error}</div>}
+    </>
   );
 }
 
@@ -223,6 +230,7 @@ function PaymentCard({
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [justLogged, setJustLogged] = useState(false);
+  const [addError, setAddError] = useState("");
   const cardRef = useRef(null);
   const amountInputRef = useRef(null);
   const justLoggedTimeoutRef = useRef();
@@ -230,6 +238,11 @@ function PaymentCard({
   const [entryDraft, setEntryDraft] = useState("");
   const [entryDateDraft, setEntryDateDraft] = useState(row.id);
   const [entryBusy, setEntryBusy] = useState(false);
+  const [entryError, setEntryError] = useState("");
+  const [dueBusy, setDueBusy] = useState(false);
+  const [dueError, setDueError] = useState("");
+  const [voidingId, setVoidingId] = useState(null);
+  const [voidError, setVoidError] = useState(null); // { entryId, message } | null
 
   const isPaid = row.balance <= 0;
   const isOverdue = !isPaid && row.date < today;
@@ -262,6 +275,7 @@ function PaymentCard({
   const submitCustomAmount = async () => {
     if (!amount || Number(amount) <= 0) return;
     setBusy(true);
+    setAddError("");
     try {
       await onAddPayment(row.id, amount, note);
       setAmount("");
@@ -269,35 +283,69 @@ function PaymentCard({
       setJustLogged(true);
       clearTimeout(justLoggedTimeoutRef.current);
       justLoggedTimeoutRef.current = setTimeout(() => setJustLogged(false), 1400);
+    } catch (e) {
+      setAddError(e.message || "Couldn't save that payment — check your connection and try again.");
     } finally {
       setBusy(false);
     }
   };
 
   const saveDue = async () => {
-    await onSetDueOverride(row.id, dueDraft);
-    setEditingDue(false);
+    setDueBusy(true);
+    setDueError("");
+    try {
+      await onSetDueOverride(row.id, dueDraft);
+      setEditingDue(false);
+    } catch (e) {
+      setDueError(e.message || "Couldn't save that rate — check your connection and try again.");
+    } finally {
+      setDueBusy(false);
+    }
   };
 
   const resetDue = async () => {
-    await onSetDueOverride(row.id, null);
-    setEditingDue(false);
+    setDueBusy(true);
+    setDueError("");
+    try {
+      await onSetDueOverride(row.id, null);
+      setEditingDue(false);
+    } catch (e) {
+      setDueError(e.message || "Couldn't reset that rate — check your connection and try again.");
+    } finally {
+      setDueBusy(false);
+    }
   };
 
   const startEditEntry = (entry) => {
     setEntryDraft(entry.amount);
     setEntryDateDraft(row.id);
     setEditingEntryId(entry.id);
+    setEntryError("");
   };
 
   const saveEntryEdit = async (entry) => {
     if (!entryDraft || Number(entryDraft) <= 0) return;
     setEntryBusy(true);
+    setEntryError("");
     try {
       await onEditPayment(entry.id, entryDateDraft, entryDraft);
       setEditingEntryId(null);
+    } catch (e) {
+      setEntryError(e.message || "Couldn't save that change — check your connection and try again.");
     } finally {
       setEntryBusy(false);
+    }
+  };
+
+  const handleVoid = async (entryId) => {
+    setVoidingId(entryId);
+    setVoidError(null);
+    try {
+      await onVoidPayment(entryId);
+    } catch (e) {
+      setVoidError({ entryId, message: e.message || "Couldn't void that payment — check your connection and try again." });
+    } finally {
+      setVoidingId(null);
     }
   };
 
@@ -355,8 +403,13 @@ function PaymentCard({
                     value={dueDraft}
                     onChange={(e) => setDueDraft(e.target.value)}
                   />
-                  <button className="btn-link" onClick={saveDue}>save</button>
-                  {row.overridden && <button className="btn-link" onClick={resetDue}>use default</button>}
+                  <button className="btn-link" disabled={dueBusy} onClick={saveDue}>
+                    {dueBusy ? "saving…" : "save"}
+                  </button>
+                  {row.overridden && (
+                    <button className="btn-link" disabled={dueBusy} onClick={resetDue}>use default</button>
+                  )}
+                  {dueError && <div className="error-text tiny" role="alert">{dueError}</div>}
                 </span>
               ) : (
                 <button
@@ -416,6 +469,7 @@ function PaymentCard({
                         <button className="btn-link" disabled={entryBusy} onClick={() => setEditingEntryId(null)}>
                           cancel
                         </button>
+                        {entryError && <div className="error-text tiny" role="alert">{entryError}</div>}
                       </span>
                     ) : e.voidedAt ? (
                       <span>{money(e.amount)}</span>
@@ -445,11 +499,16 @@ function PaymentCard({
                           {e.confirmedAt && premiumActive && (
                             <button className="receipt-link" onClick={() => onViewReceipt(e)}><Icon name="receipt" size={13} className="icon-inline" /> Receipt</button>
                           )}
-                          <button className="btn-link" onClick={() => onVoidPayment(e.id)}>void</button>
+                          <button className="btn-link" disabled={voidingId === e.id} onClick={() => handleVoid(e.id)}>
+                            {voidingId === e.id ? "voiding…" : "void"}
+                          </button>
                         </>
                       )
                     )}
                   </div>
+                  {voidError?.entryId === e.id && (
+                    <div className="error-text tiny" role="alert">{voidError.message}</div>
+                  )}
                   {!e.voidedAt && e.confirmedAt && e.communityFundAmount > 0 && (
                     <div className="muted tiny split-breakdown">
                       {money(e.amount)} paid → {money(e.communityFundAmount)} to Group Savings Fund,{" "}
@@ -496,6 +555,7 @@ function PaymentCard({
                 {busy ? "Saving…" : justLogged ? "✓ Logged" : "Log a different amount"}
               </button>
             </div>
+            {addError && <div className="error-text tiny" role="alert">{addError}</div>}
             <p className="muted tiny" style={{ marginTop: 4 }}>
               A logged payment is pending until a group leader confirms it — you'll see the dot
               turn green once it's checked.
@@ -518,21 +578,40 @@ function OrphanedEntries({ entries, allRows, onVoidPayment, onEditPayment }) {
   const [amountDraft, setAmountDraft] = useState("");
   const [dateDraft, setDateDraft] = useState(allRows[0]?.id || "");
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [voidingId, setVoidingId] = useState(null);
+  const [voidError, setVoidError] = useState(null); // { entryId, message } | null
 
   const startEdit = (entry) => {
     setAmountDraft(entry.amount);
     setDateDraft(allRows[0]?.id || "");
     setEditingId(entry.id);
+    setError("");
   };
 
   const saveEdit = async (entry) => {
     if (!amountDraft || Number(amountDraft) <= 0 || !dateDraft) return;
     setBusy(true);
+    setError("");
     try {
       await onEditPayment(entry.id, dateDraft, amountDraft);
       setEditingId(null);
+    } catch (e) {
+      setError(e.message || "Couldn't save that change — check your connection and try again.");
     } finally {
       setBusy(false);
+    }
+  };
+
+  const handleVoid = async (entryId) => {
+    setVoidingId(entryId);
+    setVoidError(null);
+    try {
+      await onVoidPayment(entryId);
+    } catch (e) {
+      setVoidError({ entryId, message: e.message || "Couldn't void that payment — check your connection and try again." });
+    } finally {
+      setVoidingId(null);
     }
   };
 
@@ -566,6 +645,7 @@ function OrphanedEntries({ entries, allRows, onVoidPayment, onEditPayment }) {
                   {busy ? "saving…" : "save"}
                 </button>
                 <button className="btn-link" disabled={busy} onClick={() => setEditingId(null)}>cancel</button>
+                {error && <div className="error-text tiny" role="alert">{error}</div>}
               </span>
             ) : (
               <button className="link-amount" onClick={() => startEdit(e)} title="Move this entry to a current date">
@@ -576,7 +656,12 @@ function OrphanedEntries({ entries, allRows, onVoidPayment, onEditPayment }) {
               Logged {new Date(e.recordedAt).toLocaleDateString()} · {e.recordedBy}
             </span>
             {editingId !== e.id && (
-              <button className="btn-link" onClick={() => onVoidPayment(e.id)}>void</button>
+              <button className="btn-link" disabled={voidingId === e.id} onClick={() => handleVoid(e.id)}>
+                {voidingId === e.id ? "voiding…" : "void"}
+              </button>
+            )}
+            {voidError?.entryId === e.id && (
+              <div className="error-text tiny" role="alert">{voidError.message}</div>
             )}
           </div>
         </div>

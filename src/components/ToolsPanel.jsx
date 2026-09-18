@@ -90,10 +90,10 @@ export default function ToolsPanel({ theme, onToggleTheme }) {
       <Toast message={status} />
 
       <h3 className="panel-subtitle" style={{ marginTop: 24 }}>Appearance</h3>
-      <div className="field checkbox-field" style={{ marginTop: 4 }}>
+      <label className="field checkbox-field" style={{ marginTop: 4 }}>
         <input type="checkbox" checked={theme === "dark"} onChange={onToggleTheme} />
         Dark mode
-      </div>
+      </label>
     </div>
   );
 }

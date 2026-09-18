@@ -41,7 +41,7 @@ export default function OwnerDashboard({ session, onSignedOut }) {
       await confirmSubscription(id);
       await load();
     } catch (e) {
-      setError(e.message);
+      setError(e.message || "Could not confirm that subscription payment.");
     } finally {
       setBusyId(null);
     }
@@ -54,7 +54,7 @@ export default function OwnerDashboard({ session, onSignedOut }) {
       await rejectSubscription(id, notes);
       await load();
     } catch (e) {
-      setError(e.message);
+      setError(e.message || "Could not reject that subscription payment.");
     } finally {
       setBusyId(null);
     }
@@ -68,7 +68,7 @@ export default function OwnerDashboard({ session, onSignedOut }) {
       await suspendGroup(group.id, reason.trim());
       await load();
     } catch (e) {
-      setError(e.message);
+      setError(e.message || "Could not suspend that group.");
     } finally {
       setBusyId(null);
     }
@@ -80,7 +80,7 @@ export default function OwnerDashboard({ session, onSignedOut }) {
       await unsuspendGroup(group.id);
       await load();
     } catch (e) {
-      setError(e.message);
+      setError(e.message || "Could not unsuspend that group.");
     } finally {
       setBusyId(null);
     }

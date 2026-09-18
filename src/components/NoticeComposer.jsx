@@ -67,7 +67,7 @@ export default function NoticeComposer() {
           disabled={busy}
         />
         <button className="btn-ghost-dark" disabled={busy || !message.trim()} onClick={handlePost}>
-          Post
+          {busy ? "Posting…" : "Post"}
         </button>
       </div>
       {postError && <div className="error-text" role="alert">{postError}</div>}

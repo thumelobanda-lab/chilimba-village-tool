@@ -11,6 +11,7 @@ export default function Reconciliation({ config, premiumActive, onOpenGroupSetup
   const [rowId, setRowId] = useState(() => pickDefaultRow(config.schedule)?.id);
   const [expanded, setExpanded] = useState(null); // one member's name at a time
   const [busyEntryId, setBusyEntryId] = useState(null);
+  const [actionError, setActionError] = useState(null); // { entryId, message } | null
   const [receiptFor, setReceiptFor] = useState(null); // { payment, memberName } | null
 
   const { data: pendingData, refresh: refreshPending } = useApiData(getPendingPayments, []);
@@ -18,9 +19,12 @@ export default function Reconciliation({ config, premiumActive, onOpenGroupSetup
 
   const handleConfirmPending = async (entry) => {
     setBusyEntryId(entry.id);
+    setActionError(null);
     try {
       await confirmPayment({ paymentId: entry.id, memberName: entry.memberName, scheduleRowId: entry.scheduleRowId });
       await Promise.all([refreshPending(), refresh()]);
+    } catch (e) {
+      setActionError({ entryId: entry.id, message: e.message || "Couldn't confirm that payment — check your connection and try again." });
     } finally {
       setBusyEntryId(null);
     }
@@ -30,9 +34,12 @@ export default function Reconciliation({ config, premiumActive, onOpenGroupSetup
     const reason = window.prompt(`Reason for not confirming ${entry.memberName}'s ${money(entry.amount)} payment (optional):`, "");
     if (reason === null) return; // cancelled
     setBusyEntryId(entry.id);
+    setActionError(null);
     try {
       await rejectPayment({ paymentId: entry.id, memberName: entry.memberName, reason });
       await Promise.all([refreshPending(), refresh()]);
+    } catch (e) {
+      setActionError({ entryId: entry.id, message: e.message || "Couldn't reject that payment — check your connection and try again." });
     } finally {
       setBusyEntryId(null);
     }
@@ -62,6 +69,7 @@ export default function Reconciliation({ config, premiumActive, onOpenGroupSetup
 
   const toggleConfirm = async (entry) => {
     setBusyEntryId(entry.id);
+    setActionError(null);
     try {
       if (entry.confirmedAt) {
         await unconfirmPayment({ paymentId: entry.id, memberName: entry.memberName });
@@ -69,6 +77,8 @@ export default function Reconciliation({ config, premiumActive, onOpenGroupSetup
         await confirmPayment({ paymentId: entry.id, memberName: entry.memberName, scheduleRowId: rowId });
       }
       await refresh();
+    } catch (e) {
+      setActionError({ entryId: entry.id, message: e.message || "Couldn't update that payment — check your connection and try again." });
     } finally {
       setBusyEntryId(null);
     }
@@ -145,6 +155,9 @@ export default function Reconciliation({ config, premiumActive, onOpenGroupSetup
                   reject
                 </button>
               </span>
+              {actionError?.entryId === entry.id && (
+                <div className="error-text tiny" role="alert" style={{ width: "100%" }}>{actionError.message}</div>
+              )}
             </div>
           ))}
         </div>
@@ -289,6 +302,9 @@ export default function Reconciliation({ config, premiumActive, onOpenGroupSetup
                                   <div className="muted tiny rejected-reason">
                                     Not confirmed by {e.rejectedBy}{e.rejectionReason ? `: ${e.rejectionReason}` : "."}
                                   </div>
+                                )}
+                                {actionError?.entryId === e.id && (
+                                  <div className="error-text tiny" role="alert">{actionError.message}</div>
                                 )}
                               </div>
                             ))}

@@ -184,7 +184,7 @@ export default function GroupSetup({ config, onSaved, session, premiumActive, on
       onSaved(toSave);
       setStatus("Saved");
     } catch (e) {
-      setError(e.message);
+      setError(e.message || "Could not save group setup — check your connection and try again.");
       setStatus("");
     } finally {
       setTimeout(() => setStatus(""), 1500);

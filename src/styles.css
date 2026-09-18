@@ -238,12 +238,30 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
    of a menu. */
 .profile-preview { position: relative; }
 .profile-preview-trigger {
+  position: relative;
   background: none;
   border: none;
   padding: 0;
   line-height: 0;
   cursor: pointer;
   border-radius: 50%;
+}
+/* Invisible tap-area expansion, not a bigger visual circle — the
+   PayoutAvatarRow rotation strip deliberately keeps its avatars small
+   (32-38px) so a whole schedule of members fits in one horizontally
+   scrolling row; shrinking that further to guarantee a visible 44px
+   circle per avatar would make the strip unreadable. max(44px, 100%)
+   only grows the actual clickable box past the visible circle when the
+   circle itself is under 44px (the header's 48px trigger is already
+   bigger, so this is a no-op there). */
+.profile-preview-trigger::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max(44px, 100%);
+  height: max(44px, 100%);
+  transform: translate(-50%, -50%);
 }
 .profile-preview-trigger .avatar-photo, .profile-preview-trigger .avatar-fallback {
   border-color: var(--chrome-ink-faint);
@@ -293,8 +311,8 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
    own badge in the top-left instead (see .profile-preview-trigger),
    so this is back to just the two. */
 .header-icon-btn {
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   padding: 0;
   border-radius: 50%;
   display: inline-flex;
@@ -434,6 +452,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  min-height: 44px;
   text-align: left;
   padding: 10px 12px;
   border: none;
@@ -576,6 +595,9 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   background: none;
   border: none;
   padding: 0;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
   color: var(--chrome-ink-faint); /* sits directly on the always-dark header, no own background */
   font-size: 0.85rem;
   cursor: pointer;
@@ -615,8 +637,10 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .group-switcher-item {
   flex: 1;
   min-width: 0;
+  min-height: 44px;
   display: flex;
   flex-direction: column;
+  justify-content: center;
   align-items: flex-start;
   gap: 2px;
   padding: 8px 10px;
@@ -646,6 +670,11 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   font-size: 0.85rem;
   padding: 4px 6px;
   flex-shrink: 0;
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 .group-switcher-remove:hover { color: var(--red); }
 .group-switcher-add {
@@ -1021,6 +1050,9 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   background: var(--panel);
   box-sizing: border-box;
 }
+.field input:not([type="checkbox"]):not([type="radio"]), .field select {
+  min-height: 44px;
+}
 .field input:disabled, .field select:disabled { opacity: 0.5; cursor: not-allowed; }
 .field-row { display: flex; gap: 14px; flex-wrap: wrap; }
 
@@ -1236,7 +1268,17 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 }
 .setup-section-chevron-open { transform: rotate(90deg); }
 .setup-section-body { padding: 16px 14px; border-top: 1px solid var(--line); }
-.checkbox-field { flex-direction: row; align-items: center; gap: 8px; font-size: 0.85rem; }
+.checkbox-field { flex-direction: row; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; }
+/* Only takes effect combined with .field (which supplies display:flex) —
+   the plain terms-acceptance checkboxes (Login/CreateGroup/AddGroupModal)
+   deliberately stay a bare inline label so their multi-line "I agree to
+   the Terms & Conditions and Privacy Policy" text (with nested link
+   buttons) still wraps like a paragraph instead of being forced into flex
+   items on one row; that wrapped paragraph is already a huge tap target,
+   so it doesn't need this. The short single-line rows (GroupSetup/
+   Reminders/ToolsPanel toggles) do, since a one-line label is otherwise
+   barely taller than the native checkbox itself. */
+.field.checkbox-field { min-height: 44px; }
 /* .field input's width:100% (meant for text/number/date inputs) also
    matched the checkbox itself here, since a checkbox-field div keeps
    the plain .field class too (for its font-size/color/margin-bottom) —
@@ -1309,7 +1351,18 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   .grid-table tr.history-row td::before { content: none; }
 }
 
-.btn-icon { background: none; border: none; color: var(--red); cursor: pointer; font-size: 0.92rem; }
+.btn-icon {
+  background: none;
+  border: none;
+  color: var(--red);
+  cursor: pointer;
+  font-size: 0.92rem;
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
 .btn-ghost-dark {
   background: transparent;
   border: 1px solid var(--line);
@@ -1573,6 +1626,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   color: var(--on-accent-2);
   border: none;
   padding: 6px 14px;
+  min-height: 44px;
   border-radius: 8px;
   font-weight: 700;
   font-size: 0.8rem;
@@ -1603,7 +1657,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 }
 
 /* Calculator icon + modal */
-.calc-icon-btn { font-size: 1.1rem; padding: 6px 12px; min-height: 40px; }
+.calc-icon-btn { font-size: 1.1rem; padding: 6px 12px; min-height: 44px; }
 /* Vertical-align nudge for an inline <Icon> sitting next to text — SVGs
    default to baseline alignment, which sits a hair low next to text's
    own baseline; every caller that drops an Icon.jsx glyph inline with a
@@ -2134,8 +2188,11 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 }
 
 .payment-card-details-toggle {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
+  min-height: 44px;
   background: none;
   border: none;
   color: var(--ink-faint);
@@ -2417,8 +2474,11 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   color: var(--ink);
 }
 .dashboard-more-toggle {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
+  min-height: 44px;
   text-align: center;
   background: none;
   border: 1px dashed var(--line);
@@ -2619,6 +2679,11 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   font-size: 0.92rem;
   padding: 4px 8px;
   flex-shrink: 0;
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .progress-ring-wrap { position: relative; display: inline-flex; align-items: center; justify-content: center; margin-top: 4px; }
@@ -2778,6 +2843,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .auth-mode-tab {
   flex: 1;
   padding: 8px 12px;
+  min-height: 44px;
   border: none;
   background: transparent;
   border-radius: 8px;

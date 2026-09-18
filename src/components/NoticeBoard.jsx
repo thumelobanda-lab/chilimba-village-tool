@@ -22,11 +22,21 @@ function timeAgo(iso) {
 export default function NoticeBoard({ isAdmin }) {
   const { data, error, loading, refresh } = useApiData(getNotices, []);
   const [expanded, setExpanded] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
+  const [deleteError, setDeleteError] = useState(null); // { id, message } | null
 
   const handleDelete = async (id) => {
     if (!window.confirm("Remove this notice?")) return;
-    await deleteNotice(id);
-    await refresh();
+    setDeletingId(id);
+    setDeleteError(null);
+    try {
+      await deleteNotice(id);
+      await refresh();
+    } catch (e) {
+      setDeleteError({ id, message: e.message || "Couldn't remove that notice — check your connection and try again." });
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   if (loading && !data) return null; // don't flash an empty board while first loading
@@ -47,9 +57,14 @@ export default function NoticeBoard({ isAdmin }) {
             <span className="muted tiny">{n.postedBy} · {timeAgo(n.postedAt)}</span>
             {n.targetMemberName && <span className="tag notice-target-tag">→ {n.targetMemberName}</span>}
             {isAdmin && (
-              <button className="btn-link" onClick={() => handleDelete(n.id)}>remove</button>
+              <button className="btn-link" disabled={deletingId === n.id} onClick={() => handleDelete(n.id)}>
+                {deletingId === n.id ? "removing…" : "remove"}
+              </button>
             )}
           </div>
+          {deleteError?.id === n.id && (
+            <div className="error-text tiny" role="alert">{deleteError.message}</div>
+          )}
         </div>
       ))}
       {notices.length > 1 && (
