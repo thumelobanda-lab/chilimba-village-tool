@@ -194,6 +194,6 @@ describe("createGroup (real-mode branch)", () => {
   it("rejects an unrecognized gender value", async () => {
     await expect(
       createGroup({ groupName: "X", adminName: "Y", pin: "1234", termsAccepted: true, gender: "other" })
-    ).rejects.toThrow(/gender/i);
+    ).rejects.toThrow(/title/i);
   });
 });

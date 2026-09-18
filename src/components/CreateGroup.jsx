@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import TermsModal from "./TermsModal.jsx";
 import PrivacyModal from "./PrivacyModal.jsx";
+import GenderSelect from "./GenderSelect.jsx";
 
 export default function CreateGroup({ onCreate, onBackToLogin }) {
   const [groupName, setGroupName] = useState("");
@@ -80,11 +81,7 @@ export default function CreateGroup({ onCreate, onBackToLogin }) {
       </label>
       <label className="field">
         How should we address you? (optional)
-        <select value={gender} onChange={(e) => setGender(e.target.value)} disabled={busy}>
-          <option value="">Prefer not to say</option>
-          <option value="female">Sister</option>
-          <option value="male">Brother</option>
-        </select>
+        <GenderSelect value={gender} onChange={(e) => setGender(e.target.value)} disabled={busy} />
       </label>
       <label className="field">
         Choose a PIN (4+ digits)

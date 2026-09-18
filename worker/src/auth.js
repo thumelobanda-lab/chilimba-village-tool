@@ -89,16 +89,20 @@ export async function resolveGroupBySlug(env, slug) {
   return group;
 }
 
-// Optional, self-reported, used only for greeting phrasing (see
-// dashboardMath.js's greeting()) — never gates anything, so an omitted
-// or empty value just means "no preference," not an error. Rejects
-// anything other than the two offered options rather than silently
-// storing free text, since greeting() only knows how to branch on
-// exactly these two.
+// Optional, self-reported title/honorific, used only for greeting
+// phrasing (see dashboardMath.js's genderedAddress()) — never gates
+// anything, so an omitted or empty value just means "no preference,"
+// not an error. "male"/"female" are the original two values (kept as-is
+// so existing accounts need no migration); the rest were added
+// alongside them for members who'd rather be addressed by a title than
+// "brother"/"sister". Rejects anything outside this list rather than
+// silently storing free text, since genderedAddress() only knows how to
+// render exactly these options.
+const VALID_GENDER_VALUES = ["male", "female", "mr", "mrs", "ms", "dr", "father", "madame"];
 function normalizeGender(gender) {
   if (gender === undefined || gender === null || gender === "") return null;
-  if (gender !== "male" && gender !== "female") {
-    throw new HttpError(400, "Gender must be 'male' or 'female' (or left unset).");
+  if (!VALID_GENDER_VALUES.includes(gender)) {
+    throw new HttpError(400, `Title must be one of: ${VALID_GENDER_VALUES.join(", ")} (or left unset).`);
   }
   return gender;
 }

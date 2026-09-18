@@ -4,7 +4,9 @@ import CreateGroup from "./CreateGroup.jsx";
 import LoginScene from "./LoginScene.jsx";
 import OpenBookMark from "./OpenBookMark.jsx";
 import PrivacyModal from "./PrivacyModal.jsx";
+import WhatIsChilimbaModal from "./WhatIsChilimbaModal.jsx";
 import Icon from "./Icon.jsx";
+import GenderSelect from "./GenderSelect.jsx";
 import { MOCK_MODE } from "../lib/api/core.js";
 
 const LAST_GROUP_KEY = "chilimba:last-group-slug";
@@ -65,6 +67,7 @@ export default function Login({ onLogin, onJoin, onCreateGroup, onOwnerLogin, se
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
+  const [showWhatIsChilimba, setShowWhatIsChilimba] = useState(false);
 
   // Drop ?join=... from the address bar once it's been read, so it
   // doesn't linger there or get shared/bookmarked with someone else's
@@ -122,6 +125,14 @@ export default function Login({ onLogin, onJoin, onCreateGroup, onOwnerLogin, se
       <OpenBookMark />
       <LoginScene />
       <p className="login-tagline">Your group's honest record.</p>
+      <button
+        type="button"
+        className="btn-link"
+        style={{ display: "block", margin: "0 auto 14px", fontSize: 13 }}
+        onClick={() => setShowWhatIsChilimba(true)}
+      >
+        <Icon name="info" size={13} className="icon-inline" /> What is a Chilimba?
+      </button>
       {sessionEndedNotice && (
         <div className="error-text" role="alert" style={{ marginBottom: 14 }}>
           Your session ended — this can happen if your access changed (e.g. you were
@@ -272,11 +283,7 @@ export default function Login({ onLogin, onJoin, onCreateGroup, onOwnerLogin, se
               </label>
               <label className="field">
                 How should we address you? (optional)
-                <select value={gender} onChange={(e) => setGender(e.target.value)} disabled={busy}>
-                  <option value="">Prefer not to say</option>
-                  <option value="female">Sister</option>
-                  <option value="male">Brother</option>
-                </select>
+                <GenderSelect value={gender} onChange={(e) => setGender(e.target.value)} disabled={busy} />
               </label>
             </>
           ) : (
@@ -345,6 +352,7 @@ export default function Login({ onLogin, onJoin, onCreateGroup, onOwnerLogin, se
 
       {showTerms && <TermsModal onClose={() => setShowTerms(false)} />}
       {showPrivacy && <PrivacyModal onClose={() => setShowPrivacy(false)} />}
+      {showWhatIsChilimba && <WhatIsChilimbaModal onClose={() => setShowWhatIsChilimba(false)} />}
 
       {isOwner ? (
         <p className="muted tiny">

@@ -319,24 +319,37 @@ export function greeting(hour = new Date().getHours()) {
   return "Good evening";
 }
 
+// "brother "/"Dr. "/etc. — the two original values stay lowercase, bare
+// words (how they've always read); the titles added alongside them
+// conventionally read capitalized, several with a trailing period, when
+// placed directly before a name.
+const GENDER_ADDRESS_FORMS = {
+  male: "brother ",
+  female: "sister ",
+  mr: "Mr. ",
+  mrs: "Mrs. ",
+  ms: "Ms. ",
+  dr: "Dr. ",
+  father: "Father ",
+  madame: "Madame ",
+};
+
 /**
- * "brother "/"sister " to slot between greeting() and a member's name —
+ * "brother "/"Dr. "/etc. to slot between greeting() and a member's name —
  * kept as its own function rather than a param on greeting() above so
- * the existing time-of-day tests/callers that don't care about gender
+ * the existing time-of-day tests/callers that don't care about this
  * stay untouched. Self-reported at sign-up (see worker/src/auth.js's
  * normalizeGender, migration 021) and used ONLY here — no other part of
  * the app reads it. Empty string (not "there", not a fallback pronoun)
- * for an unset/declined gender, so `${greeting()}, ${genderedAddress(g)}${name}`
+ * for an unset/declined value, so `${greeting()}, ${genderedAddress(g)}${name}`
  * reads as the plain old "Good morning, Chanda" for every account that
  * predates this field or chose not to answer.
  *
- * @param {"male"|"female"|null|undefined} gender
+ * @param {"male"|"female"|"mr"|"mrs"|"ms"|"dr"|"father"|"madame"|null|undefined} gender
  * @returns {string}
  */
 export function genderedAddress(gender) {
-  if (gender === "male") return "brother ";
-  if (gender === "female") return "sister ";
-  return "";
+  return GENDER_ADDRESS_FORMS[gender] || "";
 }
 
 /**

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import Icon from "./Icon.jsx";
+import WhatIsChilimbaModal from "./WhatIsChilimbaModal.jsx";
 import { getSupportContact } from "../lib/api.js";
 import { buildWhatsAppDirectUrl } from "../lib/inviteCard.js";
 
@@ -15,6 +16,7 @@ const HELP_WHATSAPP_MESSAGE = "Hi, I need help with OpenBook.";
  */
 export default function HelpModal({ onClose }) {
   const [contact, setContact] = useState({ supportEmail: null, supportWhatsapp: null });
+  const [showWhatIsChilimba, setShowWhatIsChilimba] = useState(false);
 
   useEffect(() => {
     getSupportContact()
@@ -32,6 +34,14 @@ export default function HelpModal({ onClose }) {
           <button className="calc-close-btn" onClick={onClose} aria-label="Close">✕</button>
         </div>
         <div className="terms-modal-body">
+          <button
+            type="button"
+            className="btn-link"
+            style={{ display: "block", marginBottom: 14 }}
+            onClick={() => setShowWhatIsChilimba(true)}
+          >
+            <Icon name="info" size={14} className="icon-inline" /> New here? What is a Chilimba?
+          </button>
           {hasContact ? (
             <>
               <p className="small">Reach OpenBook support directly:</p>
@@ -63,6 +73,7 @@ export default function HelpModal({ onClose }) {
           )}
         </div>
       </div>
+      {showWhatIsChilimba && <WhatIsChilimbaModal onClose={() => setShowWhatIsChilimba(false)} />}
     </div>
   );
 }

@@ -284,6 +284,50 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   text-align: center;
 }
 .profile-preview-name { font-weight: 700; color: var(--ink); word-break: break-word; }
+.profile-preview-photo-expand {
+  background: none;
+  border: none;
+  padding: 0;
+  line-height: 0;
+  cursor: zoom-in;
+  border-radius: 50%;
+}
+
+/* Full-screen photo view (MemberPreviewPopover.jsx) — a second tap on
+   the panel's own photo, past the small panel preview above. Reuses
+   Avatar.jsx itself (size="min(85vw,85vh)") rather than a raw <img>, so
+   it shares the exact same photo-resolution/fetch logic as every other
+   avatar in the app instead of re-implementing it. */
+.photo-lightbox-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  animation: photo-lightbox-fade-in 0.15s ease-out;
+}
+@keyframes photo-lightbox-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.photo-lightbox-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: rgba(255, 255, 255, 0.12);
+  border: none;
+  color: #fff;
+  font-size: 1.1rem;
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
 /* Two fixes for .notification-bell-panel's right:0 spilling off the
    left edge of narrow screens (it used to anchor to .notification-bell,
    only 44px wide, with Review/Calc sitting to its right — plenty of
@@ -1723,6 +1767,22 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .terms-content h3:first-of-type { margin-top: 8px; }
 .terms-content ul { margin: 0 0 12px; padding-left: 20px; }
 .terms-content li { margin-bottom: 6px; }
+
+/* "What is a Chilimba?" modal (WhatIsChilimbaModal.jsx) — reuses
+   .terms-modal for the wider scrollable box. */
+.chilimba-names-list {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.chilimba-names-list li {
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--surface-2);
+  font-size: 0.9rem;
+}
 .terms-legal-warning {
   background: var(--surface-amber);
   border: 1px solid var(--pending);

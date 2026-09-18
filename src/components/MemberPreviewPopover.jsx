@@ -18,6 +18,12 @@ import Avatar from "./Avatar.jsx";
  * extra handlers (PayoutAvatarRow's long-press-to-remind uses this) —
  * merged onto the trigger button after the click handler this component
  * needs for itself.
+ *
+ * The panel itself only ever shows a modest (`panelAvatarSize`) preview —
+ * tapping that photo a second time, when there is an actual photo (not
+ * just an initials fallback), expands it into a full-screen view instead
+ * of growing the panel itself, so the rest of the panel's controls (name,
+ * "Change photo") stay reachable at their normal size.
  */
 export default function MemberPreviewPopover({
   name,
@@ -35,7 +41,9 @@ export default function MemberPreviewPopover({
   triggerProps = {},
 }) {
   const [open, setOpen] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
   const wrapRef = useRef(null);
+  const hasRealPhoto = hasPhoto || !!photoDataUrl;
 
   useEffect(() => {
     if (!open) return;
@@ -52,6 +60,21 @@ export default function MemberPreviewPopover({
       document.removeEventListener("keydown", handleKey);
     };
   }, [open]);
+
+  // A closed panel has no business remembering it was mid-zoom — reopening
+  // should always start back at the normal panel size.
+  useEffect(() => {
+    if (!open) setFullscreen(false);
+  }, [open]);
+
+  useEffect(() => {
+    if (!fullscreen) return;
+    function handleKey(e) {
+      if (e.key === "Escape") setFullscreen(false);
+    }
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [fullscreen]);
 
   const { onClick: extraOnClick, ...restTriggerProps } = triggerProps;
 
@@ -81,7 +104,19 @@ export default function MemberPreviewPopover({
       </button>
       {open && (
         <div className="profile-preview-panel" role="menu">
-          <Avatar name={name} hasPhoto={hasPhoto} photoDataUrl={photoDataUrl} size={panelAvatarSize} />
+          {hasRealPhoto ? (
+            <button
+              type="button"
+              className="profile-preview-photo-expand"
+              onClick={() => setFullscreen(true)}
+              aria-label={`View ${name}'s photo full-screen`}
+              title="Tap to view full-screen"
+            >
+              <Avatar name={name} hasPhoto={hasPhoto} photoDataUrl={photoDataUrl} size={panelAvatarSize} />
+            </button>
+          ) : (
+            <Avatar name={name} hasPhoto={hasPhoto} photoDataUrl={photoDataUrl} size={panelAvatarSize} />
+          )}
           <div className="profile-preview-name">{name}</div>
           {subtitle && <div className="muted tiny">{subtitle}</div>}
           {isSelf && onChangePhoto && (
@@ -97,6 +132,25 @@ export default function MemberPreviewPopover({
               Change photo
             </button>
           )}
+        </div>
+      )}
+      {fullscreen && (
+        <div
+          className="photo-lightbox-backdrop"
+          onClick={() => setFullscreen(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-label={`${name}'s photo`}
+        >
+          <button
+            type="button"
+            className="photo-lightbox-close"
+            onClick={() => setFullscreen(false)}
+            aria-label="Close"
+          >
+            ✕
+          </button>
+          <Avatar name={name} hasPhoto={hasPhoto} photoDataUrl={photoDataUrl} size="min(85vw, 85vh)" bordered={false} />
         </div>
       )}
     </div>

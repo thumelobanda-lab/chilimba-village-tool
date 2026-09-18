@@ -31,10 +31,11 @@ function normalizePhone(phone) {
 // phrasing-only (see dashboardMath.js's genderedAddress), so an omitted
 // value is fine but an unrecognized one isn't silently stored as free
 // text.
+const VALID_GENDER_VALUES = ["male", "female", "mr", "mrs", "ms", "dr", "father", "madame"];
 function normalizeGender(gender) {
   if (gender === undefined || gender === null || gender === "") return null;
-  if (gender !== "male" && gender !== "female") {
-    throw new Error("Gender must be 'male' or 'female' (or left unset).");
+  if (!VALID_GENDER_VALUES.includes(gender)) {
+    throw new Error(`Title must be one of: ${VALID_GENDER_VALUES.join(", ")} (or left unset).`);
   }
   return gender;
 }

@@ -220,6 +220,13 @@ const PATHS = {
       <path d="M10 19.5a2 2 0 0 0 4 0" />
     </>
   ),
+  info: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <line x1="12" y1="11" x2="12" y2="16" />
+      <line x1="12" y1="7.5" x2="12" y2="7.51" />
+    </>
+  ),
 };
 
 export default function Icon({ name, size = 16, className, title }) {

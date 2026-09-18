@@ -14,6 +14,7 @@ import {
   isMemberTurnSoon,
   isCycleNearingCompletion,
   greeting,
+  genderedAddress,
   myOutstandingLoanTotal,
   buildPayoutAvatarRow,
   membersMissingMomo,
@@ -581,5 +582,28 @@ describe("membersMissingMomo", () => {
 
   it("handles multiple payees on the same payout date", () => {
     expect(membersMissingMomo(["Alice", "Bob"], members)).toEqual(["Bob"]);
+  });
+});
+
+describe("genderedAddress", () => {
+  it("renders the two original values lowercase", () => {
+    expect(genderedAddress("male")).toBe("brother ");
+    expect(genderedAddress("female")).toBe("sister ");
+  });
+
+  it("renders every added title, capitalized", () => {
+    expect(genderedAddress("mr")).toBe("Mr. ");
+    expect(genderedAddress("mrs")).toBe("Mrs. ");
+    expect(genderedAddress("ms")).toBe("Ms. ");
+    expect(genderedAddress("dr")).toBe("Dr. ");
+    expect(genderedAddress("father")).toBe("Father ");
+    expect(genderedAddress("madame")).toBe("Madame ");
+  });
+
+  it("returns an empty string for unset or unrecognized values", () => {
+    expect(genderedAddress(null)).toBe("");
+    expect(genderedAddress(undefined)).toBe("");
+    expect(genderedAddress("")).toBe("");
+    expect(genderedAddress("something-else")).toBe("");
   });
 });
