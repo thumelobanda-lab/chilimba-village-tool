@@ -229,6 +229,14 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 }
 .brand { font-weight: 700; font-size: 1.1rem; }
 .brand-row { display: flex; align-items: center; gap: 8px; }
+/* Small book mark stacked above the wordmark — same illustration as
+   OpenBookMark.jsx's login-screen brand mark, just smaller. Its stroke
+   color (#1F4B3F) is close to the header's own dark green background,
+   so it reads here mostly as the cream pages + gold ribbon silhouette
+   rather than a fully outlined icon — a deliberate, not accidental,
+   difference from how it looks on the light login panel. */
+.brand-stack { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+.brand-mark { display: block; }
 
 /* ProfilePreview.jsx — the small profile badge in the header's top-left,
    next to the OpenBook wordmark. Same trigger/panel language as
@@ -391,13 +399,14 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   border-bottom-color: var(--green);
 }
 
-.dashboard-greeting {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: var(--ink);
-  padding: 4px 4px 14px;
-}
 .greeting-emoji { display: inline-block; }
+/* The greeting itself moved into the header (App.jsx), alongside the
+   OpenBook wordmark, instead of sitting in the white body below it. */
+.header-greeting {
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin: 2px 0 4px;
+}
 
 .app-main { max-width: 880px; margin: 0 auto; padding: 20px; width: 100%; }
 
@@ -2041,11 +2050,13 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
    else lives behind the nav menu, so this is the only content competing
    for space here. */
 
-/* Compact greeting strip — one line, no gradient panel. The ring used to
+/* Compact cycle strip — one line, no gradient panel. The ring used to
    live in a dedicated hero block above the contribution card; it moved
    INTO that card instead (see .vital-primary-with-ring below) so this
    strip only ever needs to hold text, freeing an entire block's worth of
-   vertical height for the "must fit on one screen" budget above. */
+   vertical height for the "must fit on one screen" budget above. The
+   greeting that used to open this strip now lives in the header instead
+   (see .header-greeting). */
 .dashboard-strip {
   display: flex;
   align-items: baseline;
@@ -2054,7 +2065,6 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   margin-bottom: 6px;
   font-size: 0.85rem;
 }
-.dashboard-strip-greeting { font-weight: 700; color: var(--ink); }
 .dashboard-strip-cycle { flex-basis: 100%; }
 .dashboard-strip-manage { margin-left: auto; font-size: 0.8rem; }
 
@@ -2337,7 +2347,12 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   display: flex;
   gap: 10px;
   overflow-x: auto;
-  padding: 2px 2px 6px;
+  /* Top padding matches the 6px max spread of .payout-avatar-pulse's
+     box-shadow ring below — overflow-x:auto forces overflow-y to auto
+     too (a well-known CSS quirk: only one axis can stay "visible"), so
+     anything short of that flattens the "next" avatar's pulsing glow
+     against this row's top edge instead of letting it bloom. */
+  padding: 8px 2px 6px;
   -webkit-overflow-scrolling: touch;
 }
 /* Each member's spot in the rotation: avatar plus a "when" label

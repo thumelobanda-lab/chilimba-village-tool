@@ -11,8 +11,6 @@ import {
   findRecentPayout,
   isMemberTurnSoon,
   isCycleNearingCompletion,
-  greeting,
-  genderedAddress,
   myOutstandingLoanTotal,
   buildPayoutAvatarRow,
   membersMissingMomo,
@@ -244,15 +242,11 @@ export default function Dashboard({
 
       {recentPayout && <PayoutAcknowledgment groupSlug={session.groupSlug} row={recentPayout} />}
 
-      {/* C — compact greeting strip: one line, no gradient panel, no ring
-          (see the module doc comment above for where the ring went). */}
+      {/* C — compact cycle strip: one line, no gradient panel, no ring
+          (see the module doc comment above for where the ring went).
+          The greeting itself now lives in the header (App.jsx) instead
+          of here, alongside the OpenBook wordmark. */}
       <div className="dashboard-strip">
-        <span className="dashboard-strip-greeting">
-          👋 {greeting()}, <strong>{genderedAddress(session?.gender)}{session?.name}</strong>
-        </span>
-        {session?.role && (
-          <span className={"tag" + (session.role === "admin" ? " tag-rate" : "")}>{session.role}</span>
-        )}
         {config.cycleName && (
           <span className="dashboard-strip-cycle muted tiny">
             {config.cycleName}

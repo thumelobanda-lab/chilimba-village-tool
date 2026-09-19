@@ -353,6 +353,23 @@ export function genderedAddress(gender) {
 }
 
 /**
+ * Title-cases a member's name for display in the greeting — names are
+ * stored exactly as typed at sign-up (see join() in lib/api/auth.js),
+ * so "thumelo banda" would otherwise sit right next to a capitalized
+ * title ("Dr. thumelo banda") and read as a typo.
+ *
+ * @param {string} name
+ * @returns {string}
+ */
+export function capitalizeName(name) {
+  if (!name) return name;
+  return name
+    .split(" ")
+    .map((word) => (word ? word[0].toUpperCase() + word.slice(1) : word))
+    .join(" ");
+}
+
+/**
  * How much the signed-in member personally still owes across every
  * loan borrowed in their own name — the Dashboard's "Loan owed" card is
  * deliberately hidden entirely (not shown as K0) when this is zero, per

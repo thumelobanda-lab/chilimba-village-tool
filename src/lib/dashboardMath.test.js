@@ -15,6 +15,7 @@ import {
   isCycleNearingCompletion,
   greeting,
   genderedAddress,
+  capitalizeName,
   myOutstandingLoanTotal,
   buildPayoutAvatarRow,
   membersMissingMomo,
@@ -605,5 +606,21 @@ describe("genderedAddress", () => {
     expect(genderedAddress(undefined)).toBe("");
     expect(genderedAddress("")).toBe("");
     expect(genderedAddress("something-else")).toBe("");
+  });
+});
+
+describe("capitalizeName", () => {
+  it("capitalizes each word of a lowercase full name", () => {
+    expect(capitalizeName("thumelo banda")).toBe("Thumelo Banda");
+  });
+
+  it("leaves an already-capitalized name unchanged", () => {
+    expect(capitalizeName("Harriet")).toBe("Harriet");
+  });
+
+  it("passes through empty/nullish values unchanged", () => {
+    expect(capitalizeName("")).toBe("");
+    expect(capitalizeName(null)).toBe(null);
+    expect(capitalizeName(undefined)).toBe(undefined);
   });
 });

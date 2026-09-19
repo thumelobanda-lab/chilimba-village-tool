@@ -81,7 +81,7 @@ function buildSteps(session) {
   steps.push({
     icon: "check",
     title: "That's it",
-    body: "You can reopen this walkthrough any time from the ? icon in the header.",
+    body: "You can reopen this walkthrough any time from the Menu (☰) — under \"How this app works.\"",
   });
 
   return steps;

@@ -32,6 +32,7 @@ import HelpModal from "./components/HelpModal.jsx";
 import MyReceipts from "./components/MyReceipts.jsx";
 import OwnerDashboard from "./components/owner/OwnerDashboard.jsx";
 import ProfilePreview from "./components/ProfilePreview.jsx";
+import OpenBookMark from "./components/OpenBookMark.jsx";
 import Icon from "./components/Icon.jsx";
 import { currentOwnerSession, ownerLogin } from "./lib/api/owner.js";
 import { getProfilePhotoUrl } from "./lib/api.js";
@@ -45,7 +46,7 @@ import { useOfflineSync } from "./hooks/useOfflineSync.js";
 import { useReceipts } from "./hooks/useReceipts.js";
 import { useTheme } from "./hooks/useTheme.js";
 import { useApiData } from "./lib/useApiData.js";
-import { greeting, genderedAddress } from "./lib/dashboardMath.js";
+import { greeting, genderedAddress, capitalizeName } from "./lib/dashboardMath.js";
 import { findNextDue } from "./lib/scheduleUtils.js";
 import { getPendingPayments, sendReminderNow } from "./lib/api.js";
 
@@ -403,8 +404,22 @@ export default function App() {
                 onChangePhoto={() => setTab("account")}
               />
             )}
-            <div className="brand">OpenBook</div>
+            <div className="brand-stack">
+              <OpenBookMark size={24} className="brand-mark" />
+              <div className="brand">OpenBook</div>
+            </div>
           </div>
+          {session && (
+            <div className="header-greeting">
+              <span className="greeting-emoji">👋</span> {greeting()},{" "}
+              {genderedAddress(session.gender)}{capitalizeName(session.name)}
+              {session.role && (
+                <span className={"tag" + (session.role === "admin" ? " tag-rate" : "")} style={{ marginLeft: 8 }}>
+                  {session.role}
+                </span>
+              )}
+            </div>
+          )}
           {session ? (
             <GroupSwitcher
               session={session}
@@ -502,16 +517,6 @@ export default function App() {
           />
         ) : (
           <>
-            {tab !== "home" && (
-              <div className="dashboard-greeting">
-                <span className="greeting-emoji">👋</span> {greeting()}, <strong>{genderedAddress(session.gender)}{session.name}</strong>
-                {session.role && (
-                  <span className={"tag" + (session.role === "admin" ? " tag-rate" : "")} style={{ marginLeft: 8 }}>
-                    {session.role}
-                  </span>
-                )}
-              </div>
-            )}
 
             <div className="nav-row">
               <DesktopTabBar activeId={tab} onSelect={setTab} />

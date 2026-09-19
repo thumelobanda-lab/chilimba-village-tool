@@ -12,10 +12,10 @@ import React from "react";
  * owns the login screen's one big moment; this just sits above it as a
  * quiet, permanent identity mark, the way an app icon would.
  */
-export default function OpenBookMark({ size = 56 }) {
+export default function OpenBookMark({ size = 56, className = "" }) {
   return (
     <svg
-      className="open-book-mark"
+      className={"open-book-mark" + (className ? ` ${className}` : "")}
       width={size}
       height={size * (44 / 64)}
       viewBox="0 0 64 44"
