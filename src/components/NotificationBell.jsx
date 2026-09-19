@@ -32,10 +32,22 @@ const KIND_ICON = {
  * App.jsx's pendingConfirmCount) — for a time-sensitive action that a
  * quiet number badge doesn't convey. It pulses/glows and persists across
  * every tab, not just Home, until the pending queue is actually cleared.
+ *
+ * `markSeen` (from useNotifications.js) is called once on close, for
+ * whatever was in `items` at that point — not on open — so a member
+ * gets one full look at an item styled as unread before it settles into
+ * the plainer "read" treatment on their next visit. Read/unread is only
+ * ever a visual style here; dismissing (below) is still what actually
+ * removes an item from the list.
  */
-export default function NotificationBell({ items, urgent }) {
+export default function NotificationBell({ items, urgent, markSeen }) {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef(null);
+  // Tracks whether the panel has actually been open, so the effect below
+  // only marks items seen on a real open -> closed transition — not on
+  // first mount, which would otherwise mark everything seen before the
+  // member ever looked at the bell.
+  const wasOpenRef = useRef(false);
 
   useEffect(() => {
     if (!open) return;
@@ -51,6 +63,17 @@ export default function NotificationBell({ items, urgent }) {
       document.removeEventListener("mousedown", handleClick);
       document.removeEventListener("keydown", handleKey);
     };
+  }, [open]);
+
+  useEffect(() => {
+    if (open) {
+      wasOpenRef.current = true;
+      return;
+    }
+    if (!wasOpenRef.current) return;
+    wasOpenRef.current = false;
+    markSeen?.(items.map((item) => item.id));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   const count = items.length;
@@ -82,18 +105,22 @@ export default function NotificationBell({ items, urgent }) {
         <div className="notification-bell-panel" role="menu">
           <div className="notification-bell-heading">Notifications</div>
           {items.length === 0 ? (
-            <p className="muted small" style={{ padding: "8px 12px 12px" }}>You're all caught up.</p>
+            <p className="notification-empty small">You're all caught up.</p>
           ) : (
             items.map((item) => (
-              <div key={item.id} className="notification-item">
+              <div
+                key={item.id}
+                className={"notification-item" + (item.read ? " notification-item-read" : " notification-item-unread")}
+              >
                 <span aria-hidden="true" className="notification-item-icon">{KIND_ICON[item.kind] || "•"}</span>
                 <div className="notification-item-body">
                   <p className="notification-item-text">{item.text}</p>
                   <div className="notification-item-footer">
-                    {item.at && <span className="muted tiny">{timeAgo(item.at)}</span>}
+                    {item.at && <span className="notification-item-time tiny">{timeAgo(item.at)}</span>}
                     <button className="btn-link" onClick={item.dismiss}>Dismiss</button>
                   </div>
                 </div>
+                {!item.read && <span className="notification-item-dot" aria-hidden="true" title="Unread" />}
               </div>
             ))
           )}

@@ -63,7 +63,8 @@ export default function GroupSwitcher({ session, config, myGroups, onSwitch, onR
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
       >
-        {label} <span aria-hidden="true" className="group-switcher-caret">▾</span>
+        <span className="group-switcher-label">{label}</span>
+        <span aria-hidden="true" className="group-switcher-caret">▾</span>
       </button>
       {open && (
         <div className="group-switcher-panel" role="menu">

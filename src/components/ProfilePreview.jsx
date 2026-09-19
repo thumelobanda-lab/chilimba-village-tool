@@ -2,7 +2,7 @@ import React from "react";
 import MemberPreviewPopover from "./MemberPreviewPopover.jsx";
 
 /**
- * The header's own small profile badge (top-left, under the OpenBook
+ * The header's own small profile badge (top-left, beside the OpenBook
  * wordmark) — a thin wrapper around MemberPreviewPopover fixed to the
  * signed-in member's own name/photo with the "Change photo" action
  * enabled (isSelf), since only your own preview offers that.
@@ -18,7 +18,7 @@ export default function ProfilePreview({ session, photoUrl, onChangePhoto }) {
       photoDataUrl={photoUrl}
       isSelf
       onChangePhoto={onChangePhoto}
-      triggerSize={48}
+      triggerSize={40}
     />
   );
 }

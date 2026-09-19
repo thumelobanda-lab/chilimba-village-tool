@@ -215,28 +215,31 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
    book illustration, but it's the one place in the whole app that
    nods at "book" instead of just "ledger". */
 /* Themed chrome gradient — see the --chrome-* block comment in :root. */
+/* Three tight rows (see .header-top-row/.header-greeting-row/
+   .group-switcher below) instead of one wrapping flex row — a fixed
+   column stack keeps the header's height predictable on a narrow phone
+   instead of depending on where flex-wrap happens to break. */
 .app-header {
   background: linear-gradient(135deg, var(--chrome-bg-1), var(--chrome-bg-2));
   color: var(--chrome-ink);
-  padding: 14px 20px;
+  padding: 10px 16px;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
+  flex-direction: column;
+  gap: 4px;
   border-bottom: 2px solid var(--accent-2);
   box-shadow: 0 5px 0 -3px var(--chrome-trim);
 }
-.brand { font-weight: 700; font-size: 1.1rem; }
-.brand-row { display: flex; align-items: center; gap: 8px; }
-/* Small book mark stacked above the wordmark — same illustration as
-   OpenBookMark.jsx's login-screen brand mark, just smaller. Its stroke
-   color (#1F4B3F) is close to the header's own dark green background,
-   so it reads here mostly as the cream pages + gold ribbon silhouette
-   rather than a fully outlined icon — a deliberate, not accidental,
-   difference from how it looks on the light login panel. */
-.brand-stack { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
-.brand-mark { display: block; }
+.header-top-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.brand { font-weight: 700; font-size: 1rem; }
+.brand-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
+/* Book mark inline with the wordmark, baseline-aligned as one lockup —
+   same illustration as OpenBookMark.jsx's login-screen brand mark, just
+   smaller. Its stroke color (#1F4B3F) is close to the header's own dark
+   green background, so it reads here mostly as the cream pages + gold
+   ribbon silhouette rather than a fully outlined icon — a deliberate,
+   not accidental, difference from how it looks on the light login panel. */
+.brand-stack { display: flex; flex-direction: row; align-items: center; gap: 6px; }
+.brand-mark { display: block; flex-shrink: 0; }
 
 /* ProfilePreview.jsx — the small profile badge in the header's top-left,
    next to the OpenBook wordmark. Same trigger/panel language as
@@ -336,21 +339,11 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   cursor: pointer;
   touch-action: manipulation;
 }
-/* Two fixes for .notification-bell-panel's right:0 spilling off the
-   left edge of narrow screens (it used to anchor to .notification-bell,
-   only 44px wide, with Review/Calc sitting to its right — plenty of
-   room to its left on a wide screen, not enough on a phone):
-   - margin-left:auto keeps this row flush right on whichever flex line
-     it ends up on. .app-header's justify-content:space-between alone
-     isn't enough once flex-wrap:wrap puts this row on its own line —
-     a line with one item can't "space between" two things, so it
-     defaults to the line's start (left), silently moving the panel's
-     anchor to the wrong side of the screen.
-   - position:relative here (not on .notification-bell) makes the panel
-     anchor to this whole icon row's right edge instead of the bell's
-     own narrow box, so its available width no longer depends on how
-     many icons happen to sit to the bell's right. */
-.header-right { position: relative; display: flex; align-items: center; gap: 10px; margin-left: auto; }
+/* .notification-bell-panel anchors right:0 to this row (position:relative
+   here, not on .notification-bell) rather than to the bell's own narrow
+   box, so its available width doesn't depend on how many icons happen to
+   sit to the bell's right. */
+.header-right { position: relative; display: flex; align-items: center; gap: 8px; margin-left: auto; }
 /* One shared circular shape/size for the header-right icon-only
    controls (bell, calculator) so they read as one cohesive pair rather
    than a mix of shapes — same treatment for both admin and member
@@ -361,10 +354,13 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
    recognize among the member-facing ones). The profile photo used to
    be a third member of this set, on the right; it's since moved to its
    own badge in the top-left instead (see .profile-preview-trigger),
-   so this is back to just the two. */
+   so this is back to just the two. Below ~420px, .calc-icon-label also
+   collapses to icon-only (see the media query near .calc-icon-btn) so
+   Review/bell/calculator/chat can all still fit on row 1 without
+   wrapping on the narrowest phones this app targets (~360px). */
 .header-icon-btn {
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   padding: 0;
   border-radius: 50%;
   display: inline-flex;
@@ -373,10 +369,17 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   min-height: auto;
   line-height: 0;
 }
-/* .muted's own color rule (var(--ink-faint), themed) would otherwise win
-   here — the pre-login "Your group's honest record." tagline sits
-   directly on the always-dark header with no background of its own. */
-.app-header .muted { color: var(--chrome-ink-faint); }
+/* The pre-login "Your group's honest record." tagline sits directly on
+   the always-dark header with no background of its own, so it needs its
+   own explicit color rather than .muted's themed var(--ink-faint) (tuned
+   for light panel surfaces, not this dark gradient). This used to be a
+   blanket ".app-header .muted" override, but that also caught .muted
+   text inside header-anchored popovers that sit on their own light
+   .panel background (the notification bell's empty state/timestamp,
+   the group switcher's panel rows, the profile preview's subtitle) —
+   those need the normal light-surface .muted color, not this dark one,
+   so scope stays on the tagline itself instead. */
+.header-tagline { color: var(--chrome-ink-faint); margin: 2px 0; }
 
 /* The one honest offline/sync status line (OfflineBanner.jsx, driven by
    useOfflineSync.js) — full-width under the header, on every screen, not
@@ -401,12 +404,27 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 
 .greeting-emoji { display: inline-block; }
 /* The greeting itself moved into the header (App.jsx), alongside the
-   OpenBook wordmark, instead of sitting in the white body below it. */
+   OpenBook wordmark, instead of sitting in the white body below it. Kept
+   to one line — .header-greeting truncates rather than wraps, since a
+   longer name/greeting combo would otherwise push the row 3 group pill
+   further down and grow the header's height unpredictably. */
+.header-greeting-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  margin: 2px 0;
+}
 .header-greeting {
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   font-size: 0.85rem;
   font-weight: 600;
-  margin: 2px 0 4px;
 }
+.header-role-tag { flex-shrink: 0; }
 
 .app-main { max-width: 880px; margin: 0 auto; padding: 20px; width: 100%; }
 
@@ -639,25 +657,39 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 }
 .desktop-tab-active { color: var(--accent); background: var(--surface-active); border-color: var(--accent); }
 
-/* Group switcher — sits where the plain "GroupName · Cycle" subtitle
-   used to, in the dark header, so the trigger reads as text-on-dark
-   (not a light chip like nav-menu-trigger) but the popup panel below it
-   is a normal light panel, same visual language as the nav menu. */
+/* Group switcher — row 3 of the header, a tappable pill/chip rather than
+   plain text-on-dark (the popup panel below it is still a normal light
+   panel, same visual language as the nav menu). The pill fill is a
+   black tint (not a white one) over the header's own gradient — that
+   darkens its background rather than lightening it, so the already-AA
+   var(--chrome-ink) text sitting on it only gains contrast, never loses
+   it, while still reading as a distinct, higher-contrast chip than the
+   plain gradient behind it. */
 .group-switcher { position: relative; }
 .group-switcher-trigger {
-  background: none;
-  border: none;
-  padding: 0;
-  min-height: 44px;
+  background: rgba(0, 0, 0, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  padding: 6px 12px;
+  min-height: 40px;
+  max-width: 100%;
   display: inline-flex;
   align-items: center;
-  color: var(--chrome-ink-faint); /* sits directly on the always-dark header, no own background */
+  gap: 6px;
+  color: var(--chrome-ink);
   font-size: 0.85rem;
+  font-weight: 600;
   cursor: pointer;
   text-align: left;
+  border-radius: 999px;
 }
-.group-switcher-trigger:hover, .group-switcher-trigger:focus-visible { color: rgba(255,255,255,0.85); }
-.group-switcher-caret { font-size: 0.75rem; }
+.group-switcher-trigger:hover, .group-switcher-trigger:focus-visible { background: rgba(0, 0, 0, 0.28); }
+.group-switcher-label {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.group-switcher-caret { font-size: 0.75rem; flex-shrink: 0; }
 .group-switcher-panel {
   position: absolute;
   top: calc(100% + 8px);
@@ -811,6 +843,15 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   display: flex;
   flex-direction: column;
 }
+/* Every text color below is set explicitly on its own class rather than
+   borrowed from a shared utility (.muted, etc) — this panel used to lean
+   on .muted for the timestamp/empty-state text, which broke when a
+   since-removed ".app-header .muted" override (this panel is a DOM
+   descendant of .app-header, even though it renders as its own
+   light-surface popover) repainted them near-white, unreadable against
+   this panel's light var(--panel) background. Explicit, self-contained
+   colors here mean this can't happen again regardless of what any
+   ancestor does with .muted. */
 .notification-bell-heading {
   font-size: 0.75rem;
   text-transform: uppercase;
@@ -819,10 +860,16 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   font-weight: 600;
   padding: 6px 10px 4px;
 }
+.notification-empty {
+  color: var(--ink-faint);
+  padding: 8px 12px 12px;
+  margin: 0;
+}
 .notification-item {
+  position: relative;
   display: flex;
   gap: 8px;
-  padding: 8px 10px;
+  padding: 8px 28px 8px 10px;
   border-radius: 8px;
 }
 .notification-item + .notification-item { border-top: 1px solid var(--line); }
@@ -836,6 +883,27 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   gap: 8px;
   margin-top: 4px;
 }
+.notification-item-time { color: var(--ink-faint); }
+/* Unread — the default for anything not yet opened once (see
+   useNotifications.js's `read`/markSeen). Bold body text plus a small
+   accent dot; a light background tint so the row reads as "new" even at
+   a glance, not just on close inspection of the text weight. */
+.notification-item-unread { background: var(--surface-hover); }
+.notification-item-unread .notification-item-text { font-weight: 700; }
+.notification-item-dot {
+  position: absolute;
+  top: 12px;
+  right: 10px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+/* Read — already opened once, still in the list until dismissed.
+   Dimmed to --ink-faint (still explicit, still AA on --panel) rather
+   than the unread state's full-strength --ink, so the two are
+   distinguishable at a glance without needing the dot as the only cue. */
+.notification-item-read .notification-item-text { color: var(--ink-faint); font-weight: 400; }
 
 /* A soft page-like edge — a subtle warm inner highlight along the top,
    like light catching the edge of a page, plus a gentle drop shadow so
@@ -1710,7 +1778,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 }
 
 /* Calculator icon + modal */
-.calc-icon-btn { font-size: 1.1rem; padding: 6px 12px; min-height: 44px; }
+.calc-icon-btn { font-size: 1.1rem; padding: 4px 12px; min-height: 40px; }
 /* Vertical-align nudge for an inline <Icon> sitting next to text — SVGs
    default to baseline alignment, which sits a hair low next to text's
    own baseline; every caller that drops an Icon.jsx glyph inline with a
@@ -1723,6 +1791,15 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
    right next to it, with the same pending-count badge language. */
 .payment-review-icon-btn { position: relative; }
 .calc-icon-label { font-size: 0.75rem; font-weight: 600; margin-left: 2px; vertical-align: middle; }
+/* Below ~420px there isn't room for Review's text label alongside the
+   bell/calculator/chat icons on the header's single top row (see
+   .header-right) — drop to icon-only here, matching those buttons; the
+   aria-label/title on the button itself still name it fully for anyone
+   using a screen reader. */
+@media (max-width: 420px) {
+  .calc-icon-label { display: none; }
+  .calc-icon-btn { padding: 0 10px; }
+}
 
 .calc-modal-backdrop {
   position: fixed;

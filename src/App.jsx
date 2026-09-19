@@ -395,7 +395,7 @@ export default function App() {
   return (
     <div className="app-shell">
       <header className="app-header">
-        <div>
+        <div className="header-top-row">
           <div className="brand-row">
             {session && (
               <ProfilePreview
@@ -405,79 +405,87 @@ export default function App() {
               />
             )}
             <div className="brand-stack">
-              <OpenBookMark size={24} className="brand-mark" />
+              <OpenBookMark size={20} className="brand-mark" />
               <div className="brand">OpenBook</div>
             </div>
           </div>
-          {session && (
-            <div className="header-greeting">
-              <span className="greeting-emoji">👋</span> {greeting()},{" "}
-              {genderedAddress(session.gender)}{capitalizeName(session.name)}
-              {session.role && (
-                <span className={"tag" + (session.role === "admin" ? " tag-rate" : "")} style={{ marginLeft: 8 }}>
-                  {session.role}
-                </span>
-              )}
-            </div>
-          )}
-          {session ? (
-            <GroupSwitcher
-              session={session}
-              config={config}
-              myGroups={myGroups}
-              onSwitch={switchGroup}
-              onRemove={removeGroup}
-              onAddGroup={() => setShowAddGroup(true)}
-            />
-          ) : (
-            <div className="muted small">Your group's honest record.</div>
-          )}
-        </div>
-        <div className="header-right">
-          {session && (
-            <>
-              <NotificationBell items={notifications.items} urgent={pendingConfirmCount > 0} />
-              {session.role === "admin" && (
+          <div className="header-right">
+            {session && (
+              <>
+                <NotificationBell
+                  items={notifications.items}
+                  urgent={pendingConfirmCount > 0}
+                  markSeen={notifications.markSeen}
+                />
+                {session.role === "admin" && (
+                  <button
+                    className="btn-ghost calc-icon-btn payment-review-icon-btn"
+                    onClick={() => setTab("reconciliation")}
+                    aria-label={
+                      pendingConfirmCount > 0
+                        ? `Payment Review — ${pendingConfirmCount} pending confirmation${pendingConfirmCount === 1 ? "" : "s"}`
+                        : "Payment Review"
+                    }
+                    title="Payment Review"
+                  >
+                    <Icon name="check" size={16} className="icon-inline" /> <span className="calc-icon-label">Review</span>
+                    {pendingConfirmCount > 0 && (
+                      <span className="notification-bell-badge notification-bell-badge-urgent">
+                        {pendingConfirmCount > 9 ? "9+" : pendingConfirmCount}
+                      </span>
+                    )}
+                  </button>
+                )}
                 <button
-                  className="btn-ghost calc-icon-btn payment-review-icon-btn"
-                  onClick={() => setTab("reconciliation")}
-                  aria-label={
-                    pendingConfirmCount > 0
-                      ? `Payment Review — ${pendingConfirmCount} pending confirmation${pendingConfirmCount === 1 ? "" : "s"}`
-                      : "Payment Review"
-                  }
-                  title="Payment Review"
+                  type="button"
+                  className="btn-ghost header-icon-btn"
+                  onClick={() => setShowCalculator(true)}
+                  aria-label="Open calculator"
+                  title="Calculator"
+                  data-tour="calculator-button"
                 >
-                  <Icon name="check" size={16} className="icon-inline" /> <span className="calc-icon-label">Review</span>
-                  {pendingConfirmCount > 0 && (
-                    <span className="notification-bell-badge notification-bell-badge-urgent">
-                      {pendingConfirmCount > 9 ? "9+" : pendingConfirmCount}
-                    </span>
-                  )}
+                  <Icon name="calculator" size={18} />
                 </button>
-              )}
-              <button
-                type="button"
-                className="btn-ghost header-icon-btn"
-                onClick={() => setShowCalculator(true)}
-                aria-label="Open calculator"
-                title="Calculator"
-                data-tour="calculator-button"
-              >
-                <Icon name="calculator" size={18} />
-              </button>
-            </>
-          )}
-          <button
-            type="button"
-            className="btn-ghost header-icon-btn"
-            onClick={() => setShowHelp(true)}
-            aria-label="Need help?"
-            title="Need help?"
-          >
-            <Icon name="message" size={18} />
-          </button>
+              </>
+            )}
+            <button
+              type="button"
+              className="btn-ghost header-icon-btn"
+              onClick={() => setShowHelp(true)}
+              aria-label="Need help?"
+              title="Need help?"
+            >
+              <Icon name="message" size={18} />
+            </button>
+          </div>
         </div>
+
+        {session && (
+          <div className="header-greeting-row">
+            <span className="header-greeting">
+              <span className="greeting-emoji" aria-hidden="true">👋</span> {greeting()},{" "}
+              {genderedAddress(session.gender)}{capitalizeName(session.name)}
+            </span>
+            {session.role && (
+              <span className={"tag header-role-tag" + (session.role === "admin" ? " tag-rate" : "")}>
+                {session.role}
+              </span>
+            )}
+          </div>
+        )}
+
+        {session ? (
+          <GroupSwitcher
+            session={session}
+            config={config}
+            myGroups={myGroups}
+            onSwitch={switchGroup}
+            onRemove={removeGroup}
+            onAddGroup={() => setShowAddGroup(true)}
+          />
+        ) : (
+          <div className="header-tagline small">Your group's honest record.</div>
+        )}
       </header>
 
       <OfflineBanner online={online} pending={pendingSyncCount} syncing={syncing} />

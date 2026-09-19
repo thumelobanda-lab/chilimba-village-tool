@@ -245,13 +245,17 @@ export default function Dashboard({
       {/* C — compact cycle strip: one line, no gradient panel, no ring
           (see the module doc comment above for where the ring went).
           The greeting itself now lives in the header (App.jsx) instead
-          of here, alongside the OpenBook wordmark. */}
+          of here, alongside the OpenBook wordmark. No longer repeats the
+          cycle name itself (config.cycleName) — the header's group pill
+          already shows "GroupName · CycleName" on every tab, so this
+          only surfaces what that pill doesn't: date progress within the
+          cycle. */}
       <div className="dashboard-strip">
-        {config.cycleName && (
+        {(cycle.total > 0 || cycleEndDate(config.schedule)) && (
           <span className="dashboard-strip-cycle muted tiny">
-            {config.cycleName}
-            {cycle.total > 0 && ` · ${cycle.passed} of ${cycle.total} dates`}
-            {cycleEndDate(config.schedule) && ` · ends ${formatDate(cycleEndDate(config.schedule))}`}
+            {cycle.total > 0 && `${cycle.passed} of ${cycle.total} dates`}
+            {cycleEndDate(config.schedule) &&
+              `${cycle.total > 0 ? " · " : ""}ends ${formatDate(cycleEndDate(config.schedule))}`}
           </span>
         )}
         {session?.role === "admin" && onOpenGroupSetup && (

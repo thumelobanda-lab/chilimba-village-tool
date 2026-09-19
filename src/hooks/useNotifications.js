@@ -21,6 +21,26 @@ function addDismissed(session, id) {
   lsSet(dismissedKey(session), [...next]);
 }
 
+// Separate from `dismissed` above — dismissing removes an item from the
+// list for good, while "seen" only tracks whether an item still in the
+// list has already been looked at once, so the bell can render it as
+// read (regular weight, no unread dot) instead of unread on later opens.
+// Same dismissed-by-id-in-localStorage shape, deliberately, since it's
+// the same "has this member looked at this specific id" question.
+function seenKey(session) {
+  return groupScopedKey(session, "seen-notifications", session.name.toLowerCase());
+}
+
+function getSeen(session) {
+  return new Set(lsGet(seenKey(session), []));
+}
+
+function addSeen(session, ids) {
+  const next = getSeen(session);
+  for (const id of ids) next.add(id);
+  lsSet(seenKey(session), [...next]);
+}
+
 /**
  * Powers the notification bell — one combined, dismissible list across
  * every source that currently has no other in-app "you have something
@@ -55,14 +75,17 @@ export function useNotifications(session, payments, nextDue, premiumActive) {
   const items = useMemo(() => {
     if (!session) return [];
     const dismissed = getDismissed(session);
+    const seen = getSeen(session);
     const out = [];
 
     for (const m of ownerData?.messages || []) {
+      const id = `owner-${m.recipientId}`;
       out.push({
-        id: `owner-${m.recipientId}`,
+        id,
         kind: "owner",
         text: m.message,
         at: m.sentAt,
+        read: seen.has(id),
         dismiss: async () => {
           await markMessageRead(m.recipientId);
           await refreshOwner();
@@ -78,6 +101,7 @@ export function useNotifications(session, payments, nextDue, premiumActive) {
         kind: "notice",
         text: n.message,
         at: n.postedAt,
+        read: seen.has(id),
         dismiss: () => {
           addDismissed(session, id);
           setDismissTick((t) => t + 1);
@@ -95,6 +119,7 @@ export function useNotifications(session, payments, nextDue, premiumActive) {
           ? `Your ${money(p.amount)} payment wasn't confirmed${p.rejectionReason ? `: ${p.rejectionReason}` : "."}`
           : `Your ${money(p.amount)} payment was confirmed.${premiumActive ? " Receipt ready in My Payment History." : ""}`,
         at: p.rejectedAt || p.confirmedAt,
+        read: seen.has(id),
         dismiss: () => {
           addDismissed(session, id);
           setDismissTick((t) => t + 1);
@@ -110,6 +135,7 @@ export function useNotifications(session, payments, nextDue, premiumActive) {
           kind: "reminder",
           text: `Your ${money(nextDue.balance)} payment — ${relativeDueLabel(daysUntil(nextDue.row.date))}.`,
           at: null,
+          read: seen.has(id),
           dismiss: () => {
             addDismissed(session, id);
             setDismissTick((t) => t + 1);
@@ -122,5 +148,15 @@ export function useNotifications(session, payments, nextDue, premiumActive) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session, ownerData, noticesData, payments, nextDue, dismissTick, premiumActive]);
 
-  return { items, unreadCount: items.length };
+  // Called once the bell panel closes (see NotificationBell.jsx) so
+  // whatever was showing gets the "read" treatment on the next open —
+  // items stay in the list either way (see the module doc comment above
+  // on why dismiss, not read state, is what actually removes one).
+  const markSeen = (ids) => {
+    if (!session || ids.length === 0) return;
+    addSeen(session, ids);
+    setDismissTick((t) => t + 1);
+  };
+
+  return { items, unreadCount: items.filter((i) => !i.read).length, markSeen };
 }
