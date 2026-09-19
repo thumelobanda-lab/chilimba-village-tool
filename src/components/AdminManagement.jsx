@@ -4,8 +4,7 @@ import { useApiData } from "../lib/useApiData.js";
 import { cycleEndDate } from "../lib/scheduleUtils.js";
 import Toast from "./Toast.jsx";
 import Icon from "./Icon.jsx";
-
-const money = (n) => "K" + (Number(n) || 0).toLocaleString("en-ZM", { maximumFractionDigits: 0 });
+import { money } from "../lib/money.js";
 
 function formatDate(dateISO) {
   const d = new Date(dateISO + "T00:00:00");

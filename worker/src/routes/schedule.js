@@ -16,6 +16,8 @@ export default function registerScheduleRoutes(router) {
       groupName: row.group_name,
       cycleName: row.cycle_name,
       recipientExempt: !!row.recipient_exempt,
+      currency: row.currency || "ZMW",
+      country: row.country || "ZM",
       schedule: JSON.parse(row.schedule_json),
       funds: JSON.parse(row.funds_json || "[]"),
       paymentMethods: JSON.parse(row.payment_info_json || "[]"),

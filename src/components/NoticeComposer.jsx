@@ -35,7 +35,7 @@ export default function NoticeComposer() {
   };
 
   return (
-    <div className="notice-board">
+    <div className="notice-board" data-tour="community-notice-composer">
       <h3 className="panel-subtitle">Post a Notice</h3>
       <p className="muted tiny" style={{ marginBottom: 10 }}>
         Shows up on every member's dashboard, or send it to just one person.

@@ -4,8 +4,7 @@ import { useApiData } from "../lib/useApiData.js";
 import { useMemberRoster } from "../hooks/useMemberRoster.js";
 import Toast from "./Toast.jsx";
 import Icon from "./Icon.jsx";
-
-const money = (n) => "K" + (Number(n) || 0).toLocaleString("en-ZM", { maximumFractionDigits: 0 });
+import { money } from "../lib/money.js";
 
 export default function Loans() {
   const { data, error: loadError, loading, refresh } = useApiData(getGroupFunds, []);

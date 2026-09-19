@@ -2,6 +2,7 @@ import { sendPush } from "./push.js";
 import { sendSms } from "./sms.js";
 import { selectReminderCandidates } from "./reminderSelection.js";
 import { isSubscriptionActive } from "./subscriptionUtils.js";
+import { money } from "./money.js";
 
 /**
  * Runs on a schedule (see [triggers] in wrangler.toml — daily is enough;
@@ -104,7 +105,7 @@ async function runSweepForGroup(env, group) {
       const subs = subsByUser.get(user.id) || [];
       const message = {
         title: "Chilimba payment due soon",
-        body: `K${amount.toLocaleString()} is due on ${row.date} (${row.group}).`,
+        body: `${money(amount)} is due on ${row.date} (${row.group}).`,
         url: "/",
       };
       for (const sub of subs) {
@@ -119,7 +120,7 @@ async function runSweepForGroup(env, group) {
     }
 
     if (channel === "sms") {
-      const smsText = `Chilimba reminder: K${amount.toLocaleString()} due ${row.date} for ${row.group}.`;
+      const smsText = `Chilimba reminder: ${money(amount)} due ${row.date} for ${row.group}.`;
       try {
         await sendSms(env, user.phone, smsText);
       } catch (e) {

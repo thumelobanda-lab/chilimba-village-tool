@@ -14,7 +14,7 @@ import Icon from "./Icon.jsx";
  * the exact same panel instead of each having their own independent one.
  * Closes on selection, Escape, or a click outside the panel.
  */
-export default function NavMenu({ items, activeId, onSelect, onOpenWalkthrough, theme, onToggleTheme, open, onToggle, onClose }) {
+export default function NavMenu({ items, activeId, onSelect, onOpenWalkthrough, onOpenSpotlightTour, theme, onToggleTheme, open, onToggle, onClose }) {
   const wrapRef = useRef(null);
 
   useEffect(() => {
@@ -103,6 +103,16 @@ export default function NavMenu({ items, activeId, onSelect, onOpenWalkthrough, 
             }}
           >
             How this app works
+          </button>
+          <button
+            role="menuitem"
+            className="nav-menu-item"
+            onClick={() => {
+              onOpenSpotlightTour();
+              onClose();
+            }}
+          >
+            Show me around
           </button>
         </div>
       )}

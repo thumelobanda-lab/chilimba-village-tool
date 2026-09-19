@@ -10,6 +10,7 @@ import { computeMemberStreak } from "../streakMath.js";
 import { isSubscriptionActive } from "../subscriptionUtils.js";
 import { maybeRecordFundContributions } from "../fundCrediting.js";
 import { sendPush } from "../push.js";
+import { money } from "../money.js";
 
 export default function registerAdminRoutes(router) {
   // The admin roster: every active member, their role, when they joined,
@@ -459,7 +460,7 @@ export default function registerAdminRoutes(router) {
       try {
         const result = await sendPush(env, sub, {
           title: "Payment not confirmed",
-          body: `Your K${Number(owned.amount).toLocaleString()} payment wasn't confirmed${reason ? `: ${reason}` : "."}`,
+          body: `Your ${money(owned.amount)} payment wasn't confirmed${reason ? `: ${reason}` : "."}`,
           url: "/",
         });
         if (result.expired) expiredSubIds.push(sub.id);
@@ -512,7 +513,7 @@ export default function registerAdminRoutes(router) {
     const outstandingTotal = loanTotalRow.total - repaidTotalRow.total;
     const available = balanceRow.total - outstandingTotal;
     if (amount > available) {
-      throw new HttpError(400, `Only K${available.toLocaleString()} is available in ${fund.name}.`);
+      throw new HttpError(400, `Only ${money(available)} is available in ${fund.name}.`);
     }
 
     const borrowerUser = await env.DB.prepare(`SELECT id FROM users WHERE group_id = ? AND name = ?`)
@@ -552,7 +553,7 @@ export default function registerAdminRoutes(router) {
     const remaining = loan.amount - repaidRow.total;
     if (remaining <= 0) throw new HttpError(400, "This loan is already fully repaid.");
     if (amount > remaining) {
-      throw new HttpError(400, `Only K${remaining.toLocaleString()} is still owed on this loan.`);
+      throw new HttpError(400, `Only ${money(remaining)} is still owed on this loan.`);
     }
 
     const stmts = [
@@ -592,7 +593,7 @@ export default function registerAdminRoutes(router) {
       `SELECT COALESCE(SUM(amount), 0) as total FROM loan_repayments WHERE loan_id = ? AND voided_at IS NULL`
     ).bind(loan.id).first();
     if (amount < repaidRow.total) {
-      throw new HttpError(400, `Can't set this below K${repaidRow.total.toLocaleString()} — that's already been repaid against it.`);
+      throw new HttpError(400, `Can't set this below ${money(repaidRow.total)} — that's already been repaid against it.`);
     }
 
     const borrowerUser = await env.DB.prepare(`SELECT id FROM users WHERE group_id = ? AND name = ?`)

@@ -15,6 +15,8 @@
  * separate data to drift out of sync with it.
  */
 
+import { money } from "./money.js";
+
 /**
  * A short, stable, shareable code for a payment — deterministically
  * derived from the payment's own id, so it never needs separate storage
@@ -77,9 +79,9 @@ export function buildReceiptMessage(data) {
     `${data.groupName} — Payment Receipt\n\n` +
     (data.cycleName ? `Round: ${data.cycleName}\n` : "") +
     `Member: ${data.memberName}\n` +
-    `Amount paid: K${data.amount.toLocaleString()}\n` +
+    `Amount paid: ${money(data.amount)}\n` +
     (data.communityFundAmount > 0
-      ? `K${data.communityFundAmount.toLocaleString()} to Group Savings Fund, K${data.contributionAmount.toLocaleString()} to contribution\n`
+      ? `${money(data.communityFundAmount)} to Group Savings Fund, ${money(data.contributionAmount)} to contribution\n`
       : "") +
     `For payout date: ${payoutLine}\n` +
     `Date paid: ${datePaid}\n` +

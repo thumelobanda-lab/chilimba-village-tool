@@ -11,7 +11,11 @@ export default function PaymentInfo({ paymentMethods }) {
   if (!paymentMethods || paymentMethods.length === 0) return null;
 
   return (
-    <div className="payout-block" style={{ marginTop: 0, marginBottom: 20, paddingTop: 0, borderTop: "none" }}>
+    <div
+      className="payout-block"
+      style={{ marginTop: 0, marginBottom: 20, paddingTop: 0, borderTop: "none" }}
+      data-tour="payment-info-panel"
+    >
       <h3 className="panel-subtitle">Where to Pay</h3>
       <div className="payment-methods-list">
         {paymentMethods.map((m) => (

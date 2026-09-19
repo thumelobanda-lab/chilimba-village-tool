@@ -23,6 +23,7 @@ import Toast from "./components/Toast.jsx";
 import PaymentOptions from "./components/PaymentOptions.jsx";
 import QuickCalculator from "./components/QuickCalculator.jsx";
 import Walkthrough, { hasSeenWalkthrough } from "./components/Walkthrough.jsx";
+import SpotlightTour from "./components/SpotlightTour.jsx";
 import GroupSwitcher from "./components/GroupSwitcher.jsx";
 import AddGroupModal from "./components/AddGroupModal.jsx";
 import NotificationBell from "./components/NotificationBell.jsx";
@@ -141,6 +142,7 @@ export default function App() {
   const [navMenuOpen, setNavMenuOpen] = useState(false);
   const [showCalculator, setShowCalculator] = useState(false);
   const [showWalkthrough, setShowWalkthrough] = useState(false);
+  const [showSpotlightTour, setShowSpotlightTour] = useState(false);
   const [sessionEndedNotice, setSessionEndedNotice] = useState(false);
   const [showAddGroup, setShowAddGroup] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
@@ -445,6 +447,7 @@ export default function App() {
                 onClick={() => setShowCalculator(true)}
                 aria-label="Open calculator"
                 title="Calculator"
+                data-tour="calculator-button"
               >
                 <Icon name="calculator" size={18} />
               </button>
@@ -467,6 +470,14 @@ export default function App() {
       {showCalculator && <QuickCalculator onClose={() => setShowCalculator(false)} />}
       {showWalkthrough && (
         <Walkthrough session={session} onClose={() => setShowWalkthrough(false)} />
+      )}
+      {showSpotlightTour && (
+        <SpotlightTour
+          session={session}
+          activeTab={tab}
+          onNavigate={setTab}
+          onClose={() => setShowSpotlightTour(false)}
+        />
       )}
       {showAddGroup && (
         <AddGroupModal onJoin={join} onLogin={login} onClose={() => setShowAddGroup(false)} />
@@ -511,6 +522,7 @@ export default function App() {
                 activeId={tab}
                 onSelect={setTab}
                 onOpenWalkthrough={() => setShowWalkthrough(true)}
+                onOpenSpotlightTour={() => setShowSpotlightTour(true)}
                 theme={theme}
                 onToggleTheme={toggleTheme}
                 open={navMenuOpen}

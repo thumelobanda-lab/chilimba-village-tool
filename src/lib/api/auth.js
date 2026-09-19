@@ -235,6 +235,8 @@ export async function createGroup({ groupName, adminName, pin, termsAccepted, ge
       groupName: groupName.trim(),
       cycleName: "Cycle 1",
       recipientExempt: true,
+      currency: "ZMW",
+      country: "ZM",
       schedule: [],
       funds: [],
     });

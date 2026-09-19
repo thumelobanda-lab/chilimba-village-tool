@@ -4,8 +4,7 @@ import {
   confirmSubscription, rejectSubscription, suspendGroup, unsuspendGroup, ownerLogout,
 } from "../../lib/api/owner.js";
 import OwnerMessaging from "./OwnerMessaging.jsx";
-
-const money = (n) => "K" + (Number(n) || 0).toLocaleString("en-ZM", { maximumFractionDigits: 0 });
+import { money } from "../../lib/money.js";
 
 export default function OwnerDashboard({ session, onSignedOut }) {
   const [overview, setOverview] = useState(null);

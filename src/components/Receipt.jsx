@@ -2,11 +2,11 @@ import React, { useEffect, useRef, useState } from "react";
 import { buildReceiptData, buildReceiptMessage, buildReceiptFilename } from "../lib/receipt.js";
 import { buildWhatsAppShareUrl } from "../lib/inviteCard.js";
 import Icon from "./Icon.jsx";
+import { money } from "../lib/money.js";
 
 const CARD_WIDTH = 900;
 const CARD_HEIGHT = 1200; // default/initial height before the first draw computes the real one
 
-const money = (n) => "K" + (Number(n) || 0).toLocaleString("en-ZM", { maximumFractionDigits: 0 });
 
 /**
  * Draws the receipt onto a canvas — same "plain draw, not React state"

@@ -1983,6 +1983,40 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 }
 .walkthrough-nav { display: flex; gap: 8px; margin-left: auto; }
 
+/* SpotlightTour — unlike Walkthrough above, this highlights real
+   already-rendered elements instead of its own illustration, so there's
+   no shared backdrop to reuse: the "dim everything except the target"
+   effect is one oversized box-shadow on the cutout rect itself, cheaper
+   than an SVG mask and needs no extra DOM. */
+.spotlight-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+}
+.spotlight-cutout {
+  position: fixed;
+  border-radius: 10px;
+  border: 2px solid var(--accent-2);
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+  transition: top 0.2s ease, left 0.2s ease, width 0.2s ease, height 0.2s ease;
+}
+.spotlight-tooltip {
+  position: fixed;
+  background: var(--panel);
+  border-radius: 14px;
+  padding: 18px 18px 14px;
+  max-width: 300px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+}
+.spotlight-dots { display: flex; gap: 6px; margin-bottom: 12px; }
+.spotlight-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--line); }
+.spotlight-dot-active { background: var(--accent-2); width: 18px; border-radius: 6px; }
+.spotlight-title { font-size: 1rem; font-weight: 700; color: var(--ink); margin: 0 0 8px; }
+.spotlight-body { font-size: 0.88rem; color: var(--ink-faint); line-height: 1.5; margin: 0 0 16px; }
+.spotlight-controls { display: flex; justify-content: space-between; align-items: center; }
+.spotlight-nav { display: flex; gap: 8px; margin-left: auto; }
+
 .row-flagged { background: var(--surface-danger); }
 .input-flagged { border-color: var(--red) !important; }
 .error-text.tiny { font-size: 0.75rem; margin-top: 2px; }

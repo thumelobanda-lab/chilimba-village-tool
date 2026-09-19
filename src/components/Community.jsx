@@ -7,8 +7,7 @@ import GrowthProjection from "./GrowthProjection.jsx";
 import GroupReliabilityScore from "./GroupReliabilityScore.jsx";
 import GroupRoster from "./GroupRoster.jsx";
 import NoticeComposer from "./NoticeComposer.jsx";
-
-const money = (n) => "K" + (Number(n) || 0).toLocaleString("en-ZM", { maximumFractionDigits: 0 });
+import { money } from "../lib/money.js";
 
 function timeAgo(iso) {
   const diff = Date.now() - new Date(iso).getTime();
@@ -54,8 +53,8 @@ export default function Community({ schedule, currentMemberName, isAdmin }) {
                   {f.loanable
                     ? `${money(f.balance)} collected · ${money(f.outstandingLoans)} out on loan`
                     : f.id === COMMUNITY_FUND_ID
-                    ? `K${f.amount} split off every confirmed payment`
-                    : `K${f.amount} per member per date`}
+                    ? `${money(f.amount)} split off every confirmed payment`
+                    : `${money(f.amount)} per member per date`}
                 </div>
               </div>
             ))}

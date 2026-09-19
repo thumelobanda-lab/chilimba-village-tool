@@ -1,4 +1,5 @@
 import { COMMUNITY_FUND_ID, COMMUNITY_FUND_NAME } from "../fundUtils.js";
+import { money } from "../money.js";
 import { MOCK_MODE, lsGet, lsSet, realFetch, currentSession, groupScopedKey } from "./core.js";
 
 function uidFund() {
@@ -127,7 +128,7 @@ export async function issueLoan({ fundId, borrowerName, amount, notes = "" }) {
       .filter((l) => l.fundId === fundId)
       .reduce((s, l) => s + Math.max(0, l.amount - (repaidByLoan[l.id] || 0)), 0);
     const available = balance - outstanding;
-    if (amt > available) throw new Error(`Only K${available.toLocaleString()} is available in ${fund.name}.`);
+    if (amt > available) throw new Error(`Only ${money(available)} is available in ${fund.name}.`);
 
     const loan = {
       id: uidFund(),
@@ -169,7 +170,7 @@ export async function repayLoan(loanId, amount) {
     const repaidSoFar = repayments.filter((r) => r.loanId === loanId && !r.voidedAt).reduce((s, r) => s + r.amount, 0);
     const remaining = loan.amount - repaidSoFar;
     if (remaining <= 0) throw new Error("This loan is already fully repaid.");
-    if (amt > remaining) throw new Error(`Only K${remaining.toLocaleString()} is still owed on this loan.`);
+    if (amt > remaining) throw new Error(`Only ${money(remaining)} is still owed on this loan.`);
 
     const entry = { id: uidFund(), loanId, amount: amt, recordedBy: session.name, recordedAt: new Date().toISOString() };
     lsSet(groupScopedKey(session, "fund-loan-repayments"), [...repayments, entry]);
@@ -206,7 +207,7 @@ export async function editLoan(loanId, { amount, borrowerName }) {
     const repayments = lsGet(groupScopedKey(session, "fund-loan-repayments"), []);
     const repaidSoFar = repayments.filter((r) => r.loanId === loanId && !r.voidedAt).reduce((s, r) => s + r.amount, 0);
     if (amt < repaidSoFar) {
-      throw new Error(`Can't set this below K${repaidSoFar.toLocaleString()} — that's already been repaid against it.`);
+      throw new Error(`Can't set this below ${money(repaidSoFar)} — that's already been repaid against it.`);
     }
 
     const edits = lsGet(groupScopedKey(session, "fund-loan-edits"), []);

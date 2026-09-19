@@ -11,7 +11,7 @@
  * read CSS custom properties.
  */
 
-const money = (n) => "K" + (Number(n) || 0).toLocaleString("en-ZM", { maximumFractionDigits: 0 });
+import { money } from "./money.js";
 
 function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
   const words = text.split(" ");

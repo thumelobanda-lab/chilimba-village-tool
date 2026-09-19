@@ -32,6 +32,10 @@ CREATE TABLE IF NOT EXISTS groups (
   group_name TEXT NOT NULL,
   cycle_name TEXT NOT NULL,
   recipient_exempt INTEGER NOT NULL DEFAULT 1,
+  currency TEXT NOT NULL DEFAULT 'ZMW',     -- see src/lib/money.js / worker/src/money.js
+                                             -- (migration 023) — groundwork only, every
+                                             -- group today genuinely is ZMW
+  country TEXT NOT NULL DEFAULT 'ZM',       -- see currency above (migration 023)
   schedule_json TEXT NOT NULL DEFAULT '[]', -- JSON array of {id,date,group,payees,due}
   funds_json TEXT NOT NULL DEFAULT '[]',    -- JSON array of {id,name,amount,loanable}
   payment_info_json TEXT NOT NULL DEFAULT '[]', -- JSON array of where members send
@@ -508,7 +512,8 @@ INSERT OR IGNORE INTO schema_migrations (filename) VALUES
   ('019_notepad.sql'),
   ('020_profile_photo.sql'),
   ('021_gender.sql'),
-  ('022_momo_recipient.sql');
+  ('022_momo_recipient.sql'),
+  ('023_group_currency.sql');
 
 -- Seed one example group so the app is usable immediately after a fresh
 -- deploy. Real groups are created via POST /api/groups (see routes/groups.js)

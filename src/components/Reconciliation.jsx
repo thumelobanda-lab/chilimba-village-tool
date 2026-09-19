@@ -4,8 +4,7 @@ import { payeesLabel } from "../lib/scheduleUtils.js";
 import { useApiData } from "../lib/useApiData.js";
 import Receipt from "./Receipt.jsx";
 import Icon from "./Icon.jsx";
-
-const money = (n) => "K" + (Number(n) || 0).toLocaleString("en-ZM", { maximumFractionDigits: 0 });
+import { money } from "../lib/money.js";
 
 export default function Reconciliation({ config, premiumActive, onOpenGroupSetup }) {
   const [rowId, setRowId] = useState(() => pickDefaultRow(config.schedule)?.id);

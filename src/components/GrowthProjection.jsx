@@ -1,8 +1,7 @@
 import React, { useState } from "react";
 import { buildProjectionSchedule } from "../lib/interestMath.js";
 import Icon from "./Icon.jsx";
-
-const money = (n) => "K" + (Number(n) || 0).toLocaleString("en-ZM", { maximumFractionDigits: 0 });
+import { money } from "../lib/money.js";
 
 function monthsLabel(m) {
   if (m % 12 === 0) return `${m / 12} yr${m === 12 ? "" : "s"}`;

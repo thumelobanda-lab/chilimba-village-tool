@@ -3,8 +3,7 @@ import { payeesLabel } from "../lib/scheduleUtils.js";
 import { daysLate, totalDaysLate } from "../lib/dashboardMath.js";
 import Receipt from "./Receipt.jsx";
 import Icon from "./Icon.jsx";
-
-const money = (n) => "K" + (Number(n) || 0).toLocaleString("en-ZM", { maximumFractionDigits: 0 });
+import { money } from "../lib/money.js";
 
 // Same formatting convention as every other small per-component date
 // formatter in this codebase (App.jsx, MyNextPayments.jsx, etc.) — kept
@@ -124,7 +123,7 @@ function PaymentHero({ overdue, nextUnpaid, nextUpcomingRow, onAddPayment }) {
     const earliest = overdue[0];
     const behindDays = totalDaysLate(overdue);
     return (
-      <div className="payment-hero payment-hero-behind">
+      <div className="payment-hero payment-hero-behind" data-tour="ledger-pay-due">
         <div className="payment-hero-label">You're behind</div>
         <div className="payment-hero-amount">{money(totalOverdue)}</div>
         <div className="payment-hero-sub">
@@ -140,7 +139,7 @@ function PaymentHero({ overdue, nextUnpaid, nextUpcomingRow, onAddPayment }) {
   if (nextUnpaid) {
     const isToday = nextUnpaid.date === new Date().toISOString().slice(0, 10);
     return (
-      <div className="payment-hero payment-hero-due">
+      <div className="payment-hero payment-hero-due" data-tour="ledger-pay-due">
         <div className="payment-hero-label">{isToday ? "Due today" : `Due ${formatDate(nextUnpaid.date)}`}</div>
         <div className="payment-hero-amount">{money(nextUnpaid.balance)}</div>
         <PayButton row={nextUnpaid} onAddPayment={onAddPayment} size="hero" />
@@ -149,7 +148,7 @@ function PaymentHero({ overdue, nextUnpaid, nextUpcomingRow, onAddPayment }) {
   }
 
   return (
-    <div className="payment-hero payment-hero-ok">
+    <div className="payment-hero payment-hero-ok" data-tour="ledger-pay-due">
       <div className="payment-hero-label"><Icon name="sparkle" size={14} className="icon-inline" /> You're all paid up</div>
       <div className="payment-hero-sub">
         {nextUpcomingRow
@@ -417,7 +416,7 @@ function PaymentCard({
                   onClick={() => { setDueDraft(row.due); setEditingDue(true); }}
                   title="Set your own agreed rate for this date"
                 >
-                  {row.due.toLocaleString()}
+                  {money(row.due)}
                   {row.overridden && <span className="tag tag-rate">your rate</span>}
                 </button>
               )}
@@ -441,7 +440,11 @@ function PaymentCard({
               .map((e) => (
                 <div key={e.id} className="history-entry-wrap">
                   <div className={"history-entry" + (e.voidedAt ? " voided" : "")}>
-                    {!e.voidedAt && <span className={"confirm-bulb " + bulbClass(e)} title={bulbTitle(e)}>●</span>}
+                    {!e.voidedAt && (
+                      <span className={"confirm-bulb " + bulbClass(e)} title={bulbTitle(e)}>
+                        ●
+                      </span>
+                    )}
                     {!e.voidedAt && editingEntryId === e.id ? (
                       <span className="due-edit">
                         <input

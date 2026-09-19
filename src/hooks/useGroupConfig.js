@@ -5,6 +5,8 @@ const EMPTY_CONFIG = {
   groupName: "",
   cycleName: "",
   recipientExempt: true,
+  currency: "ZMW",
+  country: "ZM",
   schedule: [],
   funds: [],
   paymentMethods: [],
