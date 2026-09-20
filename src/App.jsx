@@ -405,7 +405,7 @@ export default function App() {
               />
             )}
             <div className="brand-stack">
-              <OpenBookMark size={20} className="brand-mark" />
+              <OpenBookMark size={22} className="brand-mark" />
               <div className="brand">OpenBook</div>
             </div>
           </div>

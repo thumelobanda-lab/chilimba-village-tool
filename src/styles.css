@@ -230,15 +230,29 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   box-shadow: 0 5px 0 -3px var(--chrome-trim);
 }
 .header-top-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.brand { font-weight: 700; font-size: 1rem; }
+.brand { font-weight: 700; font-size: 0.85rem; line-height: 1; white-space: nowrap; }
 .brand-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
-/* Book mark inline with the wordmark, baseline-aligned as one lockup —
-   same illustration as OpenBookMark.jsx's login-screen brand mark, just
-   smaller. Its stroke color (#1F4B3F) is close to the header's own dark
-   green background, so it reads here mostly as the cream pages + gold
-   ribbon silhouette rather than a fully outlined icon — a deliberate,
-   not accidental, difference from how it looks on the light login panel. */
-.brand-stack { display: flex; flex-direction: row; align-items: center; gap: 6px; }
+/* Book mark stacked directly above the wordmark, both centered in one
+   column container — a single lockup rather than two independently
+   positioned elements, so they can't drift apart from each other at any
+   width (row layout could let the icon and text land on different
+   flex lines/alignments; a column with align-items:center can't). Sized
+   to land close to the 40px avatar it sits beside in .brand-row (see
+   OpenBookMark size={22} in App.jsx + this ~18px text line), not
+   because 40px is significant here, just so the row doesn't grow past
+   roughly the avatar's own height. Same illustration as
+   OpenBookMark.jsx's login-screen brand mark, just smaller — its stroke
+   color (#1F4B3F) is close to the header's own dark green background,
+   so it reads here mostly as the cream pages + gold ribbon silhouette
+   rather than a fully outlined icon, a deliberate difference from how
+   it looks on the light login panel. */
+.brand-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+}
 .brand-mark { display: block; flex-shrink: 0; }
 
 /* ProfilePreview.jsx — the small profile badge in the header's top-left,
