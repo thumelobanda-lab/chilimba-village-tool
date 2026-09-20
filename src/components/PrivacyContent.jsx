@@ -38,7 +38,7 @@ export default function PrivacyContent() {
         <li><strong>Phone number</strong> — required at sign-up. Never shown to other members; used only as an alternate sign-in identifier and for a future PIN-reset option.</li>
         <li><strong>PIN</strong> — never stored or transmitted as entered. Only a one-way PBKDF2-SHA256 hash (100,000 iterations, a unique random value per account) is kept, which can verify a future login but can never be reversed back into your actual PIN, even by us.</li>
         <li><strong>Payment records</strong> — every contribution you log (amount, date, which round it's for) and its confirmation status. This is the core of what OpenBook exists to track.</li>
-        <li><strong>Optional profile photo and gender</strong> — a photo you choose to upload (visible to your group, same as your name), and a gender you can optionally give at sign-up used only so the app can address you appropriately in its greeting — nothing else reads or depends on it.</li>
+        <li><strong>Optional profile photo and title</strong> — a photo you choose to upload (visible to your group, same as your name), and a form of address (e.g. Dr, Sister) you can optionally give at sign-up or in My Account, used only so the app can greet you appropriately — nothing else reads or depends on it.</li>
         <li><strong>Mobile money number, if your group uses subscription billing</strong> — the full number is used for that one payment request; only the last 3 digits are kept afterward.</li>
       </ul>
 
@@ -88,7 +88,7 @@ export default function PrivacyContent() {
 
       <h3 className="panel-subtitle">6. Your Choices</h3>
       <p className="small">
-        A profile photo and gender are both optional and removable — see My Account. Removing
+        A profile photo and title are both optional and removable — see My Account. Removing
         a member from a group (an admin action) stops their access but keeps their payment
         history intact, the same way an append-only ledger works for everyone; if you want
         your account fully deleted rather than just deactivated, contact us using the details

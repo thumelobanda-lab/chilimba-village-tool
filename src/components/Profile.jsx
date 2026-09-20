@@ -7,6 +7,7 @@ import PrivacyModal from "./PrivacyModal.jsx";
 import Toast from "./Toast.jsx";
 import FreeTierBanner from "./FreeTierBanner.jsx";
 import MomoRecipientEditor from "./MomoRecipientEditor.jsx";
+import TitleSelect, { isTitleError, TITLE_FIELD_ERROR } from "./TitleSelect.jsx";
 
 // Self-service editing of the signed-in member's own account. Deliberately
 // scoped to just two things: a cosmetic display-name fix (spelling/
@@ -19,7 +20,12 @@ export default function Profile({ session, onRenamed, onLogout, subscriptionStat
   const [currentPin, setCurrentPin] = useState("");
   const [newPin, setNewPin] = useState("");
   const [confirmPin, setConfirmPin] = useState("");
+  // Deliberately never used to set gender — see normalizeTitle vs.
+  // normalizeGender in worker/src/auth.js for why the two are kept
+  // separate.
+  const [title, setTitle] = useState(session.title || "");
   const [error, setError] = useState("");
+  const [titleError, setTitleError] = useState("");
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
@@ -92,11 +98,13 @@ export default function Profile({ session, onRenamed, onLogout, subscriptionStat
 
   const nameChanged = displayName.trim() !== session.name && displayName.trim().length > 0;
   const wantsPinChange = !!(currentPin || newPin || confirmPin);
+  const titleChanged = title !== (session.title || "");
 
   const save = async () => {
     setError("");
-    if (!nameChanged && !wantsPinChange) {
-      setError("Change your name or fill in the PIN fields first.");
+    setTitleError("");
+    if (!nameChanged && !wantsPinChange && !titleChanged) {
+      setError("Change your name, title, or fill in the PIN fields first.");
       return;
     }
     if (wantsPinChange) {
@@ -120,14 +128,16 @@ export default function Profile({ session, onRenamed, onLogout, subscriptionStat
         displayName: nameChanged ? displayName.trim() : undefined,
         currentPin: wantsPinChange ? currentPin : undefined,
         newPin: wantsPinChange ? newPin : undefined,
+        title: titleChanged ? title : undefined,
       });
-      if (result?.name) onRenamed?.(result.name);
+      if (result?.name) onRenamed?.(result.name, titleChanged ? result.title : undefined);
       setCurrentPin("");
       setNewPin("");
       setConfirmPin("");
       setStatus("Saved");
     } catch (e) {
-      setError(e.message || "Could not save your changes.");
+      if (isTitleError(e)) setTitleError(TITLE_FIELD_ERROR);
+      else setError(e.message || "Could not save your changes.");
     } finally {
       setBusy(false);
       setTimeout(() => setStatus(""), 1500);
@@ -208,6 +218,12 @@ export default function Profile({ session, onRenamed, onLogout, subscriptionStat
         You can fix spelling or capitalization here. To change to a genuinely different
         name, ask a group leader — your name is also how the payout schedule recognizes you.
       </p>
+
+      <label className="field">
+        How should we address you? (optional)
+        <TitleSelect value={title} onChange={(e) => setTitle(e.target.value)} disabled={busy} />
+      </label>
+      {titleError && <div className="error-text" role="alert">{titleError}</div>}
 
       <h3 className="panel-subtitle">Change PIN</h3>
       <button

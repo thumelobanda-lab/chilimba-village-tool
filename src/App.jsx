@@ -46,7 +46,7 @@ import { useOfflineSync } from "./hooks/useOfflineSync.js";
 import { useReceipts } from "./hooks/useReceipts.js";
 import { useTheme } from "./hooks/useTheme.js";
 import { useApiData } from "./lib/useApiData.js";
-import { greeting, genderedAddress, capitalizeName } from "./lib/dashboardMath.js";
+import { greeting, titledAddress, capitalizeName } from "./lib/dashboardMath.js";
 import { findNextDue } from "./lib/scheduleUtils.js";
 import { getPendingPayments, sendReminderNow } from "./lib/api.js";
 
@@ -290,8 +290,8 @@ export default function App() {
     if (user.isNew) onboarding.trigger();
   };
 
-  const handleJoin = async (groupSlug, name, phone, pin, termsAccepted, gender) => {
-    const user = await join(groupSlug, name, phone, pin, termsAccepted, gender);
+  const handleJoin = async (groupSlug, name, phone, pin, termsAccepted, title) => {
+    const user = await join(groupSlug, name, phone, pin, termsAccepted, title);
     setSessionEndedNotice(false);
     if (user.isNew) onboarding.trigger();
   };
@@ -464,7 +464,7 @@ export default function App() {
           <div className="header-greeting-row">
             <span className="header-greeting">
               <span className="greeting-emoji" aria-hidden="true">👋</span> {greeting()},{" "}
-              {genderedAddress(session.gender)}{capitalizeName(session.name)}
+              {titledAddress(session.title)}{capitalizeName(session.name)}
             </span>
             {session.role && (
               <span className={"tag header-role-tag" + (session.role === "admin" ? " tag-rate" : "")}>

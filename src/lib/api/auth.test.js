@@ -13,6 +13,8 @@ vi.mock("./core.js", () => ({
 }));
 
 import { login, join, createGroup } from "./auth.js";
+
+const TITLE_OPTIONS = ["", "sister", "brother", "mrs", "mr", "ms", "dr", "father", "madame"];
 import { lsSet, realFetch } from "./core.js";
 
 describe("login (real-mode branch)", () => {
@@ -140,6 +142,42 @@ describe("join (real-mode branch)", () => {
     await join("hillcrest", "Harriet", "+260 97-123-4567", "1234", true);
     expect(realFetch).toHaveBeenCalled();
   });
+
+  it.each(TITLE_OPTIONS)("accepts %j as a title, sent separately from gender", async (title) => {
+    realFetch.mockResolvedValue({
+      name: "Harriet", role: "member", token: "abc", isNew: true,
+      groupSlug: "hillcrest", groupName: "Hillcrest Chilimba",
+    });
+
+    await join("hillcrest", "Harriet", "0971234567", "1234", true, title);
+
+    const body = JSON.parse(realFetch.mock.calls[0][1].body);
+    expect(body.title).toBe(title);
+    expect(body).not.toHaveProperty("gender");
+  });
+
+  it("rejects an unrecognized title value with a title-specific message, never mentioning gender", async () => {
+    await expect(
+      join("hillcrest", "Harriet", "0971234567", "1234", true, "professor")
+    ).rejects.toThrow(/title/i);
+    await expect(
+      join("hillcrest", "Harriet", "0971234567", "1234", true, "professor")
+    ).rejects.not.toThrow(/gender/i);
+    expect(realFetch).not.toHaveBeenCalled();
+  });
+
+  it("never infers gender from the chosen title — gender stays omitted unless explicitly set", async () => {
+    realFetch.mockResolvedValue({
+      name: "Harriet", role: "member", token: "abc", isNew: true,
+      groupSlug: "hillcrest", groupName: "Hillcrest Chilimba",
+    });
+
+    await join("hillcrest", "Harriet", "0971234567", "1234", true, "dr");
+
+    const body = JSON.parse(realFetch.mock.calls[0][1].body);
+    expect(body.title).toBe("dr");
+    expect(body).not.toHaveProperty("gender");
+  });
 });
 
 describe("createGroup (real-mode branch)", () => {
@@ -191,9 +229,48 @@ describe("createGroup (real-mode branch)", () => {
     expect(realFetch).not.toHaveBeenCalled();
   });
 
-  it("rejects an unrecognized gender value", async () => {
+  it("rejects an unrecognized gender value with a gender-specific message, never mentioning title", async () => {
     await expect(
       createGroup({ groupName: "X", adminName: "Y", pin: "1234", termsAccepted: true, gender: "other" })
+    ).rejects.toThrow(/gender/i);
+    await expect(
+      createGroup({ groupName: "X", adminName: "Y", pin: "1234", termsAccepted: true, gender: "other" })
+    ).rejects.not.toThrow(/title/i);
+    expect(realFetch).not.toHaveBeenCalled();
+  });
+
+  it("rejects an unrecognized title value with a title-specific message, never mentioning gender", async () => {
+    await expect(
+      createGroup({ groupName: "X", adminName: "Y", pin: "1234", termsAccepted: true, title: "professor" })
     ).rejects.toThrow(/title/i);
+    await expect(
+      createGroup({ groupName: "X", adminName: "Y", pin: "1234", termsAccepted: true, title: "professor" })
+    ).rejects.not.toThrow(/gender/i);
+    expect(realFetch).not.toHaveBeenCalled();
+  });
+
+  it.each(TITLE_OPTIONS)("accepts %j as a title, sent separately from gender", async (title) => {
+    realFetch.mockResolvedValue({
+      name: "Harriet", role: "admin", token: "abc", isNew: true,
+      groupSlug: "hillcrest", groupName: "Hillcrest Chilimba",
+    });
+
+    await createGroup({ groupName: "X", adminName: "Y", pin: "1234", termsAccepted: true, title });
+
+    const body = JSON.parse(realFetch.mock.calls[0][1].body);
+    expect(body.title).toBe(title);
+    expect(body).not.toHaveProperty("gender");
+  });
+
+  it("never sends gender to the Worker unless the caller explicitly set it", async () => {
+    realFetch.mockResolvedValue({
+      name: "Harriet", role: "admin", token: "abc", isNew: true,
+      groupSlug: "hillcrest", groupName: "Hillcrest Chilimba",
+    });
+
+    await createGroup({ groupName: "X", adminName: "Y", pin: "1234", termsAccepted: true, title: "dr" });
+
+    const body = JSON.parse(realFetch.mock.calls[0][1].body);
+    expect(body).not.toHaveProperty("gender");
   });
 });

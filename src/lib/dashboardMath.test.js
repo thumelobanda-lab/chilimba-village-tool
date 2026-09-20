@@ -14,7 +14,7 @@ import {
   isMemberTurnSoon,
   isCycleNearingCompletion,
   greeting,
-  genderedAddress,
+  titledAddress,
   capitalizeName,
   myOutstandingLoanTotal,
   buildPayoutAvatarRow,
@@ -586,26 +586,26 @@ describe("membersMissingMomo", () => {
   });
 });
 
-describe("genderedAddress", () => {
-  it("renders the two original values lowercase", () => {
-    expect(genderedAddress("male")).toBe("brother ");
-    expect(genderedAddress("female")).toBe("sister ");
+describe("titledAddress", () => {
+  it("renders the two kinship forms of address lowercase", () => {
+    expect(titledAddress("brother")).toBe("brother ");
+    expect(titledAddress("sister")).toBe("sister ");
   });
 
-  it("renders every added title, capitalized", () => {
-    expect(genderedAddress("mr")).toBe("Mr. ");
-    expect(genderedAddress("mrs")).toBe("Mrs. ");
-    expect(genderedAddress("ms")).toBe("Ms. ");
-    expect(genderedAddress("dr")).toBe("Dr. ");
-    expect(genderedAddress("father")).toBe("Father ");
-    expect(genderedAddress("madame")).toBe("Madame ");
+  it("renders every honorific, capitalized", () => {
+    expect(titledAddress("mr")).toBe("Mr. ");
+    expect(titledAddress("mrs")).toBe("Mrs. ");
+    expect(titledAddress("ms")).toBe("Ms. ");
+    expect(titledAddress("dr")).toBe("Dr. ");
+    expect(titledAddress("father")).toBe("Father ");
+    expect(titledAddress("madame")).toBe("Madame ");
   });
 
   it("returns an empty string for unset or unrecognized values", () => {
-    expect(genderedAddress(null)).toBe("");
-    expect(genderedAddress(undefined)).toBe("");
-    expect(genderedAddress("")).toBe("");
-    expect(genderedAddress("something-else")).toBe("");
+    expect(titledAddress(null)).toBe("");
+    expect(titledAddress(undefined)).toBe("");
+    expect(titledAddress("")).toBe("");
+    expect(titledAddress("something-else")).toBe("");
   });
 });
 

@@ -27,15 +27,31 @@ function normalizePhone(phone) {
   return trimmed.startsWith("+") ? `+${digits}` : digits;
 }
 
-// Mirrors normalizeGender() in worker/src/auth.js — optional, greeting-
-// phrasing-only (see dashboardMath.js's genderedAddress), so an omitted
-// value is fine but an unrecognized one isn't silently stored as free
-// text.
-const VALID_GENDER_VALUES = ["male", "female", "mr", "mrs", "ms", "dr", "father", "madame"];
+// Mirrors normalizeTitle() in worker/src/auth.js — a form of address only
+// (see dashboardMath.js's titledAddress), deliberately kept separate from
+// gender below. "No title" (empty/omitted) is always valid; an
+// unrecognized value isn't silently stored as free text since
+// titledAddress() only knows how to render exactly these options.
+const VALID_TITLE_VALUES = ["sister", "brother", "mrs", "mr", "ms", "dr", "father", "madame"];
+export function normalizeTitle(title) {
+  if (title === undefined || title === null || title === "") return null;
+  if (!VALID_TITLE_VALUES.includes(title)) {
+    throw new Error(`Title must be one of: ${VALID_TITLE_VALUES.join(", ")} (or left unset).`);
+  }
+  return title;
+}
+
+// True gender, kept strictly separate from the title/address field above
+// — never inferred from it. Nothing in the UI currently collects this
+// (no form has a real gender selector), so it's normally omitted/null;
+// this only guards against a value coming in from elsewhere in the API
+// surface (e.g. a future gender selector, or a real-mode payload) being
+// silently stored as free text.
+const VALID_GENDER_VALUES = ["male", "female"];
 function normalizeGender(gender) {
   if (gender === undefined || gender === null || gender === "") return null;
   if (!VALID_GENDER_VALUES.includes(gender)) {
-    throw new Error(`Title must be one of: ${VALID_GENDER_VALUES.join(", ")} (or left unset).`);
+    throw new Error(`Gender must be 'male' or 'female' (or left unset).`);
   }
   return gender;
 }
@@ -102,6 +118,7 @@ export async function login(groupSlug, identifier, pin) {
     const session = {
       name: sessionName,
       role: existing.role,
+      title: existing.title || null,
       gender: existing.gender || null,
       groupSlug: slug,
       groupName: group.groupName,
@@ -131,12 +148,13 @@ export async function login(groupSlug, identifier, pin) {
 // termsAccepted mirrors the server-side check in joinGroup() — checked
 // here too so mock mode enforces the same rule real users hit, not just
 // the Login.jsx checkbox disabling the submit button.
-export async function join(groupSlug, name, phone, pin, termsAccepted, gender) {
+export async function join(groupSlug, name, phone, pin, termsAccepted, title, gender) {
   if (!name || !name.trim()) throw new Error("Full name is required.");
   const phoneKey = normalizePhone(phone);
   if (phoneKey.replace(/^\+/, "").length < 7) throw new Error("Enter a valid phone number.");
   if (!pin || pin.length < 4) throw new Error("Choose a PIN of at least 4 digits.");
   if (!termsAccepted) throw new Error("You must accept the Terms & Conditions to continue.");
+  const titleValue = normalizeTitle(title);
   const genderValue = normalizeGender(gender);
 
   if (MOCK_MODE) {
@@ -177,13 +195,14 @@ export async function join(groupSlug, name, phone, pin, termsAccepted, gender) {
     // reproduce the create-group flow just to reach the admin-only tabs.
     const role = isAdminName(name) ? "admin" : "member";
     lsSet(key, {
-      salt, hash, role, phone: phoneKey, gender: genderValue, displayName: name.trim(), active: true,
+      salt, hash, role, phone: phoneKey, title: titleValue, gender: genderValue, displayName: name.trim(), active: true,
       joinedAt: new Date().toISOString(), termsAcceptedAt: new Date().toISOString(),
     });
 
     const session = {
       name: name.trim(),
       role,
+      title: titleValue,
       gender: genderValue,
       groupSlug: slug,
       groupName: group.groupName,
@@ -193,7 +212,7 @@ export async function join(groupSlug, name, phone, pin, termsAccepted, gender) {
     return { ...session, isNew: true };
   }
 
-  return realFetch("/api/join", { method: "POST", body: JSON.stringify({ groupSlug, name, phone, pin, termsAccepted, gender }) }).then(
+  return realFetch("/api/join", { method: "POST", body: JSON.stringify({ groupSlug, name, phone, pin, termsAccepted, title, gender }) }).then(
     (session) => {
       const { isNew, ...toPersist } = session;
       lsSet("chilimba:session", toPersist);
@@ -221,11 +240,12 @@ function generateUniqueGroupCode() {
   throw new Error("Could not generate a group code — please try again.");
 }
 
-export async function createGroup({ groupName, adminName, pin, termsAccepted, gender }) {
+export async function createGroup({ groupName, adminName, pin, termsAccepted, title, gender }) {
   if (!groupName || !groupName.trim()) throw new Error("Group name is required.");
   if (!adminName || !adminName.trim()) throw new Error("Your name is required.");
   if (!pin || pin.length < 4) throw new Error("Choose a PIN of at least 4 digits.");
   if (!termsAccepted) throw new Error("You must accept the Terms & Conditions to continue.");
+  const titleValue = normalizeTitle(title);
   const genderValue = normalizeGender(gender);
 
   if (MOCK_MODE) {
@@ -244,13 +264,14 @@ export async function createGroup({ groupName, adminName, pin, termsAccepted, ge
     const salt = randomSalt();
     const hash = await hashPin(pin, salt);
     lsSet(accountKey(normalizedSlug, adminName), {
-      salt, hash, role: "admin", gender: genderValue, active: true,
+      salt, hash, role: "admin", title: titleValue, gender: genderValue, active: true,
       joinedAt: new Date().toISOString(), termsAcceptedAt: new Date().toISOString(),
     });
 
     const session = {
       name: adminName.trim(),
       role: "admin",
+      title: titleValue,
       gender: genderValue,
       groupSlug: normalizedSlug,
       groupName: groupName.trim(),
@@ -260,7 +281,7 @@ export async function createGroup({ groupName, adminName, pin, termsAccepted, ge
     return { ...session, isNew: true };
   }
 
-  return realFetch("/api/groups", { method: "POST", body: JSON.stringify({ groupName, adminName, pin, termsAccepted, gender }) }).then(
+  return realFetch("/api/groups", { method: "POST", body: JSON.stringify({ groupName, adminName, pin, termsAccepted, title, gender }) }).then(
     (session) => {
       const { isNew, ...toPersist } = session;
       lsSet("chilimba:session", toPersist);

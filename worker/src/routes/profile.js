@@ -1,4 +1,4 @@
-import { requireSession } from "../auth.js";
+import { requireSession, normalizeTitle } from "../auth.js";
 import { hashPin, verifyPin, randomSalt } from "../crypto.js";
 import { HttpError } from "../httpError.js";
 import { json } from "../responses.js";
@@ -32,6 +32,7 @@ export default function registerProfileRoutes(router) {
     return json({
       name: session.name,
       role: session.role,
+      title: session.title,
       gender: session.gender,
       groupSlug: session.groupSlug,
       groupName: session.groupName,
@@ -40,11 +41,12 @@ export default function registerProfileRoutes(router) {
 
   router.put("/api/me", async ({ request, env, cors }) => {
     const session = await requireSession(request, env);
-    const { displayName, currentPin, newPin } = await request.json();
+    const { displayName, currentPin, newPin, title } = await request.json();
 
     const wantsNameChange = typeof displayName === "string" && displayName.trim();
     const wantsPinChange = typeof newPin === "string" && newPin;
-    if (!wantsNameChange && !wantsPinChange) {
+    const wantsTitleChange = title !== undefined;
+    if (!wantsNameChange && !wantsPinChange && !wantsTitleChange) {
       throw new HttpError(400, "Nothing to update.");
     }
 
@@ -74,11 +76,13 @@ export default function registerProfileRoutes(router) {
       pinHash = await hashPin(newPin, pinSalt);
     }
 
-    await env.DB.prepare(
-      `UPDATE users SET display_name = ?, pin_salt = ?, pin_hash = ? WHERE id = ?`
-    ).bind(nextDisplayName, pinSalt, pinHash, user.id).run();
+    const nextTitle = wantsTitleChange ? normalizeTitle(title) : user.title;
 
-    return json({ name: nextDisplayName }, 200, cors);
+    await env.DB.prepare(
+      `UPDATE users SET display_name = ?, pin_salt = ?, pin_hash = ?, title = ? WHERE id = ?`
+    ).bind(nextDisplayName, pinSalt, pinHash, nextTitle, user.id).run();
+
+    return json({ name: nextDisplayName, title: nextTitle }, 200, cors);
   });
 
   // Full mobile money recipient details — self only, never returned to

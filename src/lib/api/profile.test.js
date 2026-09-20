@@ -20,6 +20,8 @@ const baseSession = {
   groupSlug: "hillcrest", groupName: "Hillcrest Chilimba",
 };
 
+const TITLE_OPTIONS = ["", "sister", "brother", "mrs", "mr", "ms", "dr", "father", "madame"];
+
 describe("updateProfile (real-mode branch)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -64,6 +66,28 @@ describe("updateProfile (real-mode branch)", () => {
 
     await expect(updateProfile({ currentPin: "0000", newPin: "1111" })).rejects.toThrow("API error 401");
     expect(lsSet).not.toHaveBeenCalled();
+  });
+
+  it.each(TITLE_OPTIONS)("submits %j as a title change on its own, no name or PIN required", async (title) => {
+    realFetch.mockResolvedValue({ name: "Harriet", title: title || null });
+
+    await updateProfile({ title });
+
+    expect(realFetch).toHaveBeenCalledWith(
+      "/api/me",
+      expect.objectContaining({
+        method: "PUT",
+        body: JSON.stringify({ title }),
+      })
+    );
+  });
+
+  it("persists the returned title into the session", async () => {
+    realFetch.mockResolvedValue({ name: "Harriet", title: "dr" });
+
+    await updateProfile({ title: "dr" });
+
+    expect(lsSet).toHaveBeenCalledWith("chilimba:session", { ...baseSession, name: "Harriet", title: "dr" });
   });
 });
 

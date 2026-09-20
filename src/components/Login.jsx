@@ -6,7 +6,7 @@ import OpenBookMark from "./OpenBookMark.jsx";
 import PrivacyModal from "./PrivacyModal.jsx";
 import WhatIsChilimbaModal from "./WhatIsChilimbaModal.jsx";
 import Icon from "./Icon.jsx";
-import GenderSelect from "./GenderSelect.jsx";
+import TitleSelect, { isTitleError, TITLE_FIELD_ERROR } from "./TitleSelect.jsx";
 import { MOCK_MODE } from "../lib/api/core.js";
 
 const LAST_GROUP_KEY = "chilimba:last-group-slug";
@@ -47,11 +47,13 @@ export default function Login({ onLogin, onJoin, onCreateGroup, onOwnerLogin, se
   const [joinName, setJoinName] = useState("");
   const [phone, setPhone] = useState("");
   // Optional — used only for greeting phrasing (dashboardMath.js's
-  // genderedAddress), never validated against/required the way name and
+  // titledAddress), never validated against/required the way name and
   // phone are. "" (not asked yet) is a valid, permanent choice, not just
-  // an in-progress state — see normalizeGender in lib/api/auth.js, which
-  // treats it the same as never having answered.
-  const [gender, setGender] = useState("");
+  // an in-progress state — see normalizeTitle in lib/api/auth.js, which
+  // treats it the same as never having answered. Deliberately never used
+  // to set gender — see normalizeTitle vs. normalizeGender in
+  // worker/src/auth.js for why the two are kept separate.
+  const [title, setTitle] = useState("");
   const [signinIdentifier, setSigninIdentifier] = useState("");
   const [pin, setPin] = useState("");
   // Owner sign-in is a structurally different credential (real email +
@@ -60,6 +62,7 @@ export default function Login({ onLogin, onJoin, onCreateGroup, onOwnerLogin, se
   const [ownerEmail, setOwnerEmail] = useState("");
   const [ownerPassword, setOwnerPassword] = useState("");
   const [error, setError] = useState("");
+  const [titleError, setTitleError] = useState("");
   const [busy, setBusy] = useState(false);
   // Only sign-up needs this — signing in isn't "a new member/admin
   // registering", so this never gates the sign-in submit button, and
@@ -91,6 +94,7 @@ export default function Login({ onLogin, onJoin, onCreateGroup, onOwnerLogin, se
 
   const submit = async () => {
     setError("");
+    setTitleError("");
     if (!canSubmit || busy) return;
     setBusy(true);
     try {
@@ -99,13 +103,14 @@ export default function Login({ onLogin, onJoin, onCreateGroup, onOwnerLogin, se
         return;
       }
       if (isJoin) {
-        await onJoin(groupSlug.trim(), joinName.trim(), phone.trim(), pin, termsAccepted, gender);
+        await onJoin(groupSlug.trim(), joinName.trim(), phone.trim(), pin, termsAccepted, title);
       } else {
         await onLogin(groupSlug.trim(), signinIdentifier.trim(), pin);
       }
       localStorage.setItem(LAST_GROUP_KEY, groupSlug.trim().toLowerCase());
     } catch (e) {
-      setError(e.message || (isOwner ? "Could not sign in." : isJoin ? "Could not join." : "Could not sign in."));
+      if (isTitleError(e)) setTitleError(TITLE_FIELD_ERROR);
+      else setError(e.message || (isOwner ? "Could not sign in." : isJoin ? "Could not join." : "Could not sign in."));
     } finally {
       setBusy(false);
     }
@@ -298,8 +303,9 @@ export default function Login({ onLogin, onJoin, onCreateGroup, onOwnerLogin, se
               </label>
               <label className="field">
                 How should we address you? (optional)
-                <GenderSelect value={gender} onChange={(e) => setGender(e.target.value)} disabled={busy} />
+                <TitleSelect value={title} onChange={(e) => setTitle(e.target.value)} disabled={busy} />
               </label>
+              {titleError && <div className="error-text" role="alert">{titleError}</div>}
             </>
           ) : (
             <label className="field">

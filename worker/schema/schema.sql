@@ -111,10 +111,15 @@ CREATE TABLE IF NOT EXISTS users (
                                      -- NULL/empty both mean "nothing written yet"
   photo_key TEXT,                   -- reference into R2 (migration 020), not the image
                                      -- itself — NULL means no photo. See routes/profilePhoto.js.
-  gender TEXT,                      -- 'male' | 'female' | NULL (migration 021). Used ONLY for
-                                     -- greeting phrasing (dashboardMath.js's greeting()) — never
-                                     -- read anywhere else. NULL (declined/unset) falls back to
-                                     -- the same name-only greeting used before this existed.
+  gender TEXT,                      -- 'male' | 'female' | NULL (migration 021). Kept strictly
+                                     -- separate from `title` below and never read anywhere else
+                                     -- in the app — nothing in the UI currently collects it.
+  title TEXT,                       -- self-reported form of address, e.g. 'dr' | 'sister' | NULL
+                                     -- (migration 024). Used ONLY for greeting phrasing
+                                     -- (dashboardMath.js's titledAddress()) — never read
+                                     -- anywhere else, and never inferred from `gender` or vice
+                                     -- versa. NULL (declined/unset) falls back to the same
+                                     -- name-only greeting used before either field existed.
   momo_provider TEXT,                -- 'MTN' | 'Airtel' | NULL (migration 022) — where this
                                       -- member's payout should go, separate from `phone` above
                                       -- (their login number, which may differ). Self-service,
@@ -513,7 +518,8 @@ INSERT OR IGNORE INTO schema_migrations (filename) VALUES
   ('020_profile_photo.sql'),
   ('021_gender.sql'),
   ('022_momo_recipient.sql'),
-  ('023_group_currency.sql');
+  ('023_group_currency.sql'),
+  ('024_title.sql');
 
 -- Seed one example group so the app is usable immediately after a fresh
 -- deploy. Real groups are created via POST /api/groups (see routes/groups.js)

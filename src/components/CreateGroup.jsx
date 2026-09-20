@@ -1,16 +1,19 @@
 import React, { useState } from "react";
 import TermsModal from "./TermsModal.jsx";
 import PrivacyModal from "./PrivacyModal.jsx";
-import GenderSelect from "./GenderSelect.jsx";
+import TitleSelect, { isTitleError, TITLE_FIELD_ERROR } from "./TitleSelect.jsx";
 
 export default function CreateGroup({ onCreate, onBackToLogin }) {
   const [groupName, setGroupName] = useState("");
   const [adminName, setAdminName] = useState("");
   const [pin, setPin] = useState("");
   // Optional, greeting-phrasing-only — same field as Login.jsx's sign-up
-  // form (see dashboardMath.js's genderedAddress).
-  const [gender, setGender] = useState("");
+  // form (see dashboardMath.js's titledAddress). Deliberately never used
+  // to set gender — see normalizeTitle vs. normalizeGender in
+  // worker/src/auth.js for why the two are kept separate.
+  const [title, setTitle] = useState("");
   const [error, setError] = useState("");
+  const [titleError, setTitleError] = useState("");
   const [busy, setBusy] = useState(false);
   // Creating a group also creates a brand-new admin account — this is
   // "a new admin registering", same as Login.jsx's sign-up checkbox, so
@@ -21,6 +24,7 @@ export default function CreateGroup({ onCreate, onBackToLogin }) {
 
   const submit = async () => {
     setError("");
+    setTitleError("");
     if (busy) return;
     if (!groupName.trim() || !adminName.trim()) {
       setError("Fill in the group name and your name.");
@@ -37,9 +41,10 @@ export default function CreateGroup({ onCreate, onBackToLogin }) {
       // shows it, Login.jsx's dev-only path signs straight in). A
       // human-chosen code trades away the one thing that matters most
       // for a shared login secret: not being guessable.
-      await onCreate({ groupName: groupName.trim(), adminName: adminName.trim(), pin, termsAccepted, gender });
+      await onCreate({ groupName: groupName.trim(), adminName: adminName.trim(), pin, termsAccepted, title });
     } catch (e) {
-      setError(e.message || "Could not create the group.");
+      if (isTitleError(e)) setTitleError(TITLE_FIELD_ERROR);
+      else setError(e.message || "Could not create the group.");
     } finally {
       setBusy(false);
     }
@@ -81,8 +86,9 @@ export default function CreateGroup({ onCreate, onBackToLogin }) {
       </label>
       <label className="field">
         How should we address you? (optional)
-        <GenderSelect value={gender} onChange={(e) => setGender(e.target.value)} disabled={busy} />
+        <TitleSelect value={title} onChange={(e) => setTitle(e.target.value)} disabled={busy} />
       </label>
+      {titleError && <div className="error-text" role="alert">{titleError}</div>}
       <label className="field">
         Choose a PIN (4+ digits)
         <input

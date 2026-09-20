@@ -1,0 +1,22 @@
+-- Migration 024: title, a form-of-address field separate from gender.
+--
+-- Before this, the "How should we address you?" dropdown (Sister/
+-- Brother/Mrs/Mr/Ms/Dr/Father/Madame) wrote its value into the `gender`
+-- column (migration 021), whose own validation was loosened to accept
+-- honorifics too. That meant picking "Dr" was checked against a
+-- gender-flavored rule for a field the user never saw labeled "gender" —
+-- confusing when it failed, and wrong in principle: a title is not a
+-- gender. This migration gives title its own column so the two can be
+-- validated (and eventually collected) independently. `gender` itself is
+-- untouched and keeps its original, stricter male/female/NULL meaning —
+-- see normalizeGender() vs. normalizeTitle() in worker/src/auth.js.
+--
+-- Self-reported, optional, and read in exactly one place: dashboardMath.js's
+-- titledAddress() picks how the app addresses the signed-in member. NULL
+-- (declined, or an account that predates this migration) falls back to
+-- the same name-only greeting the app always used.
+--
+-- Apply with:
+--   scripts/apply-migration.sh worker/schema/migrations/024_title.sql
+
+ALTER TABLE users ADD COLUMN title TEXT;

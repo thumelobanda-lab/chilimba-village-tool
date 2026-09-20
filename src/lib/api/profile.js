@@ -1,5 +1,6 @@
 import { randomSalt, hashPin, verifyPin } from "../crypto.js";
 import { MOCK_MODE, lsGet, lsSet, realFetch, currentSession, groupScopedKey } from "./core.js";
+import { normalizeTitle } from "./auth.js";
 
 export const MOMO_PROVIDERS = ["MTN", "Airtel"];
 
@@ -28,6 +29,7 @@ export async function getMe() {
     fresh = {
       name: session.name,
       role: account.role || "member",
+      title: account.title || null,
       groupSlug: session.groupSlug,
       groupName: session.groupName,
     };
@@ -50,13 +52,14 @@ export async function getMe() {
 // on, so this only accepts an edit that still normalizes to the same
 // key. See worker/src/routes/profile.js for the server-side twin of
 // this same rule.
-export async function updateProfile({ displayName, currentPin, newPin } = {}) {
+export async function updateProfile({ displayName, currentPin, newPin, title } = {}) {
   const session = currentSession();
   if (!session) throw new Error("Not signed in.");
 
   const wantsNameChange = !!(displayName && displayName.trim());
   const wantsPinChange = !!newPin;
-  if (!wantsNameChange && !wantsPinChange) throw new Error("Nothing to update.");
+  const wantsTitleChange = title !== undefined;
+  if (!wantsNameChange && !wantsPinChange && !wantsTitleChange) throw new Error("Nothing to update.");
 
   if (MOCK_MODE) {
     const key = groupScopedKey(session, "account", normalizeKey(session.name));
@@ -82,18 +85,20 @@ export async function updateProfile({ displayName, currentPin, newPin } = {}) {
       const hash = await hashPin(newPin, salt);
       nextAccount = { ...account, salt, hash };
     }
+    const nextTitle = wantsTitleChange ? normalizeTitle(title) : account.title || null;
+    if (wantsTitleChange) nextAccount = { ...nextAccount, title: nextTitle };
     lsSet(key, nextAccount);
 
-    const nextSession = { ...session, name: nextDisplayName };
+    const nextSession = { ...session, name: nextDisplayName, title: nextTitle };
     lsSet("chilimba:session", nextSession);
-    return { name: nextDisplayName };
+    return { name: nextDisplayName, title: nextTitle };
   }
 
   const result = await realFetch("/api/me", {
     method: "PUT",
-    body: JSON.stringify({ displayName, currentPin, newPin }),
+    body: JSON.stringify({ displayName, currentPin, newPin, title }),
   });
-  lsSet("chilimba:session", { ...session, name: result.name || session.name });
+  lsSet("chilimba:session", { ...session, name: result.name || session.name, title: wantsTitleChange ? result.title : session.title });
   return result;
 }
 

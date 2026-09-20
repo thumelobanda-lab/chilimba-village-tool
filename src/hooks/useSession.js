@@ -53,8 +53,8 @@ export function useSession() {
   // Deliberately a separate call from login() above, not a fallback it
   // reaches for on a not-found identifier: see auth.js for why the split
   // matters (phone collection has to be unskippable).
-  const join = async (groupSlug, name, phone, pin, termsAccepted, gender) => {
-    const user = await apiJoin(groupSlug, name, phone, pin, termsAccepted, gender);
+  const join = async (groupSlug, name, phone, pin, termsAccepted, title) => {
+    const user = await apiJoin(groupSlug, name, phone, pin, termsAccepted, title);
     setMyGroups(rememberGroup(user));
     setSession(user);
     return user;
@@ -155,12 +155,14 @@ export function useSession() {
   };
 
   // updateProfile() (lib/api/profile.js) already persists the new display
-  // name to the stored session in localStorage — this just mirrors that
-  // into the in-memory session so the header greeting and every other
-  // component reading `session.name` update immediately, without needing
-  // a full page reload to pick the change back up.
-  const renameSession = (name) => {
-    setSession((prev) => (prev ? { ...prev, name } : prev));
+  // name and/or title to the stored session in localStorage — this just
+  // mirrors that into the in-memory session so the header greeting and
+  // every other component reading `session.name`/`session.title` update
+  // immediately, without needing a full page reload to pick the change
+  // back up. `title` is optional — Profile.jsx only passes it when it
+  // actually changed.
+  const renameSession = (name, title) => {
+    setSession((prev) => (prev ? { ...prev, name, ...(title !== undefined ? { title } : {}) } : prev));
   };
 
   return {

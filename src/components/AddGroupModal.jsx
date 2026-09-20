@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import TermsModal from "./TermsModal.jsx";
 import PrivacyModal from "./PrivacyModal.jsx";
-import GenderSelect from "./GenderSelect.jsx";
+import TitleSelect, { isTitleError, TITLE_FIELD_ERROR } from "./TitleSelect.jsx";
 
 /**
  * Join or sign into a second (or third...) group without losing your
@@ -27,11 +27,14 @@ export default function AddGroupModal({ onJoin, onLogin, onClose }) {
   const [joinName, setJoinName] = useState("");
   const [phone, setPhone] = useState("");
   // Optional, greeting-phrasing-only — same field as Login.jsx's sign-up
-  // form (see dashboardMath.js's genderedAddress).
-  const [gender, setGender] = useState("");
+  // form (see dashboardMath.js's titledAddress). Deliberately never used
+  // to set gender — see normalizeTitle vs. normalizeGender in
+  // worker/src/auth.js for why the two are kept separate.
+  const [title, setTitle] = useState("");
   const [signinIdentifier, setSigninIdentifier] = useState("");
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
+  const [titleError, setTitleError] = useState("");
   const [busy, setBusy] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
@@ -44,17 +47,19 @@ export default function AddGroupModal({ onJoin, onLogin, onClose }) {
 
   const submit = async () => {
     setError("");
+    setTitleError("");
     if (!canSubmit || busy) return;
     setBusy(true);
     try {
       if (isJoin) {
-        await onJoin(groupSlug.trim(), joinName.trim(), phone.trim(), pin, termsAccepted, gender);
+        await onJoin(groupSlug.trim(), joinName.trim(), phone.trim(), pin, termsAccepted, title);
       } else {
         await onLogin(groupSlug.trim(), signinIdentifier.trim(), pin);
       }
       onClose();
     } catch (e) {
-      setError(e.message || (isJoin ? "Could not join." : "Could not sign in."));
+      if (isTitleError(e)) setTitleError(TITLE_FIELD_ERROR);
+      else setError(e.message || (isJoin ? "Could not join." : "Could not sign in."));
     } finally {
       setBusy(false);
     }
@@ -138,8 +143,9 @@ export default function AddGroupModal({ onJoin, onLogin, onClose }) {
               </label>
               <label className="field">
                 How should we address you? (optional)
-                <GenderSelect value={gender} onChange={(e) => setGender(e.target.value)} disabled={busy} />
+                <TitleSelect value={title} onChange={(e) => setTitle(e.target.value)} disabled={busy} />
               </label>
+              {titleError && <div className="error-text" role="alert">{titleError}</div>}
             </>
           ) : (
             <label className="field">

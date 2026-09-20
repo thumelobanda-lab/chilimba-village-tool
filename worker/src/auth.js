@@ -21,7 +21,7 @@ export async function getSessionUser(request, env) {
   if (!token) return null;
 
   const row = await env.DB.prepare(
-    `SELECT s.expires_at, u.id, u.display_name, u.role, u.active, u.gender,
+    `SELECT s.expires_at, u.id, u.display_name, u.role, u.active, u.title, u.gender,
             u.group_id as groupId, g.slug as groupSlug, g.group_name as groupName,
             g.suspended_at as groupSuspendedAt
      FROM sessions s
@@ -52,6 +52,7 @@ export async function getSessionUser(request, env) {
     id: row.id,
     name: row.display_name,
     role: row.role,
+    title: row.title || null,
     gender: row.gender || null,
     groupId: row.groupId,
     groupSlug: row.groupSlug,
@@ -89,20 +90,34 @@ export async function resolveGroupBySlug(env, slug) {
   return group;
 }
 
-// Optional, self-reported title/honorific, used only for greeting
-// phrasing (see dashboardMath.js's genderedAddress()) — never gates
+// Optional, self-reported form of address, used only for greeting
+// phrasing (see dashboardMath.js's titledAddress()) — never gates
 // anything, so an omitted or empty value just means "no preference,"
-// not an error. "male"/"female" are the original two values (kept as-is
-// so existing accounts need no migration); the rest were added
-// alongside them for members who'd rather be addressed by a title than
-// "brother"/"sister". Rejects anything outside this list rather than
-// silently storing free text, since genderedAddress() only knows how to
-// render exactly these options.
-const VALID_GENDER_VALUES = ["male", "female", "mr", "mrs", "ms", "dr", "father", "madame"];
-function normalizeGender(gender) {
+// not an error. Kept in its own `title` column, deliberately separate
+// from `gender` below — this used to be folded into the gender column
+// (pre-migration 024), which meant picking "Dr" was validated as if it
+// were a gender and could fail with a "gender" error for a field the
+// user never saw labeled that way. Rejects anything outside this list
+// rather than silently storing free text, since titledAddress() only
+// knows how to render exactly these options.
+const VALID_TITLE_VALUES = ["sister", "brother", "mrs", "mr", "ms", "dr", "father", "madame"];
+export function normalizeTitle(title) {
+  if (title === undefined || title === null || title === "") return null;
+  if (!VALID_TITLE_VALUES.includes(title)) {
+    throw new HttpError(400, `Title must be one of: ${VALID_TITLE_VALUES.join(", ")} (or left unset).`);
+  }
+  return title;
+}
+
+// True gender — strictly separate from the title/address field above,
+// and never inferred from it. Nothing in the UI currently collects this
+// (no form has a real gender selector), so it's normally omitted/null;
+// kept validated for whatever does eventually set it explicitly.
+const VALID_GENDER_VALUES = ["male", "female"];
+export function normalizeGender(gender) {
   if (gender === undefined || gender === null || gender === "") return null;
   if (!VALID_GENDER_VALUES.includes(gender)) {
-    throw new HttpError(400, `Title must be one of: ${VALID_GENDER_VALUES.join(", ")} (or left unset).`);
+    throw new HttpError(400, `Gender must be 'male' or 'female' (or left unset).`);
   }
   return gender;
 }
@@ -186,6 +201,7 @@ export async function login(env, groupSlug, identifier, pin) {
   return {
     name: user.display_name,
     role: user.role,
+    title: user.title || null,
     gender: user.gender || null,
     token,
     isNew: false,
@@ -204,7 +220,7 @@ export async function login(env, groupSlug, identifier, pin) {
 // all — same reasoning as createGroup() below (a failure between two
 // separate writes here previously risked an orphaned account with no
 // session, on a much smaller scale than that bug, but the same fix).
-export async function joinGroup(env, groupSlug, name, phone, pin, termsAccepted, gender) {
+export async function joinGroup(env, groupSlug, name, phone, pin, termsAccepted, title, gender) {
   if (!name || !name.trim()) throw new HttpError(400, "Full name is required.");
   const phoneKey = normalizePhone(phone);
   if (phoneKey.replace(/^\+/, "").length < 7) throw new HttpError(400, "Enter a valid phone number.");
@@ -214,6 +230,7 @@ export async function joinGroup(env, groupSlug, name, phone, pin, termsAccepted,
   // the client alone for something that matters" rule every other
   // validation in this file already follows.
   if (!termsAccepted) throw new HttpError(400, "You must accept the Terms & Conditions to continue.");
+  const titleValue = normalizeTitle(title);
   const genderValue = normalizeGender(gender);
 
   const group = await resolveGroupBySlug(env, groupSlug);
@@ -246,9 +263,9 @@ export async function joinGroup(env, groupSlug, name, phone, pin, termsAccepted,
   try {
     await env.DB.batch([
       env.DB.prepare(
-        `INSERT INTO users (id, group_id, name, display_name, phone, pin_salt, pin_hash, gender, terms_accepted_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`
-      ).bind(id, group.id, key, name.trim(), phoneKey, salt, hash, genderValue),
+        `INSERT INTO users (id, group_id, name, display_name, phone, pin_salt, pin_hash, title, gender, terms_accepted_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`
+      ).bind(id, group.id, key, name.trim(), phoneKey, salt, hash, titleValue, genderValue),
       env.DB.prepare(`INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)`)
         .bind(token, id, expiresAt),
     ]);
@@ -262,6 +279,7 @@ export async function joinGroup(env, groupSlug, name, phone, pin, termsAccepted,
   return {
     name: name.trim(),
     role: "member",
+    title: titleValue,
     gender: genderValue,
     token,
     isNew: true,
@@ -297,7 +315,7 @@ async function generateUniqueGroupCode(env) {
   throw new HttpError(500, "Could not generate a group code — please try again.");
 }
 
-export async function createGroup(env, { groupName, adminName, pin, phone, gender, createdIp, termsAccepted }) {
+export async function createGroup(env, { groupName, adminName, pin, phone, title, gender, createdIp, termsAccepted }) {
   if (!groupName || !groupName.trim()) throw new HttpError(400, "Group name is required.");
   if (!adminName || !adminName.trim()) throw new HttpError(400, "Your name is required.");
   if (!pin || pin.length < 4) throw new HttpError(400, "Choose a PIN of at least 4 digits.");
@@ -305,6 +323,7 @@ export async function createGroup(env, { groupName, adminName, pin, phone, gende
   // brand-new admin account, so it's a "new member/admin registering"
   // moment too, not just an existing admin's routine action.
   if (!termsAccepted) throw new HttpError(400, "You must accept the Terms & Conditions to continue.");
+  const titleValue = normalizeTitle(title);
   const genderValue = normalizeGender(gender);
 
   const normalizedSlug = await generateUniqueGroupCode(env);
@@ -344,9 +363,9 @@ export async function createGroup(env, { groupName, adminName, pin, phone, gende
          VALUES (?, ?, ?, 'Cycle 1', 1, '[]', '[]', ?, ?)`
       ).bind(groupId, normalizedSlug, groupName.trim(), createdIp || null, normalizedPhone),
       env.DB.prepare(
-        `INSERT INTO users (id, group_id, name, display_name, phone, pin_salt, pin_hash, gender, role, terms_accepted_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'admin', datetime('now'))`
-      ).bind(userId, groupId, key, adminName.trim(), normalizedPhone, salt, hash, genderValue),
+        `INSERT INTO users (id, group_id, name, display_name, phone, pin_salt, pin_hash, title, gender, role, terms_accepted_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'admin', datetime('now'))`
+      ).bind(userId, groupId, key, adminName.trim(), normalizedPhone, salt, hash, titleValue, genderValue),
       env.DB.prepare(`INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)`)
         .bind(token, userId, expiresAt),
     ]);
@@ -360,6 +379,7 @@ export async function createGroup(env, { groupName, adminName, pin, phone, gende
   return {
     name: adminName.trim(),
     role: "admin",
+    title: titleValue,
     gender: genderValue,
     token,
     isNew: true,

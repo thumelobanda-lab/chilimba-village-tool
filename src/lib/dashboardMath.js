@@ -319,13 +319,13 @@ export function greeting(hour = new Date().getHours()) {
   return "Good evening";
 }
 
-// "brother "/"Dr. "/etc. — the two original values stay lowercase, bare
-// words (how they've always read); the titles added alongside them
-// conventionally read capitalized, several with a trailing period, when
-// placed directly before a name.
-const GENDER_ADDRESS_FORMS = {
-  male: "brother ",
-  female: "sister ",
+// "brother "/"Dr. "/etc. — "sister"/"brother" stay lowercase, bare words
+// (how they've always read); the honorifics alongside them conventionally
+// read capitalized, several with a trailing period, when placed directly
+// before a name.
+const TITLE_ADDRESS_FORMS = {
+  brother: "brother ",
+  sister: "sister ",
   mr: "Mr. ",
   mrs: "Mrs. ",
   ms: "Ms. ",
@@ -339,17 +339,20 @@ const GENDER_ADDRESS_FORMS = {
  * kept as its own function rather than a param on greeting() above so
  * the existing time-of-day tests/callers that don't care about this
  * stay untouched. Self-reported at sign-up (see worker/src/auth.js's
- * normalizeGender, migration 021) and used ONLY here — no other part of
- * the app reads it. Empty string (not "there", not a fallback pronoun)
- * for an unset/declined value, so `${greeting()}, ${genderedAddress(g)}${name}`
- * reads as the plain old "Good morning, Chanda" for every account that
- * predates this field or chose not to answer.
+ * normalizeTitle, migration 024) and used ONLY here — no other part of
+ * the app reads it. This is purely a form of address, never a gender —
+ * see normalizeTitle vs. normalizeGender in worker/src/auth.js for why
+ * the two are kept separate. Empty string (not "there", not a fallback
+ * pronoun) for an unset/declined value, so
+ * `${greeting()}, ${titledAddress(t)}${name}` reads as the plain old
+ * "Good morning, Chanda" for every account that predates this field or
+ * chose not to answer.
  *
- * @param {"male"|"female"|"mr"|"mrs"|"ms"|"dr"|"father"|"madame"|null|undefined} gender
+ * @param {"brother"|"sister"|"mr"|"mrs"|"ms"|"dr"|"father"|"madame"|null|undefined} title
  * @returns {string}
  */
-export function genderedAddress(gender) {
-  return GENDER_ADDRESS_FORMS[gender] || "";
+export function titledAddress(title) {
+  return TITLE_ADDRESS_FORMS[title] || "";
 }
 
 /**
