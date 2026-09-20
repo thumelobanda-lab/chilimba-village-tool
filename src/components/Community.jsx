@@ -33,7 +33,7 @@ export default function Community({ schedule, currentMemberName, isAdmin, onOpen
           width={700}
           height={467}
           loading="lazy"
-          alt="A small group of neighbors meeting together, the kind of gathering a Chilimba's community fund supports"
+          alt="Close-up of colorful Ankara fabric skirts"
         />
         <div className="hero-banner-overlay">
           <span className="hero-banner-caption">Stronger together</span>

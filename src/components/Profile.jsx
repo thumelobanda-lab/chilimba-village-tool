@@ -294,8 +294,8 @@ export default function Profile({ session, onRenamed, onLogout, subscriptionStat
       {showPrivacy && <PrivacyModal onClose={() => setShowPrivacy(false)} />}
 
       <p className="muted tiny photo-credit">
-        Photos by Ninno JackJr, Random Institute, Logan Voss, Brice Cooper and Aaron Burden via
-        Unsplash.
+        Photos by Logan Voss, Brice Cooper, Aaron Burden, Ron Smit, Barney Goodman and Musonda
+        Kankomba via Unsplash.
       </p>
 
       {onLogout && (
