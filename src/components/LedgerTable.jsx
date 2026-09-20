@@ -3,6 +3,7 @@ import { payeesLabel } from "../lib/scheduleUtils.js";
 import { daysLate, totalDaysLate } from "../lib/dashboardMath.js";
 import Receipt from "./Receipt.jsx";
 import Icon from "./Icon.jsx";
+import EmptyState from "./EmptyState.jsx";
 import { money } from "../lib/money.js";
 
 // Same formatting convention as every other small per-component date
@@ -436,18 +437,9 @@ function PaymentCard({
             <div className="payment-card-history-title">Payment history</div>
             {activeEntries.length === 0 && voidedEntries.length === 0 && (
               firstPaymentPrompt ? (
-                <div className="payment-empty-state">
-                  <img
-                    className="payment-empty-state-img"
-                    src="/images/empty-payments.webp"
-                    width={72}
-                    height={72}
-                    loading="lazy"
-                    alt="An empty piggy bank, waiting for its first coin"
-                  />
-                  <p className="payment-empty-state-text">No payments yet — pay once and your streak begins.</p>
+                <EmptyState icon="emptyPayments" message="No payments yet — pay once and your streak begins.">
                   <PayButton row={row} onAddPayment={onAddPayment} size="hero" label="Log a Payment" />
-                </div>
+                </EmptyState>
               ) : (
                 <p className="muted tiny">No payments logged for this date yet.</p>
               )

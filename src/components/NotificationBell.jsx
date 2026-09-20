@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { parseServerTimestamp } from "../lib/serverTime.js";
 import Icon from "./Icon.jsx";
+import EmptyState from "./EmptyState.jsx";
 
 function timeAgo(serverTimestamp) {
   if (!serverTimestamp) return "";
@@ -105,7 +106,11 @@ export default function NotificationBell({ items, urgent, markSeen }) {
         <div className="notification-bell-panel" role="menu">
           <div className="notification-bell-heading">Notifications</div>
           {items.length === 0 ? (
-            <p className="notification-empty small">You're all caught up.</p>
+            // No action button here, deliberately — unlike the other
+            // empty states (payments/members/fund), "caught up" isn't a
+            // "go do X" prompt, it's a resting state with nothing
+            // meaningful to act on.
+            <EmptyState icon="emptyNotifications" message="You're all caught up." size={44} />
           ) : (
             items.map((item) => (
               <div

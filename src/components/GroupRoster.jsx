@@ -3,6 +3,7 @@ import { getGroupRoster } from "../lib/api.js";
 import { useApiData } from "../lib/useApiData.js";
 import { buildMemberRoster } from "../lib/scheduleUtils.js";
 import Avatar from "./Avatar.jsx";
+import EmptyState from "./EmptyState.jsx";
 
 function formatDate(dateISO) {
   const d = new Date(dateISO + "T00:00:00");
@@ -20,14 +21,25 @@ function formatDate(dateISO) {
  * ever fetches names — never due amounts, balances, or streaks, which
  * stay admin-only (Group Setup's own roster).
  */
-export default function GroupRoster({ schedule, currentMemberName }) {
+export default function GroupRoster({ schedule, currentMemberName, isAdmin, onOpenGroupSetup }) {
   const { data, loading, error } = useApiData(getGroupRoster, []);
 
   if (loading && !data) return <p className="muted small">Loading roster…</p>;
   if (error || !data) return null;
 
   const roster = buildMemberRoster(schedule, data.members.map((m) => m.name));
-  if (roster.length === 0) return null;
+  if (roster.length === 0) {
+    return (
+      <>
+        <h3 className="panel-subtitle">Payout Rotation</h3>
+        <EmptyState icon="emptyMembers" message="No members yet — invite the group to get started.">
+          {isAdmin && onOpenGroupSetup && (
+            <button type="button" className="btn-pay" onClick={onOpenGroupSetup}>Invite Members</button>
+          )}
+        </EmptyState>
+      </>
+    );
+  }
   const photoByName = Object.fromEntries(data.members.map((m) => [m.name, m]));
 
   return (

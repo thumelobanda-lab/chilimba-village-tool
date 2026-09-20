@@ -744,7 +744,12 @@ export default function App() {
 
             {tab === "community" && (
               <div role="tabpanel" id="panel-community" aria-labelledby="tab-community">
-                <Community schedule={config.schedule} currentMemberName={session.name} isAdmin={session.role === "admin"} />
+                <Community
+                  schedule={config.schedule}
+                  currentMemberName={session.name}
+                  isAdmin={session.role === "admin"}
+                  onOpenGroupSetup={session.role === "admin" ? () => setTab("setup") : undefined}
+                />
               </div>
             )}
 

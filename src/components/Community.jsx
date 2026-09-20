@@ -7,6 +7,7 @@ import GrowthProjection from "./GrowthProjection.jsx";
 import GroupReliabilityScore from "./GroupReliabilityScore.jsx";
 import GroupRoster from "./GroupRoster.jsx";
 import NoticeComposer from "./NoticeComposer.jsx";
+import EmptyState from "./EmptyState.jsx";
 import { money } from "../lib/money.js";
 
 function timeAgo(iso) {
@@ -19,7 +20,7 @@ function timeAgo(iso) {
   return `${days}d ago`;
 }
 
-export default function Community({ schedule, currentMemberName, isAdmin }) {
+export default function Community({ schedule, currentMemberName, isAdmin, onOpenGroupSetup }) {
   const { data, error, loading } = useApiData(getGroupFunds, []);
   const { data: pulseData } = useApiData(getGroupPulse, []);
 
@@ -47,7 +48,12 @@ export default function Community({ schedule, currentMemberName, isAdmin }) {
 
       {isAdmin && <NoticeComposer />}
 
-      <GroupRoster schedule={schedule} currentMemberName={currentMemberName} />
+      <GroupRoster
+        schedule={schedule}
+        currentMemberName={currentMemberName}
+        isAdmin={isAdmin}
+        onOpenGroupSetup={onOpenGroupSetup}
+      />
 
       <GroupReliabilityScore grs={pulseData?.grs} />
 
@@ -74,10 +80,15 @@ export default function Community({ schedule, currentMemberName, isAdmin }) {
                 </div>
               </div>
             ))}
-            {data.funds.length === 0 && (
-              <p className="muted small">No group savings funds are set up yet.</p>
-            )}
           </div>
+
+          {data.funds.length === 0 && (
+            <EmptyState icon="emptyFund" message="No group savings funds are set up yet." size={48}>
+              {isAdmin && onOpenGroupSetup && (
+                <button type="button" className="btn-pay" onClick={onOpenGroupSetup}>Set Up Funds</button>
+              )}
+            </EmptyState>
+          )}
 
           {data.funds.length > 0 && <GrowthProjection fundTotal={sumFundBalances(data.funds)} />}
 

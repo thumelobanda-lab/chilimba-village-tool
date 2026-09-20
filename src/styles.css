@@ -874,11 +874,6 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   font-weight: 600;
   padding: 6px 10px 4px;
 }
-.notification-empty {
-  color: var(--ink-faint);
-  padding: 8px 12px 12px;
-  margin: 0;
-}
 .notification-item {
   position: relative;
   display: flex;
@@ -2500,20 +2495,31 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   font-weight: 700;
   margin-bottom: 6px;
 }
-/* The "No payments yet" first-timer state (see firstPaymentPrompt in
-   LedgerTable.jsx) — sits on .payment-card's own var(--panel) background
-   rather than a separate inset surface, so it reads as part of the card
-   rather than a distinct sub-panel. */
-.payment-empty-state {
+/* Shared "nothing here yet" pattern (EmptyState.jsx) — sits directly on
+   whatever surface it's placed in (a payment card, the notification
+   panel, a plain panel) rather than adding its own inset background, so
+   it reads as part of that surface, not a distinct sub-panel. The badge
+   is two-tone on purpose: --surface-gold ring, --accent (green) icon —
+   both theme tokens, so this re-tints correctly in dark mode with no
+   extra rule needed here. */
+.empty-state {
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  gap: 8px;
-  padding: 6px 8px 4px;
+  gap: 10px;
+  padding: 10px 8px 4px;
 }
-.payment-empty-state-img { display: block; }
-.payment-empty-state-text { margin: 0; color: var(--ink-faint); font-size: 0.85rem; max-width: 220px; }
+.empty-state-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--surface-gold);
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.empty-state-message { margin: 0; color: var(--ink-faint); font-size: 0.85rem; max-width: 240px; }
 
 /* Payout avatar row — where the rotation actually is right now, right
    under the ring: the last couple already paid, who's next, who's

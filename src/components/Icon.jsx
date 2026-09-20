@@ -227,6 +227,41 @@ const PATHS = {
       <line x1="12" y1="7.5" x2="12" y2="7.51" />
     </>
   ),
+  // The four empty-state glyphs below (see EmptyState.jsx) are a
+  // deliberately matched set — same stroke weight/rounding as every icon
+  // above, sized larger by callers (EmptyState renders them at 28px, not
+  // this file's usual ~16-18px inline size) so they read as a small
+  // illustration rather than a label glyph. Each one avoids reusing an
+  // existing icon's exact silhouette (money/bell/people/bank) so it's
+  // visually distinct at a glance despite the shared line-art language.
+  emptyPayments: (
+    <>
+      <rect x="5" y="3" width="14" height="18" rx="2" />
+      <line x1="12" y1="9" x2="12" y2="15" />
+      <line x1="9" y1="12" x2="15" y2="12" />
+    </>
+  ),
+  emptyMembers: (
+    <>
+      <circle cx="10" cy="8" r="3.5" />
+      <path d="M4 20c0-3.6 2.7-6.5 6-6.5s6 2.9 6 6.5" />
+      <line x1="18" y1="6" x2="18" y2="10" />
+      <line x1="16" y1="8" x2="20" y2="8" />
+    </>
+  ),
+  emptyNotifications: (
+    <>
+      <path d="M6 10a6 6 0 0 1 12 0c0 4 1.5 5.5 2 6.5H4c.5-1 2-2.5 2-6.5Z" />
+      <path d="M9.5 13.3l1.8 1.8L15 11.5" />
+    </>
+  ),
+  emptyFund: (
+    <>
+      <rect x="3.5" y="10" width="17" height="10" rx="1.5" />
+      <path d="M7 10V8a5 5 0 0 1 10 0v2" />
+      <line x1="12" y1="14" x2="12" y2="16" />
+    </>
+  ),
 };
 
 export default function Icon({ name, size = 16, className, title }) {
