@@ -117,6 +117,20 @@
     radial-gradient(circle at 18% 22%, rgba(27, 46, 34, 0.025) 0, transparent 45%),
     radial-gradient(circle at 78% 60%, rgba(27, 46, 34, 0.02) 0, transparent 50%),
     radial-gradient(circle at 40% 88%, rgba(22, 107, 71, 0.018) 0, transparent 42%);
+  /* One shared radius/elevation for every top-level content card —
+     .panel, .card, .payment-card, .vital-primary — so a member moving
+     between Dashboard, Payments, and Community sees the same "this is a
+     card" language throughout instead of each screen's card family
+     having quietly drifted to its own radius (6/10/12/14px, previously)
+     and its own flat/shadowed treatment. Each family keeps its own
+     accent-border convention (left vs top, and which color) — that's
+     meaningful information, not decoration, so it's untouched here. Not
+     re-themed for dark mode: .panel already used this exact shadow in
+     both themes before this token existed, so applying the same
+     constant to more cards is consistent with the existing look, not a
+     new dark-mode tradeoff. */
+  --card-radius: 10px;
+  --card-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 2px 10px rgba(43, 46, 44, 0.08);
   font-family: "Inter", "IBM Plex Sans", system-ui, sans-serif;
 
   /* "Chrome" — the app header, dashboard hero, platform message banner,
@@ -922,9 +936,9 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   background: var(--panel);
   background-image: var(--paper-grain);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--card-radius);
   padding: 20px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 2px 10px rgba(43, 46, 44, 0.08);
+  box-shadow: var(--card-shadow);
 }
 
 .login-panel { max-width: 380px; margin: 40px auto; text-align: left; }
@@ -959,7 +973,11 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .hero-banner-caption {
   color: #FFFFFF;
   font-weight: 700;
-  font-size: 1rem;
+  /* Matches every other heading-level class in the app (.panel-title,
+     .setup-hero-title, .walkthrough-title) — one consistent heading
+     size/weight regardless of what's behind it (plain panel vs. a photo
+     with a gradient scrim). */
+  font-size: 1.1rem;
   margin: 0;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
@@ -1700,7 +1718,8 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   border: 1px solid var(--line);
   border-left: 4px solid var(--accent);
   padding: 12px 14px;
-  border-radius: 6px;
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
 }
 .card-warn { border-left-color: var(--red); }
 .card-highlight { border-left-color: var(--accent-2); }
@@ -2389,8 +2408,9 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .payment-card {
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--card-radius);
   padding: 14px 16px;
+  box-shadow: var(--card-shadow);
 }
 .payment-card-behind { border-color: var(--pending); background: var(--surface-amber); }
 .payment-card-paid { opacity: 0.82; }
@@ -2734,8 +2754,9 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   background-image: var(--paper-grain);
   border: 1px solid var(--line);
   border-top: 4px solid var(--accent);
-  border-radius: 14px;
+  border-radius: var(--card-radius);
   padding: 16px 18px;
+  box-shadow: var(--card-shadow);
 }
 .vital-primary-value {
   font-size: 2.6rem;
