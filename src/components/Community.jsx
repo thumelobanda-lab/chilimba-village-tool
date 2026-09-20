@@ -59,7 +59,10 @@ export default function Community({ schedule, currentMemberName, isAdmin }) {
           <h3 className="panel-subtitle">Fund Breakdown</h3>
           <div className="calc-grid" style={{ marginBottom: 20 }}>
             {data.funds.map((f) => (
-              <div className="card" key={f.id}>
+              <div
+                className={"card" + (f.id === COMMUNITY_FUND_ID ? " card-community-fund" : "")}
+                key={f.id}
+              >
                 <div className="card-label">{f.name}</div>
                 <div className="card-value">{money(f.loanable ? f.available : f.balance)}</div>
                 <div className="muted tiny">

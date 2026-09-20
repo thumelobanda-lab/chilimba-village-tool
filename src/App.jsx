@@ -576,9 +576,22 @@ export default function App() {
 
             {tab === "ledger" && (
               <div className="panel" role="tabpanel" id="panel-ledger" aria-labelledby="tab-ledger">
-                <h2 className="panel-title">
-                  My Payment History <span className="muted tiny">(Ledger)</span>
-                </h2>
+                <div className="hero-banner ledger-hero">
+                  <img
+                    className="hero-banner-img"
+                    src="/images/ledger-header.webp"
+                    width={600}
+                    height={451}
+                    loading="lazy"
+                    alt="An open ledger book, representing a recorded history of payments"
+                  />
+                  <div className="hero-banner-overlay">
+                    <div>
+                      <h2 className="hero-banner-caption">My Payment History</h2>
+                      <div className="hero-banner-subcaption">Ledger</div>
+                    </div>
+                  </div>
+                </div>
                 <PaymentInfo paymentMethods={config.paymentMethods} />
 
                 {config.schedule.length === 0 ? (

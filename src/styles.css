@@ -965,14 +965,39 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   color: #FFFFFF;
   font-weight: 700;
   font-size: 1rem;
+  margin: 0;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+.hero-banner-subcaption {
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 600;
+  font-size: 0.75rem;
+  margin-top: 2px;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
 /* Matches login-hero-600.webp/login-hero.webp's actual 600x443/800x590
-   proportions (same source photo, two widths) — see Login.jsx. */
-.login-hero { aspect-ratio: 600 / 443; }
+   proportions (same source photo, two widths) — see Login.jsx. A subtle
+   teal pattern (pattern-teal.webp) sits behind the photo as this
+   container's own CSS background; the few pixels of padding below let
+   it show through as a thin frame rather than being fully covered, and
+   the same .hero-banner-overlay gradient above already spans this whole
+   container (photo + frame), not just the <img>, so both read as one
+   textured, legible unit rather than two independent layers. */
+.login-hero {
+  aspect-ratio: 600 / 443;
+  padding: 5px;
+  background-image: url("/images/pattern-teal.webp");
+  background-size: cover;
+  background-position: center;
+}
+.login-hero .hero-banner-img { border-radius: 7px; }
 /* Matches community-hero.webp's actual 700x467 proportions — see
    Community.jsx. */
 .community-hero { aspect-ratio: 700 / 467; }
+/* Cropped shorter than ledger-header.webp's own 600x451 proportions —
+   "a slim banner", not a full hero — object-fit:cover on the shared
+   .hero-banner-img handles the crop. */
+.ledger-hero { aspect-ratio: 600 / 200; }
 
 /* OpenBookMark.jsx — a quiet, permanent brand mark above LoginScene's
    own animated moment, not competing with it (see that component's doc
@@ -1684,6 +1709,20 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 }
 .card-warn { border-left-color: var(--red); }
 .card-highlight { border-left-color: var(--accent-2); }
+/* Community Fund's own accent strip — pattern-brown.webp filling the
+   same 4px left-border gutter every other card here uses for a flat
+   color, so it reads as "this card is textured" without changing the
+   card's size or the grid's alignment. background-origin:border-box is
+   what lets the image paint under the (now-transparent) border area
+   instead of only the padding box. */
+.card-community-fund {
+  border-left: 4px solid transparent;
+  background-image: url("/images/pattern-brown.webp");
+  background-repeat: no-repeat;
+  background-position: left center;
+  background-size: 4px 100%;
+  background-origin: border-box;
+}
 .card-highlight .card-value { color: var(--accent-2-light); }
 .card-label { font-size: 0.75rem; text-transform: uppercase; color: var(--ink-faint); letter-spacing: 0.03em; }
 .card-value { font-size: 1.3rem; font-weight: 700; margin-top: 4px; }
