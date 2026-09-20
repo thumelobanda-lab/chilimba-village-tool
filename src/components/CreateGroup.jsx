@@ -56,9 +56,7 @@ export default function CreateGroup({ onCreate, onBackToLogin }) {
     <div className="panel login-panel">
       <h2 className="panel-title">Create a Chilimba group</h2>
       <p className="muted small" style={{ marginBottom: 14 }}>
-        You'll be the group's first group leader — you can promote a co-leader later by asking
-        them to sign up, then setting their role directly in the database. A group code for
-        members to sign in with is generated automatically once you create the group.
+        You'll be its first group leader. A group code is generated automatically.
       </p>
 
       <label className="field">
@@ -85,7 +83,7 @@ export default function CreateGroup({ onCreate, onBackToLogin }) {
         />
       </label>
       <label className="field">
-        How should we address you? (optional)
+        Title
         <TitleSelect value={title} onChange={(e) => setTitle(e.target.value)} disabled={busy} />
       </label>
       {titleError && <div className="error-text" role="alert">{titleError}</div>}

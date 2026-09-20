@@ -296,15 +296,13 @@ export default function App() {
     if (user.isNew) onboarding.trigger();
   };
 
-  // Dev-only: lets Login.jsx's hidden "create a group" shortcut (visible
-  // only when import.meta.env.DEV && MOCK_MODE — see Login.jsx) bootstrap
-  // a first group without an existing admin session. Production self-serve
-  // group creation stays admin-gated (the "creategroup" tab further down,
-  // reachable only once already signed in as an admin, via
-  // CreateAnotherGroup/createAdditionalGroup) — this is purely a
-  // local-testing shortcut for the pre-login chicken-and-egg case: a fresh
-  // mock-mode browser has no group to sign into yet.
-  const handleDevCreateGroup = async (fields) => {
+  // Pre-login self-service group creation — Login.jsx's Sign Up > "Create
+  // a group" switch. Bootstraps a first group with no existing admin
+  // session, same as CreateAnotherGroup/createAdditionalGroup further
+  // down does for an already-signed-in admin starting an unrelated
+  // second group; this is the pre-login equivalent for whoever's
+  // starting their Chilimba's very first group.
+  const handleCreateGroup = async (fields) => {
     const user = await createGroup(fields);
     setSessionEndedNotice(false);
     if (user.isNew) onboarding.trigger();
@@ -512,7 +510,7 @@ export default function App() {
           <Login
             onLogin={handleLogin}
             onJoin={handleJoin}
-            onCreateGroup={handleDevCreateGroup}
+            onCreateGroup={handleCreateGroup}
             onOwnerLogin={handleOwnerLogin}
             sessionEndedNotice={sessionEndedNotice}
           />

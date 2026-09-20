@@ -1,47 +1,45 @@
 import React, { useEffect, useState } from "react";
 import TermsModal from "./TermsModal.jsx";
-import CreateGroup from "./CreateGroup.jsx";
-import LoginScene from "./LoginScene.jsx";
-import OpenBookMark from "./OpenBookMark.jsx";
 import PrivacyModal from "./PrivacyModal.jsx";
-import WhatIsChilimbaModal from "./WhatIsChilimbaModal.jsx";
-import Icon from "./Icon.jsx";
+import OpenBookMark from "./OpenBookMark.jsx";
 import TitleSelect, { isTitleError, TITLE_FIELD_ERROR } from "./TitleSelect.jsx";
-import { MOCK_MODE } from "../lib/api/core.js";
 
 const LAST_GROUP_KEY = "chilimba:last-group-slug";
-
-// Production group creation is intentionally admin-gated (see App.jsx's
-// "creategroup" tab) — a fresh, logged-out browser has no self-service way
-// to create the very first group, by design. That's a chicken-and-egg
-// problem for local testing only: a brand-new mock-mode browser has no
-// group to sign into yet either. `import.meta.env.DEV` is statically
-// replaced with the literal `false` by Vite for a production build (`npm
-// run build`), so this condition is always false there and the shortcut
-// below can never render or execute outside `npm run dev`. Also requires
-// MOCK_MODE so it can't fire against a real deployed Worker if someone
-// points a local dev server at one.
-const DEV_CREATE_GROUP_ENABLED = import.meta.env.DEV && MOCK_MODE;
 
 // Reads ?join=<slug> from the URL — the format InviteCard.jsx's share
 // link now uses (see buildJoinUrl in inviteCard.js). Its presence is
 // what tells this screen someone arrived via an invite rather than
 // typing the app's URL in from memory, so it can default them into
-// "Sign up" mode with the code already filled in instead of a generic
-// combined form that doesn't say what they're supposed to do.
+// "Sign up > Join a group" with the code already filled in instead of
+// a generic combined form that doesn't say what they're supposed to do.
 function getInviteSlugFromUrl() {
   if (typeof window === "undefined") return "";
   return new URLSearchParams(window.location.search).get("join") || "";
 }
 
+// Fully static — no entrance effects, no hero motion, no tab-switch
+// animation. Every mode change below is a plain state swap with no
+// transition, by design (see CLAUDE.md's Part 3 ground rules for why:
+// this is the one screen every visitor hits before anything else has
+// loaded, so it stays instant and predictable rather than performing).
 export default function Login({ onLogin, onJoin, onCreateGroup, onOwnerLogin, sessionEndedNotice }) {
   const [inviteSlug] = useState(getInviteSlugFromUrl);
-  const [mode, setMode] = useState(inviteSlug ? "join" : "signin"); // "join" | "signin" | "owner" | "devCreateGroup"
+  // Top-level tab.
+  const [mode, setMode] = useState(inviteSlug ? "signup" : "signin"); // "signup" | "signin"
+  // Sign up's own compact switch — "Create a group" replaces what used
+  // to be a separate, admin-gated "Owner" tab. Any old link/state that
+  // pointed at that tab now lands here instead of on a dead mode.
+  const [signupMode, setSignupMode] = useState("join"); // "join" | "create"
+  // Sign in's own switch — folds the platform owner's separate
+  // higher-privilege credential (real email + password, not a group
+  // code + PIN) into this one tab instead of giving it a tab of its own.
+  const [signinMode, setSigninMode] = useState("group"); // "group" | "owner"
+
   const [groupSlug, setGroupSlug] = useState(
     () => inviteSlug || localStorage.getItem(LAST_GROUP_KEY) || ""
   );
-  // Separate state per mode rather than one shared "name" field — sign
-  // up and sign in ask genuinely different questions (full name vs.
+  // Separate state per mode rather than one shared "name" field — join
+  // and sign-in ask genuinely different questions (full name vs.
   // name-or-phone), so switching modes shouldn't leave one mode's input
   // sitting in the other's field.
   const [joinName, setJoinName] = useState("");
@@ -52,25 +50,25 @@ export default function Login({ onLogin, onJoin, onCreateGroup, onOwnerLogin, se
   // an in-progress state — see normalizeTitle in lib/api/auth.js, which
   // treats it the same as never having answered. Deliberately never used
   // to set gender — see normalizeTitle vs. normalizeGender in
-  // worker/src/auth.js for why the two are kept separate.
+  // worker/src/auth.js for why the two are kept separate. Shared between
+  // Join and Create since only one of the two is ever visible at once.
   const [title, setTitle] = useState("");
+  const [groupName, setGroupName] = useState("");
+  const [adminName, setAdminName] = useState("");
   const [signinIdentifier, setSigninIdentifier] = useState("");
   const [pin, setPin] = useState("");
-  // Owner sign-in is a structurally different credential (real email +
-  // password, not a group code + PIN) — see onOwnerLogin below — so it
-  // gets its own fields rather than being squeezed into groupSlug/pin.
   const [ownerEmail, setOwnerEmail] = useState("");
   const [ownerPassword, setOwnerPassword] = useState("");
   const [error, setError] = useState("");
   const [titleError, setTitleError] = useState("");
   const [busy, setBusy] = useState(false);
-  // Only sign-up needs this — signing in isn't "a new member/admin
-  // registering", so this never gates the sign-in submit button, and
-  // deliberately starts unchecked (not pre-checked) every time.
+  // Join and Create both mean "a new member/admin registering" — shared
+  // since only one is ever visible at once. Sign in isn't, so this never
+  // gates that tab's submit button, and deliberately starts unchecked
+  // (not pre-checked) every time.
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
-  const [showWhatIsChilimba, setShowWhatIsChilimba] = useState(false);
 
   // Drop ?join=... from the address bar once it's been read, so it
   // doesn't linger there or get shared/bookmarked with someone else's
@@ -84,12 +82,16 @@ export default function Login({ onLogin, onJoin, onCreateGroup, onOwnerLogin, se
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const isJoin = mode === "join";
-  const isOwner = mode === "owner";
-  const canSubmit = isOwner
-    ? !!(ownerEmail.trim() && ownerPassword)
-    : isJoin
+  const isSignup = mode === "signup";
+  const isJoin = isSignup && signupMode === "join";
+  const isCreate = isSignup && signupMode === "create";
+  const isOwner = !isSignup && signinMode === "owner";
+  const canSubmit = isJoin
     ? !!(groupSlug.trim() && joinName.trim() && phone.trim() && termsAccepted)
+    : isCreate
+    ? !!(groupName.trim() && adminName.trim() && termsAccepted)
+    : isOwner
+    ? !!(ownerEmail.trim() && ownerPassword)
     : !!(groupSlug.trim() && signinIdentifier.trim());
 
   const submit = async () => {
@@ -98,32 +100,26 @@ export default function Login({ onLogin, onJoin, onCreateGroup, onOwnerLogin, se
     if (!canSubmit || busy) return;
     setBusy(true);
     try {
-      if (isOwner) {
-        await onOwnerLogin(ownerEmail.trim(), ownerPassword);
-        return;
-      }
       if (isJoin) {
         await onJoin(groupSlug.trim(), joinName.trim(), phone.trim(), pin, termsAccepted, title);
+        localStorage.setItem(LAST_GROUP_KEY, groupSlug.trim().toLowerCase());
+      } else if (isCreate) {
+        await onCreateGroup({ groupName: groupName.trim(), adminName: adminName.trim(), pin, termsAccepted, title });
+      } else if (isOwner) {
+        await onOwnerLogin(ownerEmail.trim(), ownerPassword);
       } else {
         await onLogin(groupSlug.trim(), signinIdentifier.trim(), pin);
+        localStorage.setItem(LAST_GROUP_KEY, groupSlug.trim().toLowerCase());
       }
-      localStorage.setItem(LAST_GROUP_KEY, groupSlug.trim().toLowerCase());
     } catch (e) {
       if (isTitleError(e)) setTitleError(TITLE_FIELD_ERROR);
-      else setError(e.message || (isOwner ? "Could not sign in." : isJoin ? "Could not join." : "Could not sign in."));
+      else setError(e.message || "Something went wrong.");
     } finally {
       setBusy(false);
     }
   };
 
   const onEnter = (e) => e.key === "Enter" && submit();
-
-  // Early return, not a branch inside the main panel below — CreateGroup
-  // renders its own "panel login-panel" wrapper, so nesting it inside this
-  // component's would double up the panel chrome.
-  if (mode === "devCreateGroup" && DEV_CREATE_GROUP_ENABLED) {
-    return <CreateGroup onCreate={onCreateGroup} onBackToLogin={() => setMode("signin")} />;
-  }
 
   return (
     <div className="panel login-panel">
@@ -143,16 +139,8 @@ export default function Login({ onLogin, onJoin, onCreateGroup, onOwnerLogin, se
         </div>
       </div>
       <OpenBookMark />
-      <LoginScene />
       <p className="login-tagline">Your group's honest record.</p>
-      <button
-        type="button"
-        className="btn-link"
-        style={{ display: "block", margin: "0 auto 14px", fontSize: 13 }}
-        onClick={() => setShowWhatIsChilimba(true)}
-      >
-        <Icon name="info" size={13} className="icon-inline" /> What is a Chilimba?
-      </button>
+
       {sessionEndedNotice && (
         <div className="error-text" role="alert" style={{ marginBottom: 14 }}>
           Your session ended — this can happen if your access changed (e.g. you were
@@ -160,107 +148,56 @@ export default function Login({ onLogin, onJoin, onCreateGroup, onOwnerLogin, se
           continue with your current access.
         </div>
       )}
-      <div className="auth-mode-toggle" role="tablist" aria-label="Sign up, sign in, or owner sign-in">
+
+      <div className="auth-mode-toggle" role="tablist" aria-label="Sign up or sign in">
         <button
           role="tab"
-          aria-selected={isJoin}
-          className={"auth-mode-tab" + (isJoin ? " auth-mode-tab-active" : "")}
-          onClick={() => setMode("join")}
+          aria-selected={isSignup}
+          className={"auth-mode-tab" + (isSignup ? " auth-mode-tab-active" : "")}
+          onClick={() => setMode("signup")}
           disabled={busy}
         >
           Sign up
         </button>
         <button
           role="tab"
-          aria-selected={!isJoin && !isOwner}
-          className={"auth-mode-tab" + (!isJoin && !isOwner ? " auth-mode-tab-active" : "")}
+          aria-selected={!isSignup}
+          className={"auth-mode-tab" + (!isSignup ? " auth-mode-tab-active" : "")}
           onClick={() => setMode("signin")}
           disabled={busy}
         >
           Sign in
         </button>
-        <button
-          role="tab"
-          aria-selected={isOwner}
-          className={"auth-mode-tab" + (isOwner ? " auth-mode-tab-active" : "")}
-          onClick={() => setMode("owner")}
-          disabled={busy}
-        >
-          Owner
-        </button>
       </div>
 
-      {DEV_CREATE_GROUP_ENABLED && (
-        <button
-          type="button"
-          className="btn-link"
-          style={{
-            display: "block",
-            margin: "0 0 14px",
-            fontSize: 12,
-            border: "1px dashed #999",
-            borderRadius: 6,
-            padding: "6px 10px",
-          }}
-          onClick={() => setMode("devCreateGroup")}
-          disabled={busy}
+      {isSignup && (
+        <div
+          className="auth-mode-toggle auth-submode-toggle"
+          role="tablist"
+          aria-label="Join a group or create a group"
         >
-          <Icon name="tools" size={12} className="icon-inline" /> DEV ONLY — create a new group for local testing (never shown in production)
-        </button>
+          <button
+            role="tab"
+            aria-selected={isJoin}
+            className={"auth-mode-tab" + (isJoin ? " auth-mode-tab-active" : "")}
+            onClick={() => setSignupMode("join")}
+            disabled={busy}
+          >
+            Join a group
+          </button>
+          <button
+            role="tab"
+            aria-selected={isCreate}
+            className={"auth-mode-tab" + (isCreate ? " auth-mode-tab-active" : "")}
+            onClick={() => setSignupMode("create")}
+            disabled={busy}
+          >
+            Create a group
+          </button>
+        </div>
       )}
 
-      {isJoin ? (
-        <>
-          <h2 className="panel-title">New here? Join your group</h2>
-          <p className="muted small" style={{ marginBottom: 14 }}>
-            First time? Enter the group code your group leader shared with you, your name and
-            phone number, and set a PIN.
-          </p>
-        </>
-      ) : isOwner ? (
-        <>
-          <h2 className="panel-title">Owner sign in</h2>
-          <p className="muted small" style={{ marginBottom: 14 }}>
-            Not a group login — this is a separate, higher-privilege platform account.
-            There's no self-service way to create one — see scripts/create-owner.sh.
-          </p>
-        </>
-      ) : (
-        <>
-          <h2 className="panel-title">Welcome back — Sign in</h2>
-          <p className="muted small" style={{ marginBottom: 14 }}>
-            Already joined? Enter your name or phone number and PIN to access your group.
-          </p>
-        </>
-      )}
-
-      {isOwner ? (
-        <>
-          <label className="field">
-            Email
-            <input
-              type="email"
-              value={ownerEmail}
-              onChange={(e) => setOwnerEmail(e.target.value)}
-              onKeyDown={onEnter}
-              autoComplete="username"
-              autoFocus
-              disabled={busy}
-            />
-          </label>
-          <label className="field">
-            Password
-            <input
-              type="password"
-              value={ownerPassword}
-              onChange={(e) => setOwnerPassword(e.target.value)}
-              onKeyDown={onEnter}
-              autoComplete="current-password"
-              disabled={busy}
-            />
-          </label>
-        </>
-      ) : (
+      {isJoin && (
         <>
           <label className="field">
             Group code
@@ -268,61 +205,40 @@ export default function Login({ onLogin, onJoin, onCreateGroup, onOwnerLogin, se
               value={groupSlug}
               onChange={(e) => setGroupSlug(e.target.value)}
               onKeyDown={onEnter}
-              placeholder="e.g. hillcrest"
               autoComplete="organization"
               autoFocus
               disabled={busy}
             />
           </label>
-
-          {isJoin ? (
-            <>
-              <label className="field">
-                Full name
-                <input
-                  value={joinName}
-                  onChange={(e) => setJoinName(e.target.value)}
-                  onKeyDown={onEnter}
-                  placeholder="e.g. Harriet Banda"
-                  autoComplete="name"
-                  disabled={busy}
-                />
-              </label>
-              <label className="field">
-                Phone number
-                <input
-                  type="tel"
-                  inputMode="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  onKeyDown={onEnter}
-                  placeholder="e.g. 097 123 4567"
-                  autoComplete="tel"
-                  disabled={busy}
-                />
-              </label>
-              <label className="field">
-                How should we address you? (optional)
-                <TitleSelect value={title} onChange={(e) => setTitle(e.target.value)} disabled={busy} />
-              </label>
-              {titleError && <div className="error-text" role="alert">{titleError}</div>}
-            </>
-          ) : (
-            <label className="field">
-              Name or phone number
-              <input
-                value={signinIdentifier}
-                onChange={(e) => setSigninIdentifier(e.target.value)}
-                onKeyDown={onEnter}
-                placeholder="e.g. Harriet or 097 123 4567"
-                autoComplete="username"
-                disabled={busy}
-              />
-            </label>
-          )}
-
           <label className="field">
-            PIN (4+ digits)
+            Full name
+            <input
+              value={joinName}
+              onChange={(e) => setJoinName(e.target.value)}
+              onKeyDown={onEnter}
+              autoComplete="name"
+              disabled={busy}
+            />
+          </label>
+          <label className="field">
+            Phone
+            <input
+              type="tel"
+              inputMode="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              onKeyDown={onEnter}
+              autoComplete="tel"
+              disabled={busy}
+            />
+          </label>
+          <label className="field">
+            Title
+            <TitleSelect value={title} onChange={(e) => setTitle(e.target.value)} disabled={busy} />
+          </label>
+          {titleError && <div className="error-text" role="alert">{titleError}</div>}
+          <label className="field">
+            PIN
             <input
               type="password"
               inputMode="numeric"
@@ -330,71 +246,174 @@ export default function Login({ onLogin, onJoin, onCreateGroup, onOwnerLogin, se
               onChange={(e) => setPin(e.target.value)}
               onKeyDown={onEnter}
               placeholder="••••"
-              autoComplete={isJoin ? "new-password" : "current-password"}
+              autoComplete="new-password"
               disabled={busy}
             />
           </label>
-          {!isJoin && (
-            <button
-              type="button"
-              className="btn-link"
-              disabled
-              title="Self-service PIN reset by SMS is coming soon."
-              style={{ marginBottom: 14 }}
-            >
-              Forgot your PIN? (coming soon — ask a group leader for now)
+          <label className="checkbox-field" style={{ marginBottom: 14 }}>
+            <input
+              type="checkbox"
+              checked={termsAccepted}
+              onChange={(e) => setTermsAccepted(e.target.checked)}
+              disabled={busy}
+            />
+            I agree to the{" "}
+            <button type="button" className="btn-link" onClick={() => setShowTerms(true)}>
+              Terms &amp; Conditions
+            </button>{" "}
+            and{" "}
+            <button type="button" className="btn-link" onClick={() => setShowPrivacy(true)}>
+              Privacy Policy
             </button>
-          )}
+          </label>
         </>
       )}
-      {isJoin && (
-        <label className="checkbox-field" style={{ marginBottom: 14 }}>
-          <input
-            type="checkbox"
-            checked={termsAccepted}
-            onChange={(e) => setTermsAccepted(e.target.checked)}
+
+      {isCreate && (
+        <>
+          <label className="field">
+            Group name
+            <input
+              value={groupName}
+              onChange={(e) => setGroupName(e.target.value)}
+              onKeyDown={onEnter}
+              autoComplete="organization"
+              autoFocus
+              disabled={busy}
+            />
+          </label>
+          <label className="field">
+            Your name
+            <input
+              value={adminName}
+              onChange={(e) => setAdminName(e.target.value)}
+              onKeyDown={onEnter}
+              autoComplete="name"
+              disabled={busy}
+            />
+          </label>
+          <label className="field">
+            Title
+            <TitleSelect value={title} onChange={(e) => setTitle(e.target.value)} disabled={busy} />
+          </label>
+          {titleError && <div className="error-text" role="alert">{titleError}</div>}
+          <label className="field">
+            PIN
+            <input
+              type="password"
+              inputMode="numeric"
+              value={pin}
+              onChange={(e) => setPin(e.target.value)}
+              onKeyDown={onEnter}
+              placeholder="••••"
+              autoComplete="new-password"
+              disabled={busy}
+            />
+          </label>
+          <label className="checkbox-field" style={{ marginBottom: 14 }}>
+            <input
+              type="checkbox"
+              checked={termsAccepted}
+              onChange={(e) => setTermsAccepted(e.target.checked)}
+              disabled={busy}
+            />
+            I agree to the{" "}
+            <button type="button" className="btn-link" onClick={() => setShowTerms(true)}>
+              Terms &amp; Conditions
+            </button>{" "}
+            and{" "}
+            <button type="button" className="btn-link" onClick={() => setShowPrivacy(true)}>
+              Privacy Policy
+            </button>
+          </label>
+        </>
+      )}
+
+      {!isSignup && (
+        <>
+          {isOwner ? (
+            <>
+              <label className="field">
+                Email
+                <input
+                  type="email"
+                  value={ownerEmail}
+                  onChange={(e) => setOwnerEmail(e.target.value)}
+                  onKeyDown={onEnter}
+                  autoComplete="username"
+                  autoFocus
+                  disabled={busy}
+                />
+              </label>
+              <label className="field">
+                Password
+                <input
+                  type="password"
+                  value={ownerPassword}
+                  onChange={(e) => setOwnerPassword(e.target.value)}
+                  onKeyDown={onEnter}
+                  autoComplete="current-password"
+                  disabled={busy}
+                />
+              </label>
+            </>
+          ) : (
+            <>
+              <label className="field">
+                Group code
+                <input
+                  value={groupSlug}
+                  onChange={(e) => setGroupSlug(e.target.value)}
+                  onKeyDown={onEnter}
+                  autoComplete="organization"
+                  autoFocus
+                  disabled={busy}
+                />
+              </label>
+              <label className="field">
+                Name or phone
+                <input
+                  value={signinIdentifier}
+                  onChange={(e) => setSigninIdentifier(e.target.value)}
+                  onKeyDown={onEnter}
+                  autoComplete="username"
+                  disabled={busy}
+                />
+              </label>
+              <label className="field">
+                PIN
+                <input
+                  type="password"
+                  inputMode="numeric"
+                  value={pin}
+                  onChange={(e) => setPin(e.target.value)}
+                  onKeyDown={onEnter}
+                  placeholder="••••"
+                  autoComplete="current-password"
+                  disabled={busy}
+                />
+              </label>
+            </>
+          )}
+          <button
+            type="button"
+            className="btn-link"
+            style={{ display: "block", marginBottom: 14 }}
+            onClick={() => setSigninMode(isOwner ? "group" : "owner")}
             disabled={busy}
-          />
-          I agree to the{" "}
-          <button type="button" className="btn-link" onClick={() => setShowTerms(true)}>
-            Terms &amp; Conditions
-          </button>{" "}
-          and{" "}
-          <button type="button" className="btn-link" onClick={() => setShowPrivacy(true)}>
-            Privacy Policy
+          >
+            {isOwner ? "Sign in to a group instead" : "Platform owner? Sign in here"}
           </button>
-        </label>
+        </>
       )}
 
       {error && <div className="error-text" role="alert" aria-live="assertive">{error}</div>}
       <button className="btn-primary" disabled={!canSubmit || busy} onClick={submit}>
-        {busy ? "Checking…" : isOwner ? "Sign in" : isJoin ? "Join group" : "Continue"}
+        {busy ? "Working…" : isJoin ? "Join group" : isCreate ? "Create group" : isOwner ? "Sign in" : "Continue"}
       </button>
 
       {showTerms && <TermsModal onClose={() => setShowTerms(false)} />}
       {showPrivacy && <PrivacyModal onClose={() => setShowPrivacy(false)} />}
-      {showWhatIsChilimba && <WhatIsChilimbaModal onClose={() => setShowWhatIsChilimba(false)} />}
-
-      {isOwner ? (
-        <p className="muted tiny">
-          Your password is never stored or sent in plain text — only a one-way hash of it
-          is checked.
-        </p>
-      ) : isJoin ? (
-        <p className="muted tiny">
-          Your phone number is kept private — it's never shown to other members — and
-          lets you sign in with it later, plus enables a PIN-reset option down the road,
-          since a PIN can't be recovered once forgotten. Your PIN itself is never stored
-          or sent in plain text, only a one-way hash of it is checked.
-        </p>
-      ) : (
-        <p className="muted tiny">
-          Your PIN is never stored or sent in plain text — only a one-way hash of it is
-          checked. If your group doesn't have a code yet, ask its group leader — starting a
-          brand-new Chilimba group is a group leader action from inside the app now, not
-          something reachable from here.
-        </p>
-      )}
     </div>
   );
 }
