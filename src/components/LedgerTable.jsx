@@ -163,7 +163,7 @@ function PaymentHero({ overdue, nextUnpaid, nextUpcomingRow, onAddPayment }) {
 // to pay something other than the full remaining balance still can, via
 // a card's own Details panel below; this button only ever covers the
 // common case, which is most taps most days.
-function PayButton({ row, onAddPayment, size }) {
+function PayButton({ row, onAddPayment, size, label }) {
   const [busy, setBusy] = useState(false);
   const [justLogged, setJustLogged] = useState(false);
   const [error, setError] = useState("");
@@ -193,7 +193,7 @@ function PayButton({ row, onAddPayment, size }) {
         disabled={busy}
         onClick={pay}
       >
-        {busy ? "Saving…" : justLogged ? "✓ Logged" : `Pay ${money(row.balance)}`}
+        {busy ? "Saving…" : justLogged ? "✓ Logged" : label || `Pay ${money(row.balance)}`}
       </button>
       {error && <div className="error-text" role="alert">{error}</div>}
     </>
@@ -222,7 +222,11 @@ function PaymentCard({
   onAutoOpened,
   firstPaymentPrompt,
 }) {
-  const [detailsOpen, setDetailsOpen] = useState(false);
+  // Starts expanded only for the one card firstPaymentPrompt is true for
+  // (this member's very next actionable date, when they've never logged
+  // a payment anywhere) — otherwise the "No payments yet" illustration
+  // below would sit hidden behind a tap nobody knows to make yet.
+  const [detailsOpen, setDetailsOpen] = useState(Boolean(firstPaymentPrompt));
   const [editingDue, setEditingDue] = useState(false);
   const [dueDraft, setDueDraft] = useState(row.due);
   const [amount, setAmount] = useState("");
@@ -369,7 +373,12 @@ function PaymentCard({
         {nothingDue ? "Nothing due for this date" : isPaid ? `${money(row.paid)} paid` : `${money(row.balance)} due`}
       </div>
 
-      {!isPaid && <PayButton row={row} onAddPayment={onAddPayment} />}
+      {/* Suppressed for firstPaymentPrompt — that card auto-expands (see
+          detailsOpen above) straight into the "No payments yet" empty
+          state below, which already has its own equivalent button; two
+          buttons doing the same thing on one card would just be
+          confusing. */}
+      {!isPaid && !firstPaymentPrompt && <PayButton row={row} onAddPayment={onAddPayment} />}
 
       <button
         type="button"
@@ -427,10 +436,18 @@ function PaymentCard({
             <div className="payment-card-history-title">Payment history</div>
             {activeEntries.length === 0 && voidedEntries.length === 0 && (
               firstPaymentPrompt ? (
-                <p className="muted small first-payment-prompt">
-                  <Icon name="sparkle" size={13} className="icon-inline" /> Your first payment shows up here as
-                  soon as you tap "Pay" above — nothing logged yet.
-                </p>
+                <div className="payment-empty-state">
+                  <img
+                    className="payment-empty-state-img"
+                    src="/images/empty-payments.webp"
+                    width={72}
+                    height={72}
+                    loading="lazy"
+                    alt="An empty piggy bank, waiting for its first coin"
+                  />
+                  <p className="payment-empty-state-text">No payments yet — pay once and your streak begins.</p>
+                  <PayButton row={row} onAddPayment={onAddPayment} size="hero" label="Log a Payment" />
+                </div>
               ) : (
                 <p className="muted tiny">No payments logged for this date yet.</p>
               )

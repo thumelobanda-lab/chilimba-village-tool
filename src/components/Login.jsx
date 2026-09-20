@@ -122,6 +122,21 @@ export default function Login({ onLogin, onJoin, onCreateGroup, onOwnerLogin, se
 
   return (
     <div className="panel login-panel">
+      <div className="hero-banner login-hero">
+        <img
+          className="hero-banner-img"
+          src="/images/login-hero-600.webp"
+          srcSet="/images/login-hero-600.webp 600w, /images/login-hero.webp 800w"
+          sizes="(max-width: 420px) 100vw, 380px"
+          width={600}
+          height={443}
+          loading="eager"
+          alt="Neighbors gathered together outdoors, in the same spirit of trust and community a Chilimba is built on"
+        />
+        <div className="hero-banner-overlay">
+          <span className="hero-banner-caption">Welcome to your Chilimba</span>
+        </div>
+      </div>
       <OpenBookMark />
       <LoginScene />
       <p className="login-tagline">Your group's honest record.</p>

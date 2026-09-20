@@ -933,6 +933,47 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 }
 
 .login-panel { max-width: 380px; margin: 40px auto; text-align: left; }
+
+/* Shared "photo banner bleeding to a panel's own top corners" pattern —
+   used by the login screen's hero (below) and Community's (see
+   .community-hero) so the two don't duplicate the same handful of
+   properties. Negative margins pull the image flush against .panel's
+   own 20px padding and 10px border-radius rather than sitting inset
+   like ordinary panel content; the gradient overlay is a dark-green
+   scrim (not black) to match this app's own chrome color rather than a
+   generic dark vignette, and exists specifically so the caption text
+   sitting on top of it clears AA regardless of how light the photo
+   underneath happens to be. object-fit:cover plus an aspect-ratio set
+   per-image (see .login-hero/.community-hero) keeps the reserved space
+   fixed before the image ever loads, so nothing shifts into place. */
+.hero-banner {
+  position: relative;
+  margin: -20px -20px 16px;
+  border-radius: 10px 10px 0 0;
+  overflow: hidden;
+}
+.hero-banner-img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.hero-banner-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  padding: 14px;
+  background: linear-gradient(to top, rgba(15, 51, 38, 0.88), rgba(15, 51, 38, 0) 60%);
+}
+.hero-banner-caption {
+  color: #FFFFFF;
+  font-weight: 700;
+  font-size: 1rem;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+/* Matches login-hero-600.webp/login-hero.webp's actual 600x443/800x590
+   proportions (same source photo, two widths) — see Login.jsx. */
+.login-hero { aspect-ratio: 600 / 443; }
+/* Matches community-hero.webp's actual 700x467 proportions — see
+   Community.jsx. */
+.community-hero { aspect-ratio: 700 / 467; }
+
 /* OpenBookMark.jsx — a quiet, permanent brand mark above LoginScene's
    own animated moment, not competing with it (see that component's doc
    comment for why the two are split: one static identity mark, one big
@@ -1616,6 +1657,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .free-tier-banner-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 
 .privacy-row { margin-top: 16px; text-align: right; display: flex; justify-content: flex-end; gap: 14px; }
+.photo-credit { margin-top: 6px; text-align: right; }
 .account-signout-row { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--line); }
 .btn-link {
   background: none;
@@ -2419,6 +2461,20 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   font-weight: 700;
   margin-bottom: 6px;
 }
+/* The "No payments yet" first-timer state (see firstPaymentPrompt in
+   LedgerTable.jsx) — sits on .payment-card's own var(--panel) background
+   rather than a separate inset surface, so it reads as part of the card
+   rather than a distinct sub-panel. */
+.payment-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+  padding: 6px 8px 4px;
+}
+.payment-empty-state-img { display: block; }
+.payment-empty-state-text { margin: 0; color: var(--ink-faint); font-size: 0.85rem; max-width: 220px; }
 
 /* Payout avatar row — where the rotation actually is right now, right
    under the ring: the last couple already paid, who's next, who's

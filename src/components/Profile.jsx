@@ -277,6 +277,8 @@ export default function Profile({ session, onRenamed, onLogout, subscriptionStat
       {showTerms && <TermsModal onClose={() => setShowTerms(false)} />}
       {showPrivacy && <PrivacyModal onClose={() => setShowPrivacy(false)} />}
 
+      <p className="muted tiny photo-credit">Photos by Ninno JackJr and Random Institute via Unsplash</p>
+
       {onLogout && (
         <div className="account-signout-row">
           <button className="btn-ghost-dark" onClick={onLogout}>Log out</button>

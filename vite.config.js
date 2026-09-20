@@ -17,6 +17,16 @@ export default defineConfig({
       // comment for why that pairing matters).
       injectRegister: false,
       includeAssets: ["favicon.svg"],
+      // Default globPatterns is js/css/html only — the four self-hosted
+      // photos under public/images/ (login/community heroes, the empty-
+      // payments illustration) get copied into dist/images/ by Vite's
+      // ordinary public-dir handling either way, but without this they'd
+      // never be added to self.__WB_MANIFEST, so they'd only ever load
+      // from network and silently break offline instead of coming from
+      // the precache like everything else.
+      injectManifest: {
+        globPatterns: ["**/*.{js,css,html,webp}"],
+      },
       manifest: {
         name: "OpenBook",
         short_name: "OpenBook",

@@ -25,6 +25,19 @@ export default function Community({ schedule, currentMemberName, isAdmin }) {
 
   return (
     <div className="panel">
+      <div className="hero-banner community-hero">
+        <img
+          className="hero-banner-img"
+          src="/images/community-hero.webp"
+          width={700}
+          height={467}
+          loading="lazy"
+          alt="A small group of neighbors meeting together, the kind of gathering a Chilimba's community fund supports"
+        />
+        <div className="hero-banner-overlay">
+          <span className="hero-banner-caption">Stronger together</span>
+        </div>
+      </div>
       <h2 className="panel-title">Community</h2>
       <p className="muted small" style={{ marginBottom: 16 }}>
         Fund balances, recent settlements, and any loans against a fund that's open for
