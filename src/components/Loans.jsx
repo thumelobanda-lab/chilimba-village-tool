@@ -4,6 +4,7 @@ import { useApiData } from "../lib/useApiData.js";
 import { useMemberRoster } from "../hooks/useMemberRoster.js";
 import Toast from "./Toast.jsx";
 import Icon from "./Icon.jsx";
+import InfoTip from "./InfoTip.jsx";
 import { money } from "../lib/money.js";
 
 export default function Loans() {
@@ -188,8 +189,10 @@ export default function Loans() {
         <>
           <h3 className="panel-subtitle" style={{ marginTop: 20 }}>Loan history</h3>
           <p className="muted tiny" style={{ marginBottom: 10 }}>
-            Tap a borrower's name to see every repayment logged against their loan, or record a new one —
-            partial repayments are fine, the balance just goes down each time.
+            Tap a borrower's name to see repayments, or record a new one.
+            <InfoTip label="More about loan repayments">
+              Partial repayments are fine — the balance just goes down each time.
+            </InfoTip>
           </p>
           <div className="grid-wrap">
             <table className="grid-table">

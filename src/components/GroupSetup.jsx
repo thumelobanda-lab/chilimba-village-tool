@@ -7,6 +7,7 @@ import CollapsibleSection from "./CollapsibleSection.jsx";
 import InviteCard from "./InviteCard.jsx";
 import Toast from "./Toast.jsx";
 import Icon from "./Icon.jsx";
+import InfoTip from "./InfoTip.jsx";
 
 function formatDate(dateISO) {
   const d = new Date(dateISO + "T00:00:00");
@@ -272,8 +273,11 @@ export default function GroupSetup({ config, onSaved, session, premiumActive, on
         )}
         <h3 className="panel-subtitle">Generate Payout Dates</h3>
         <p className="muted tiny" style={{ marginBottom: 10 }}>
-          Auto-fills a run of dates so you're not typing them one by one — every generated
-          date stays a normal, editable row below, same as if you'd typed it in yourself.
+          Auto-fills a run of dates instead of typing them one by one.
+          <InfoTip label="More about generated dates">
+            Every generated date stays a normal, editable row below, same as if you'd
+            typed it in yourself.
+          </InfoTip>
         </p>
         <div className="field-row" style={{ alignItems: "flex-end" }}>
           <label className="field">
@@ -362,15 +366,15 @@ export default function GroupSetup({ config, onSaved, session, premiumActive, on
       >
         <h3 className="panel-subtitle">Automatic Payment Split</h3>
         <p className="muted tiny" style={{ marginBottom: 10 }}>
-          A fixed amount taken off every payment once a group leader confirms it — the rest still
-          counts toward the member's due. Split into one always-on "Group Savings Fund" balance
-          (shown in the Community tab and on the dashboard), separate from the named funds
-          below. Set to K0 to turn it off.
+          Deducted into the always-on Group Savings Fund on every confirmed payment.
+          <InfoTip label="More about the automatic payment split">
+            The rest still counts toward the member's due, and this stays separate from
+            the named funds below. Set to K0 to turn it off.
+          </InfoTip>
         </p>
         {!premiumActive && (
           <p className="muted small" style={{ marginBottom: 10 }}>
-            This is a premium feature — this group is on the free plan. Upgrade from the
-            Group Membership Plan tab to enable it.
+            Premium feature — upgrade from the Group Membership Plan tab to enable it.
           </p>
         )}
         <label className="field" style={{ maxWidth: 220, marginBottom: 16 }}>
@@ -386,10 +390,12 @@ export default function GroupSetup({ config, onSaved, session, premiumActive, on
 
         <h3 className="panel-subtitle">Late Payment Penalty</h3>
         <p className="muted tiny" style={{ marginBottom: 10 }}>
-          A fixed amount added to the Group Savings Fund when a payment is confirmed after its
-          due date — a separate line item from the payment split above, logged and visible to
-          everyone in the Community tab. Set to K0 to turn it off. Never applies to a recipient's
-          own payout-date row.
+          Added to the Group Savings Fund when a payment is confirmed after its due date.
+          <InfoTip label="More about the late payment penalty">
+            A separate line item from the payment split above, visible to everyone in the
+            Community tab. Set to K0 to turn it off. Never applies to a recipient's own
+            payout-date row.
+          </InfoTip>
         </p>
         <label className="field" style={{ maxWidth: 220, marginBottom: 16 }}>
           Penalty for a late payment (K)
@@ -404,8 +410,8 @@ export default function GroupSetup({ config, onSaved, session, premiumActive, on
 
         <h3 className="panel-subtitle">Named Funds</h3>
         <p className="muted tiny" style={{ marginBottom: 10 }}>
-          A fixed amount is set aside from each member's contribution once they've paid their
-          due amount for a date. Visible to every member — see the "Community" tab.
+          Set aside from each contribution once a member's due amount is paid.
+          <InfoTip label="More about named funds">Visible to every member — see the Community tab.</InfoTip>
         </p>
         <div className="grid-wrap">
           <table className="grid-table">
@@ -448,9 +454,10 @@ export default function GroupSetup({ config, onSaved, session, premiumActive, on
         done={paymentDetailsDone}
       >
         <p className="muted tiny" style={{ marginBottom: 10 }}>
-          Where members should actually send their contribution. Shown to every member.
-          Managed from its own dedicated "Payment Options" screen, not here — this is just
-          a summary.
+          Where members should send their contribution — shown to every member.
+          <InfoTip label="More about payment details">
+            Managed from the separate Payment Options screen; this is just a summary.
+          </InfoTip>
         </p>
         {config.paymentMethods && config.paymentMethods.length > 0 ? (
           <div className="payment-methods-list">
@@ -478,8 +485,10 @@ export default function GroupSetup({ config, onSaved, session, premiumActive, on
 
       <CollapsibleSection icon={<Icon name="megaphone" size={16} />} title="Invite Members" summary="WhatsApp-ready invite card">
         <p className="muted tiny" style={{ marginBottom: 10 }}>
-          A shareable card with your group's name and code — post it straight to WhatsApp,
-          or download it to send however you like.
+          A shareable card with your group's name and code.
+          <InfoTip label="More about the invite card">
+            Post it straight to WhatsApp, or download it to send however you like.
+          </InfoTip>
         </p>
         <InviteCard groupName={config.groupName} groupSlug={session?.groupSlug} cycleName={config.cycleName} />
       </CollapsibleSection>

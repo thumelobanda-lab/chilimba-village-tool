@@ -81,8 +81,7 @@ export default function MomoRecipientEditor() {
     <>
       <h3 className="panel-subtitle">Mobile Money Payout Number</h3>
       <p className="muted tiny" style={{ marginBottom: 10 }}>
-        Where your own payout gets sent when it's your turn — this can be different from the
-        number you log in with. You can change it here any time.
+        Where your payout goes when it's your turn — can differ from your login number.
       </p>
 
       {savedProvider && savedPhone && !confirming && (

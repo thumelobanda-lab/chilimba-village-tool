@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { initiateSubscriptionPayment, subscriptionPrice, subscriptionDurationDays } from "../lib/api.js";
+import InfoTip from "./InfoTip.jsx";
 
 const NETWORKS = ["MTN Money", "Airtel Money", "Zamtel Kwacha"];
 
@@ -77,10 +78,12 @@ export default function Subscription({ status, onPaid }) {
     <div className="panel">
       <h2 className="panel-title">Upgrade to Premium</h2>
       <p className="muted small">
-        K{price} unlocks premium features for every member of the group for {months} months —
-        one-time group payment, members never pay individually. Your group already works on
-        the free plan (up to {status.freeTierMaxMembers} members, core payment-tracking features); this
-        adds receipts, automated reminders, and group savings fund splitting.
+        K{price} unlocks premium for every member for {months} months — one-time group payment.
+        <InfoTip label="What premium adds">
+          Your group already works on the free plan (up to {status.freeTierMaxMembers} members,
+          core payment-tracking features); this adds receipts, automated reminders, and group
+          savings fund splitting.
+        </InfoTip>
       </p>
 
       <label className="field">

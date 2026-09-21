@@ -4,6 +4,7 @@ import { daysLate, totalDaysLate } from "../lib/dashboardMath.js";
 import Receipt from "./Receipt.jsx";
 import Icon from "./Icon.jsx";
 import EmptyState from "./EmptyState.jsx";
+import InfoTip from "./InfoTip.jsx";
 import { money } from "../lib/money.js";
 
 // Same formatting convention as every other small per-component date
@@ -569,8 +570,7 @@ function PaymentCard({
             </div>
             {addError && <div className="error-text tiny" role="alert">{addError}</div>}
             <p className="muted tiny" style={{ marginTop: 4 }}>
-              A logged payment is pending until a group leader confirms it — you'll see the dot
-              turn green once it's checked.
+              Pending until a group leader confirms it — the dot turns green once checked.
             </p>
           </div>
         </div>
@@ -631,8 +631,10 @@ function OrphanedEntries({ entries, allRows, onVoidPayment, onEditPayment }) {
     <div className="panel" style={{ marginTop: 14 }}>
       <h3 className="panel-subtitle">Payments logged for a removed date</h3>
       <p className="muted tiny" style={{ marginBottom: 10 }}>
-        These still count toward what you've paid — the payout date they were logged against
-        was later removed from the schedule. Move each one to a real date to fully resolve it.
+        Still counts toward what you've paid. Move each one to a real date to resolve it.
+        <InfoTip label="Why this happens">
+          The payout date they were logged against was later removed from the schedule.
+        </InfoTip>
       </p>
       {entries.map((e) => (
         <div key={e.id} className="history-entry-wrap">

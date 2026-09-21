@@ -148,8 +148,7 @@ export default function Profile({ session, onRenamed, onLogout, subscriptionStat
     <div className="panel">
       <h2 className="panel-title">My Account</h2>
       <p className="muted small">
-        Update how your name is shown, or change your PIN. This only ever affects your own
-        account — nobody else's info is touched.
+        Update your name, title, or PIN — this only ever affects your own account.
       </p>
 
       {/* Moved off the dashboard — it was permanent, always-visible real
@@ -235,8 +234,7 @@ export default function Profile({ session, onRenamed, onLogout, subscriptionStat
         Forgot your PIN?
       </button>
       <p className="muted tiny" style={{ marginTop: 2, marginBottom: 14 }}>
-        Self-service reset by SMS is coming soon. For now, ask a group leader to reset it for
-        you — they can do this from Group Setup.
+        Coming soon — for now, ask a group leader to reset it for you.
       </p>
       <label className="field">
         Current PIN

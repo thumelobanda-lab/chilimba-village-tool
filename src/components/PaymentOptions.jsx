@@ -3,6 +3,7 @@ import { saveSchedule } from "../lib/api.js";
 import PaymentMethodsEditor from "./PaymentMethodsEditor.jsx";
 import Toast from "./Toast.jsx";
 import Icon from "./Icon.jsx";
+import InfoTip from "./InfoTip.jsx";
 
 /**
  * A dedicated, easy-to-find home for "how do I actually pay" — members
@@ -81,10 +82,11 @@ export default function PaymentOptions({ session, config, onSaved }) {
         <span className="badge badge-admin">Group Leader</span>
       </div>
       <p className="muted small" style={{ marginBottom: 14 }}>
-        Mobile money and/or bank details for where members should send their contribution
-        — both can be set at once, add as many as you need. Visible to every member. This
-        is the same data as Group Setup → Payment Details; edit either place, they stay in
-        sync.
+        Mobile money and/or bank details for where members send their contribution.
+        <InfoTip label="More about payment details">
+          Add as many as you need — visible to every member. Same data as Group Setup →
+          Payment Details; edit either place, they stay in sync.
+        </InfoTip>
       </p>
 
       <PaymentMethodsEditor methods={draft} onChange={setDraft} />

@@ -1085,6 +1085,28 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .small { font-size: 0.85rem; }
 .tiny { font-size: 0.75rem; }
 
+/* InfoTip.jsx — a small inline "more info" toggle so a screen's own
+   copy can stay to a heading plus one short line, with the longer
+   explanation still one tap away rather than deleted. */
+.info-tip { display: inline-block; }
+.info-tip-toggle {
+  background: none;
+  border: none;
+  padding: 2px;
+  margin-left: 2px;
+  cursor: pointer;
+  color: var(--ink-faint);
+  vertical-align: middle;
+  min-width: 24px;
+  min-height: 24px;
+}
+.info-tip-body {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.8rem;
+  color: var(--ink-faint);
+}
+
 /* min-width: 0 overrides the flex-item default (min-width: auto), which
    otherwise refuses to let a field shrink below its content's natural
    width — a <select> with long option text (e.g. a fund name + balance)

@@ -4,6 +4,7 @@ import { useApiData } from "../lib/useApiData.js";
 import { cycleEndDate } from "../lib/scheduleUtils.js";
 import Toast from "./Toast.jsx";
 import Icon from "./Icon.jsx";
+import InfoTip from "./InfoTip.jsx";
 import { money } from "../lib/money.js";
 
 function formatDate(dateISO) {
@@ -105,13 +106,13 @@ export default function AdminManagement({ schedule }) {
         </p>
       )}
       <p className="muted tiny" style={{ marginBottom: 10 }}>
-        Every active member, newest-joined first, tagged "new" for their first 48 hours so
-        a fresh sign-up doesn't get missed — this is the only place that shows one. Any
-        group leader can promote another member, demote another group leader (the group is never
-        left without at least one), remove a member entirely (keeps their payment history,
-        just revokes access), or reset a member's PIN if they've forgotten it — PINs are
-        one-way hashed, so this is the only recovery path. To remove a group leader, demote them
-        first.
+        Promote, demote, remove, or reset a PIN — demote a group leader before removing them.
+        <InfoTip label="More about member management">
+          Every active member is listed, newest-joined first, tagged "new" for their first
+          48 hours. The group is never left without at least one group leader. Removing
+          someone keeps their payment history and just revokes access. PINs are one-way
+          hashed, so a reset by a group leader is the only recovery path.
+        </InfoTip>
       </p>
 
       {loading && !data && <p className="muted small" aria-live="polite">Loading…</p>}

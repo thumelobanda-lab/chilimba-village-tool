@@ -5,6 +5,7 @@ import {
 } from "../lib/api.js";
 import { pushSupported, subscribeToPush, unsubscribeFromPush, getExistingSubscription } from "../lib/push.js";
 import Toast from "./Toast.jsx";
+import InfoTip from "./InfoTip.jsx";
 
 const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || "";
 
@@ -87,8 +88,7 @@ export default function Reminders({ config, premiumActive }) {
       <div className="panel">
         <h2 className="panel-title">Payment Reminders</h2>
         <p className="muted small">
-          Automated push and SMS reminders are a premium feature. This group is on the free
-          plan — ask a group leader to upgrade from the Group Membership Plan tab to turn these on.
+          Premium feature — ask a group leader to upgrade from the Group Membership Plan tab.
         </p>
       </div>
     );
@@ -98,7 +98,7 @@ export default function Reminders({ config, premiumActive }) {
     <div className="panel">
       <h2 className="panel-title">Payment Reminders</h2>
       <p className="muted small">
-        This Chilimba runs on a set schedule — get a nudge a few days before each due date so nothing gets missed.
+        Get a nudge a few days before each due date so nothing gets missed.
       </p>
 
       <label className="field checkbox-field" style={{ marginTop: 14 }}>
@@ -163,9 +163,11 @@ export default function Reminders({ config, premiumActive }) {
         <>
           <h3 className="panel-subtitle" style={{ marginTop: 24 }}>Per-Date Reminders</h3>
           <p className="muted tiny" style={{ marginBottom: 10 }}>
-            Override your default above for a specific date — a different lead time, or no
-            reminder for that date at all (handy for your own payout date, if you don't need
-            a nudge about it).
+            Override your default above for one specific date.
+            <InfoTip label="More about per-date reminders">
+              A different lead time, or no reminder at all — handy for your own payout
+              date, if you don't need a nudge about it.
+            </InfoTip>
           </p>
           {rowError && <div className="error-text" role="alert" style={{ marginBottom: 10 }}>{rowError}</div>}
           {overrides === null ? (

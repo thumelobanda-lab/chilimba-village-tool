@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { buildProjectionSchedule } from "../lib/interestMath.js";
 import Icon from "./Icon.jsx";
+import InfoTip from "./InfoTip.jsx";
 import { money } from "../lib/money.js";
 
 function monthsLabel(m) {
@@ -25,8 +26,10 @@ export default function GrowthProjection({ fundTotal }) {
       <h3 className="panel-subtitle"><Icon name="chart" size={15} className="icon-inline" /> Growth Projection</h3>
       <p className="muted tiny" style={{ marginBottom: 10 }}>
         A projection only — this does not add interest to the fund or change any balance.
-        It's simple interest (not compounded) on today's fund total of {money(fundTotal)}, for
-        planning purposes.
+        <InfoTip label="How this projection is calculated">
+          Simple interest (not compounded) on today's fund total of {money(fundTotal)}, for
+          planning purposes.
+        </InfoTip>
       </p>
 
       <label className="field" style={{ maxWidth: 200 }}>

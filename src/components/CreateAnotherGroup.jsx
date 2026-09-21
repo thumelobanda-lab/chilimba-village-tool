@@ -23,9 +23,8 @@ export default function CreateAnotherGroup({ onCreate }) {
       <div className="panel">
         <h2 className="panel-title">Group created</h2>
         <p className="muted small">
-          "{created.groupName}" is ready, with its own separate admin account — you're
-          still signed in here, in your current group. Share the code below with whoever's
-          running that group so they can sign in.
+          "{created.groupName}" is ready — you're still signed in to your current group.
+          Share the code below with whoever's running it.
         </p>
         <table className="summary-table">
           <tbody>

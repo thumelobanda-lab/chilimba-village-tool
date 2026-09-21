@@ -27,9 +27,8 @@ export default function SubscriptionGate({ status }) {
     <div className="panel">
       <h2 className="panel-title">Free Plan</h2>
       <p className="muted small">
-        This group is on the free plan — up to {status.freeTierMaxMembers} members and every
-        core payment-tracking feature. Receipts, automated reminders, and group savings fund splitting
-        need premium, which only a group leader can activate.
+        Up to {status.freeTierMaxMembers} members, core features. Premium adds receipts, reminders,
+        and fund splitting — a group leader can activate it.
       </p>
       {status.pending && (
         <p className="muted small">

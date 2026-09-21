@@ -8,6 +8,7 @@ import GroupReliabilityScore from "./GroupReliabilityScore.jsx";
 import GroupRoster from "./GroupRoster.jsx";
 import NoticeComposer from "./NoticeComposer.jsx";
 import EmptyState from "./EmptyState.jsx";
+import InfoTip from "./InfoTip.jsx";
 import { money } from "../lib/money.js";
 
 function timeAgo(iso) {
@@ -41,9 +42,11 @@ export default function Community({ schedule, currentMemberName, isAdmin, onOpen
       </div>
       <h2 className="panel-title">Community</h2>
       <p className="muted small" style={{ marginBottom: 16 }}>
-        Fund balances, recent settlements, and any loans against a fund that's open for
-        borrowing — visible to everyone in the group, the way a shared payment record works.
-        This shows names, amounts, and dates only — never anyone's full payment history or balance.
+        Visible to everyone — names, amounts, and dates only, never a full payment history or balance.
+        <InfoTip label="What this tab shows">
+          Fund balances, recent settlements, and any loans against a fund that's open for
+          borrowing.
+        </InfoTip>
       </p>
 
       {isAdmin && <NoticeComposer />}

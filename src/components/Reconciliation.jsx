@@ -127,8 +127,7 @@ export default function Reconciliation({ config, premiumActive, onOpenGroupSetup
             {pendingData.pending.length} pending confirmation{pendingData.pending.length === 1 ? "" : "s"}
           </h3>
           <p className="muted tiny" style={{ marginBottom: 10 }}>
-            Logged by members, not yet checked — none of these count toward anyone's balance
-            until you confirm or reject them.
+            Not yet checked — none of these count toward a balance until confirmed or rejected.
           </p>
           {pendingData.pending.map((entry) => (
             <div key={entry.id} className="pending-entry">
