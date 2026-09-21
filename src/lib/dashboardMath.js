@@ -34,6 +34,29 @@ export function computeCycleProgress(schedule, todayISO = new Date().toISOString
 }
 
 /**
+ * The dashboard cover banner's second line — cycle name plus schedule
+ * progress — or null when there's no cycle data yet to show at all (a
+ * fresh group with no schedule generated), in which case the banner
+ * falls back to showing only the group name. Takes an already-formatted
+ * end date rather than formatting it itself, matching the split
+ * elsewhere in this file between date arithmetic (here) and
+ * presentation (Dashboard.jsx's own formatDate). "Has cycle data" means
+ * either a non-empty schedule or a known end date — a bare cycleName
+ * alone (every group has one, even brand new) isn't itself cycle data.
+ *
+ * @param {{ cycleName?: string|null, cycleTotal: number, cyclePassed: number, formattedEndDate?: string|null }} args
+ * @returns {string|null}
+ */
+export function bannerCycleLine({ cycleName, cycleTotal, cyclePassed, formattedEndDate }) {
+  if (!(cycleTotal > 0) && !formattedEndDate) return null;
+  const parts = [];
+  if (cycleName) parts.push(cycleName);
+  if (cycleTotal > 0) parts.push(`${cyclePassed} of ${cycleTotal} dates`);
+  if (formattedEndDate) parts.push(`ends ${formattedEndDate}`);
+  return parts.join(" · ");
+}
+
+/**
  * Which schedule row "this round" refers to for a specific member — the
  * next upcoming/current date, or the schedule's last date once
  * everything has passed. Same selection rule Reconciliation.jsx's

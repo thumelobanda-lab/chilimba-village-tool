@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   computeCycleProgress,
+  bannerCycleLine,
   currentRoundRow,
   roundProgressPercent,
   daysUntil,
@@ -44,6 +45,37 @@ describe("computeCycleProgress", () => {
   it("ignores rows with an unparsable date rather than throwing", () => {
     const schedule = [{ date: "2026-01-01" }, { date: "not-a-date" }];
     expect(computeCycleProgress(schedule, "2026-08-20")).toEqual({ total: 2, passed: 1, percent: 50 });
+  });
+});
+
+describe("bannerCycleLine", () => {
+  it("combines cycle name, progress, and end date in order", () => {
+    expect(bannerCycleLine({ cycleName: "Cycle 1", cycleTotal: 2, cyclePassed: 1, formattedEndDate: "Thu, 24 Sept" }))
+      .toBe("Cycle 1 · 1 of 2 dates · ends Thu, 24 Sept");
+  });
+
+  it("uses whatever the cycle is named, not just the default", () => {
+    expect(bannerCycleLine({ cycleName: "Group 1", cycleTotal: 2, cyclePassed: 1, formattedEndDate: "Thu, 24 Sept" }))
+      .toBe("Group 1 · 1 of 2 dates · ends Thu, 24 Sept");
+  });
+
+  it("returns null when there is no cycle data at all — bare cycleName doesn't count", () => {
+    expect(bannerCycleLine({ cycleName: "Cycle 1", cycleTotal: 0, cyclePassed: 0, formattedEndDate: null })).toBeNull();
+  });
+
+  it("omits the cycle name when unset but keeps the rest", () => {
+    expect(bannerCycleLine({ cycleName: null, cycleTotal: 2, cyclePassed: 0, formattedEndDate: "Thu, 24 Sept" }))
+      .toBe("0 of 2 dates · ends Thu, 24 Sept");
+  });
+
+  it("omits the end date when there is none but keeps progress", () => {
+    expect(bannerCycleLine({ cycleName: "Cycle 1", cycleTotal: 3, cyclePassed: 2, formattedEndDate: null }))
+      .toBe("Cycle 1 · 2 of 3 dates");
+  });
+
+  it("shows just the cycle name and end date when the schedule is otherwise empty but an end date exists", () => {
+    expect(bannerCycleLine({ cycleName: "Cycle 1", cycleTotal: 0, cyclePassed: 0, formattedEndDate: "Thu, 24 Sept" }))
+      .toBe("Cycle 1 · ends Thu, 24 Sept");
   });
 });
 

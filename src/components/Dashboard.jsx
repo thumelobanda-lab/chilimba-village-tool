@@ -5,6 +5,7 @@ import { useApiData } from "../lib/useApiData.js";
 import { findNextDue, myNextDueDates, payeesLabel, cycleEndDate, getPayees, unassignedMembers } from "../lib/scheduleUtils.js";
 import {
   computeCycleProgress,
+  bannerCycleLine,
   currentRoundRow,
   roundProgressPercent,
   buildCycleTimeline,
@@ -26,6 +27,7 @@ import PayoutAvatarRow from "./PayoutAvatarRow.jsx";
 import DashboardStatBlock from "./DashboardStatBlock.jsx";
 import MyNextPaymentsTable from "./MyNextPaymentsTable.jsx";
 import NoticeBoard from "./NoticeBoard.jsx";
+import DashboardCoverBanner from "./DashboardCoverBanner.jsx";
 import Icon from "./Icon.jsx";
 
 function formatDate(dateISO) {
@@ -133,6 +135,17 @@ export default function Dashboard({
   );
 
   const cycle = computeCycleProgress(config.schedule);
+  // The cover banner's second line — same cycle-progress data as the
+  // rest of this file, formatted once here rather than duplicated in
+  // both places. null (no cycle data yet) means the banner falls back
+  // to showing only the group name.
+  const cycleEnd = cycleEndDate(config.schedule);
+  const cycleLine = bannerCycleLine({
+    cycleName: config.cycleName,
+    cycleTotal: cycle.total,
+    cyclePassed: cycle.passed,
+    formattedEndDate: cycleEnd ? formatDate(cycleEnd) : null,
+  });
   // Both derived from config.schedule, already loaded for the rest of
   // the dashboard — no extra request, so the cycle section renders in
   // the same instant as everything else here.
@@ -240,30 +253,24 @@ export default function Dashboard({
         </div>
       )}
 
+      {/* B — the cover banner: group name + the cycle-progress line that
+          used to sit loose in the strip below (see cycleLine above). The
+          greeting itself lives in the header (App.jsx), alongside the
+          OpenBook wordmark — this is identity/orientation only, never
+          the visual focus (the ring and "Nothing owed" below it are). */}
+      <DashboardCoverBanner groupName={session?.groupName} cycleLine={cycleLine} />
+
       {recentPayout && <PayoutAcknowledgment groupSlug={session.groupSlug} row={recentPayout} />}
 
-      {/* C — compact cycle strip: one line, no gradient panel, no ring
-          (see the module doc comment above for where the ring went).
-          The greeting itself now lives in the header (App.jsx) instead
-          of here, alongside the OpenBook wordmark. No longer repeats the
-          cycle name itself (config.cycleName) — the header's group pill
-          already shows "GroupName · CycleName" on every tab, so this
-          only surfaces what that pill doesn't: date progress within the
-          cycle. */}
-      <div className="dashboard-strip">
-        {(cycle.total > 0 || cycleEndDate(config.schedule)) && (
-          <span className="dashboard-strip-cycle muted tiny">
-            {cycle.total > 0 && `${cycle.passed} of ${cycle.total} dates`}
-            {cycleEndDate(config.schedule) &&
-              `${cycle.total > 0 ? " · " : ""}ends ${formatDate(cycleEndDate(config.schedule))}`}
-          </span>
-        )}
-        {session?.role === "admin" && onOpenGroupSetup && (
+      {/* C — just "Manage" now — the cycle line moved into the banner
+          above (see the comment there). */}
+      {session?.role === "admin" && onOpenGroupSetup && (
+        <div className="dashboard-strip">
           <button className="btn-link dashboard-strip-manage" onClick={onOpenGroupSetup}>
             <Icon name="tools" size={12} className="icon-inline" /> Manage
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* A1 — what I owe right now */}
       {nextDue ? (

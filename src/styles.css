@@ -1012,10 +1012,57 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
    .hero-banner-img handles the crop. */
 .ledger-hero { aspect-ratio: 600 / 200; }
 
-/* OpenBookMark.jsx — a quiet, permanent brand mark above LoginScene's
-   own animated moment, not competing with it (see that component's doc
-   comment for why the two are split: one static identity mark, one big
-   animated welcome). */
+/* Dashboard cover banner (DashboardCoverBanner.jsx) — Dashboard.jsx
+   only, directly under the app header. Fixed aspect ratio matches
+   cover-victoria-falls.webp's own 960x300 crop, reserving its height
+   before the photo loads so nothing below it (the payment ring,
+   "Nothing owed right now") ever shifts. Deliberately slimmer than the
+   other hero banners above — identity/orientation, not the screen's
+   visual focus. */
+.dashboard-cover-banner {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 960 / 300;
+  overflow: hidden;
+  /* Shown as-is, overlay and all, if the photo fails to load — see
+     DashboardCoverBanner.jsx's imgFailed state. */
+  background: #1F4B3F;
+  margin: 0 0 14px;
+}
+.dashboard-cover-banner-img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.dashboard-cover-banner-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 10px 14px;
+  /* About 55% on average, darker toward the bottom where the text sits
+     — same "to top" gradient shape as .hero-banner-overlay, tuned
+     lighter at the top since this banner is shorter and the text never
+     sits up there. */
+  background: linear-gradient(to top, rgba(15, 51, 38, 0.82) 0%, rgba(15, 51, 38, 0.35) 100%);
+}
+.dashboard-cover-banner-name {
+  display: block;
+  color: #FFFFFF;
+  font-weight: 700;
+  font-size: 1rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+}
+.dashboard-cover-banner-cycle {
+  display: block;
+  color: rgba(255, 255, 255, 0.92);
+  font-weight: 600;
+  font-size: 0.75rem;
+  margin-top: 2px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+}
+
+/* OpenBookMark.jsx — a quiet, permanent brand mark on the login screen. */
 .open-book-mark { display: block; margin: 0 auto 8px; }
 
 .login-tagline {
