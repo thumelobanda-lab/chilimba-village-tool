@@ -5,6 +5,7 @@ import { useApiData } from "../lib/useApiData.js";
 import Receipt from "./Receipt.jsx";
 import Icon from "./Icon.jsx";
 import { money } from "../lib/money.js";
+import { vibrateOnce } from "../lib/vibrate.js";
 
 export default function Reconciliation({ config, premiumActive, onOpenGroupSetup }) {
   const [rowId, setRowId] = useState(() => pickDefaultRow(config.schedule)?.id);
@@ -21,6 +22,7 @@ export default function Reconciliation({ config, premiumActive, onOpenGroupSetup
     setActionError(null);
     try {
       await confirmPayment({ paymentId: entry.id, memberName: entry.memberName, scheduleRowId: entry.scheduleRowId });
+      vibrateOnce();
       await Promise.all([refreshPending(), refresh()]);
     } catch (e) {
       setActionError({ entryId: entry.id, message: e.message || "Couldn't confirm that payment — check your connection and try again." });
@@ -74,6 +76,7 @@ export default function Reconciliation({ config, premiumActive, onOpenGroupSetup
         await unconfirmPayment({ paymentId: entry.id, memberName: entry.memberName });
       } else {
         await confirmPayment({ paymentId: entry.id, memberName: entry.memberName, scheduleRowId: rowId });
+        vibrateOnce();
       }
       await refresh();
     } catch (e) {

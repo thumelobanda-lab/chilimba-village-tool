@@ -29,6 +29,7 @@ import MyNextPaymentsTable from "./MyNextPaymentsTable.jsx";
 import NoticeBoard from "./NoticeBoard.jsx";
 import DashboardCoverBanner from "./DashboardCoverBanner.jsx";
 import Icon from "./Icon.jsx";
+import { withViewTransition } from "../lib/viewTransition.js";
 
 function formatDate(dateISO) {
   const d = new Date(dateISO + "T00:00:00");
@@ -205,7 +206,13 @@ export default function Dashboard({
     const completedNames = payoutAvatarRows.filter((r) => r.date === roundRow.date).map((r) => r.name);
     const nextNames = payoutAvatarRows.filter((r) => r.status === "next").map((r) => r.name);
     if (completedNames.length === 0) return;
-    setAnimateTransition({ completedNames, nextNames });
+    // Layers a native View Transitions crossfade (browser support/
+    // reduced-motion permitting — see lib/viewTransition.js) underneath
+    // the rotation strip's own CSS pop/connector-dot animation above,
+    // rather than replacing it: this call is what actually flips avatars
+    // from "paid" to "next-up", the CSS classes are what animate the
+    // result.
+    withViewTransition(() => setAnimateTransition({ completedNames, nextNames }));
     // Safety-net clear in case the connector's onAnimationEnd never fires
     // (e.g. the two avatars aren't adjacent in the strip, so no connector
     // is even rendered) — the localStorage marker above already prevents

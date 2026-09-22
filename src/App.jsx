@@ -48,6 +48,8 @@ import { useApiData } from "./lib/useApiData.js";
 import { greeting, titledAddress, capitalizeName } from "./lib/dashboardMath.js";
 import { findNextDue } from "./lib/scheduleUtils.js";
 import { getPendingPayments, sendReminderNow } from "./lib/api.js";
+import { withViewTransition } from "./lib/viewTransition.js";
+import { setAppBadge, clearAppBadge } from "./lib/badge.js";
 
 const TABS = [
   { id: "ledger", label: "My Payment History" },
@@ -123,6 +125,13 @@ export default function App() {
     paidByRowId
   );
   const notifications = useNotifications(session, ledger.payments, nextDue, subscription.status?.active);
+  // Mirrors the same unread count onto the app icon (Badging API) —
+  // reuses useNotifications.js's own read/unread logic rather than
+  // computing anything separately, so the two can never drift apart.
+  // Guarded for unsupported browsers inside setAppBadge itself.
+  useEffect(() => {
+    setAppBadge(notifications.unreadCount);
+  }, [notifications.unreadCount]);
   const receipts = useReceipts(session, totals.rowsComputed);
   // Admin-only pending-confirmation count, needed here (not just inside
   // Dashboard.jsx's own copy) so the header's notification bell can carry
@@ -135,6 +144,17 @@ export default function App() {
   const pendingConfirmCount = pendingData?.pending?.length || 0;
 
   const [tab, setTab] = useState("home");
+  // Every in-app tab switch goes through this instead of setTab directly,
+  // so the change gets a native View Transitions crossfade where the
+  // browser supports it (falling back to a plain setTab otherwise — see
+  // lib/viewTransition.js). Two call sites deliberately bypass this and
+  // call setTab directly: the group-switch effect below (landing on
+  // "home" is part of the session/login flow itself, which stays fully
+  // static, not a user-initiated route change) and SpotlightTour's own
+  // onNavigate (it drives its own cutout-position animation under a
+  // full-viewport overlay; layering a page-level crossfade underneath
+  // that would fight it, not complement it).
+  const navigateTab = (id) => withViewTransition(() => setTab(id));
   // Shared between the header's hamburger trigger and BottomTabBar's
   // Menu tab (mobile only) — both open/close the exact same NavMenu
   // panel rather than each owning an independent one. See NavMenu.jsx's
@@ -308,7 +328,7 @@ export default function App() {
 
   const openLedgerToPay = () => {
     if (nextDue) setFocusPaymentRowId(nextDue.row.id);
-    setTab("ledger");
+    navigateTab("ledger");
   };
 
   // Receipts are marked seen the moment the member actually opens the
@@ -388,7 +408,7 @@ export default function App() {
               <ProfilePreview
                 session={session}
                 photoUrl={headerPhotoUrl}
-                onChangePhoto={() => setTab("account")}
+                onChangePhoto={() => navigateTab("account")}
               />
             )}
             <div className="brand-stack">
@@ -403,11 +423,12 @@ export default function App() {
                   items={notifications.items}
                   urgent={pendingConfirmCount > 0}
                   markSeen={notifications.markSeen}
+                  onOpen={clearAppBadge}
                 />
                 {session.role === "admin" && (
                   <button
                     className="btn-ghost calc-icon-btn payment-review-icon-btn"
-                    onClick={() => setTab("reconciliation")}
+                    onClick={() => navigateTab("reconciliation")}
                     aria-label={
                       pendingConfirmCount > 0
                         ? `Payment Review — ${pendingConfirmCount} pending confirmation${pendingConfirmCount === 1 ? "" : "s"}`
@@ -511,13 +532,13 @@ export default function App() {
           <>
 
             <div className="nav-row">
-              <DesktopTabBar activeId={tab} onSelect={setTab} />
+              <DesktopTabBar activeId={tab} onSelect={navigateTab} />
               <NavMenu
                 items={TABS.filter((t) => !t.adminOnly || session.role === "admin").map((t) =>
                   t.id === "receipts" ? { ...t, badge: receipts.unseenCount } : t
                 )}
                 activeId={tab}
-                onSelect={setTab}
+                onSelect={navigateTab}
                 onOpenSpotlightTour={() => setShowSpotlightTour(true)}
                 theme={theme}
                 onToggleTheme={toggleTheme}
@@ -534,18 +555,18 @@ export default function App() {
                   status={subscription.status}
                   isAdmin={session.role === "admin"}
                   groupSlug={session.groupSlug}
-                  onUpgrade={() => setTab("subscription")}
+                  onUpgrade={() => navigateTab("subscription")}
                 />
                 <Dashboard
                   session={session}
                   config={config}
                   ledger={ledger}
                   totals={totals}
-                  onOpenReconciliation={session.role === "admin" ? () => setTab("reconciliation") : undefined}
-                  onOpenLedger={() => setTab("ledger")}
-                  onOpenGroupSetup={session.role === "admin" ? () => setTab("setup") : undefined}
-                  onOpenPaymentOptions={() => setTab("payment-options")}
-                  onOpenCommunity={() => setTab("community")}
+                  onOpenReconciliation={session.role === "admin" ? () => navigateTab("reconciliation") : undefined}
+                  onOpenLedger={() => navigateTab("ledger")}
+                  onOpenGroupSetup={session.role === "admin" ? () => navigateTab("setup") : undefined}
+                  onOpenPaymentOptions={() => navigateTab("payment-options")}
+                  onOpenCommunity={() => navigateTab("community")}
                   onLogPayment={openLedgerToPay}
                   onSendReminder={handleSendReminder}
                 />
@@ -554,7 +575,7 @@ export default function App() {
             )}
 
             {tab !== "home" && (
-              <button className="btn-link back-link" onClick={() => setTab("home")}>← Back to Home</button>
+              <button className="btn-link back-link" onClick={() => navigateTab("home")}>← Back to Home</button>
             )}
 
             {tab === "ledger" && (
@@ -656,7 +677,7 @@ export default function App() {
                   groupName={config.groupName}
                   cycleName={config.cycleName}
                   premiumActive={subscription.status?.active}
-                  onUpgrade={() => setTab("subscription")}
+                  onUpgrade={() => navigateTab("subscription")}
                 />
               </div>
             )}
@@ -700,7 +721,7 @@ export default function App() {
                   onSaved={setConfig}
                   session={session}
                   premiumActive={subscription.status?.active}
-                  onOpenPaymentOptions={() => setTab("payment-options")}
+                  onOpenPaymentOptions={() => navigateTab("payment-options")}
                 />
               </div>
             )}
@@ -710,7 +731,7 @@ export default function App() {
                 <Reconciliation
                   config={config}
                   premiumActive={subscription.status?.active}
-                  onOpenGroupSetup={() => setTab("setup")}
+                  onOpenGroupSetup={() => navigateTab("setup")}
                 />
               </div>
             )}
@@ -731,7 +752,7 @@ export default function App() {
                   schedule={config.schedule}
                   currentMemberName={session.name}
                   isAdmin={session.role === "admin"}
-                  onOpenGroupSetup={session.role === "admin" ? () => setTab("setup") : undefined}
+                  onOpenGroupSetup={session.role === "admin" ? () => navigateTab("setup") : undefined}
                 />
               </div>
             )}
@@ -753,7 +774,7 @@ export default function App() {
                   onRenamed={renameSession}
                   onLogout={handleLogout}
                   subscriptionStatus={subscription.status}
-                  onUpgrade={() => setTab("subscription")}
+                  onUpgrade={() => navigateTab("subscription")}
                   onPhotoChanged={handleHeaderPhotoChanged}
                 />
               </div>
@@ -778,7 +799,7 @@ export default function App() {
         <BottomTabBar
           activeId={tab}
           onSelect={(id) => {
-            setTab(id);
+            navigateTab(id);
             setNavMenuOpen(false);
           }}
           onOpenMenu={() => setNavMenuOpen((o) => !o)}

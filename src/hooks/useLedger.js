@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { isRecipient as isRecipientHelper } from "../lib/scheduleUtils.js";
 import { computeLedgerTotals } from "../lib/ledgerMath.js";
+import { vibrateOnce } from "../lib/vibrate.js";
 import {
   getMyLedger,
   addPayment,
@@ -72,6 +73,7 @@ export function useLedger(session, config) {
 
   const addPaymentAndReload = async (scheduleRowId, amount, note) => {
     await addPayment({ scheduleRowId, amount, note });
+    vibrateOnce();
     await reload();
   };
 

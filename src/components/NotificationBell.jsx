@@ -40,8 +40,13 @@ const KIND_ICON = {
  * the plainer "read" treatment on their next visit. Read/unread is only
  * ever a visual style here; dismissing (below) is still what actually
  * removes an item from the list.
+ *
+ * `onOpen` (optional) fires on the closed -> open transition, separate
+ * from `markSeen` above — App.jsx wires it to clear the app-icon badge
+ * (see lib/badge.js) the moment the panel is actually opened, rather
+ * than waiting for the close-triggered read-state update.
  */
-export default function NotificationBell({ items, urgent, markSeen }) {
+export default function NotificationBell({ items, urgent, markSeen, onOpen }) {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef(null);
   // Tracks whether the panel has actually been open, so the effect below
@@ -94,7 +99,11 @@ export default function NotificationBell({ items, urgent, markSeen }) {
               : "Notifications"
         }
         title={urgent ? "A payment confirmation is waiting for review" : "Notifications"}
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => {
+          const next = !open;
+          setOpen(next);
+          if (next) onOpen?.();
+        }}
       >
         <Icon name="bell" size={18} />
         {(count > 0 || urgent) && (

@@ -265,9 +265,19 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
+  gap: 2px;
 }
 .brand-mark { display: block; flex-shrink: 0; }
+/* .open-book-mark (OpenBookMark.jsx's own class, shared with the login
+   screen's much larger standalone mark, defined further down this file)
+   carries a `margin: 0 auto 8px` meant for spacing there. The combined
+   selector below — both classes present together only on this smaller
+   header copy (see OpenBookMark.jsx) — cancels it with higher
+   specificity than plain .open-book-mark, so this header copy is spaced
+   purely by .brand-stack's own `gap` above, not gap PLUS an extra
+   unrelated 8px stacked on top of it, regardless of which rule comes
+   first in the file. */
+.open-book-mark.brand-mark { margin: 0; }
 
 /* ProfilePreview.jsx — the small profile badge in the header's top-left,
    next to the OpenBook wordmark. Same trigger/panel language as
