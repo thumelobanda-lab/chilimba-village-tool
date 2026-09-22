@@ -122,242 +122,83 @@ export default function Login({ onLogin, onJoin, onCreateGroup, onOwnerLogin, se
   const onEnter = (e) => e.key === "Enter" && submit();
 
   return (
-    <div className="panel login-panel">
-      <div className="hero-banner login-hero">
-        <img
-          className="hero-banner-img"
-          src="/images/login-hero-600.webp"
-          srcSet="/images/login-hero-600.webp 600w, /images/login-hero.webp 800w"
-          sizes="(max-width: 420px) 100vw, 380px"
-          width={600}
-          height={443}
-          loading="eager"
-          alt="A river at sunset, framed by trees"
-        />
-        <div className="hero-banner-overlay">
-          <span className="hero-banner-caption">Welcome to your Chilimba</span>
+    <div className="login-screen">
+      <img
+        className="login-hero-bg"
+        src="/images/login-hero-600.webp"
+        srcSet="/images/login-hero-600.webp 600w, /images/login-hero.webp 800w"
+        sizes="100vw"
+        width={600}
+        height={443}
+        loading="eager"
+        alt="A river at sunset, framed by trees"
+      />
+      <div className="login-hero-scrim" aria-hidden="true" />
+
+      <div className="login-content">
+        <div className="login-top">
+          <OpenBookMark />
+          <p className="login-tagline">Your group's honest record.</p>
         </div>
-      </div>
-      <OpenBookMark />
-      <p className="login-tagline">Your group's honest record.</p>
 
-      {sessionEndedNotice && (
-        <div className="error-text" role="alert" style={{ marginBottom: 14 }}>
-          Your session ended — this can happen if your access changed (e.g. you were
-          promoted or removed) while you were signed in elsewhere. Sign in again to
-          continue with your current access.
-        </div>
-      )}
+        <div className="login-form">
+          {sessionEndedNotice && (
+            <div className="error-text" role="alert" style={{ marginBottom: 14 }}>
+              Your session ended — this can happen if your access changed (e.g. you were
+              promoted or removed) while you were signed in elsewhere. Sign in again to
+              continue with your current access.
+            </div>
+          )}
 
-      <div className="auth-mode-toggle" role="tablist" aria-label="Sign up or sign in">
-        <button
-          role="tab"
-          aria-selected={isSignup}
-          className={"auth-mode-tab" + (isSignup ? " auth-mode-tab-active" : "")}
-          onClick={() => setMode("signup")}
-          disabled={busy}
-        >
-          Sign up
-        </button>
-        <button
-          role="tab"
-          aria-selected={!isSignup}
-          className={"auth-mode-tab" + (!isSignup ? " auth-mode-tab-active" : "")}
-          onClick={() => setMode("signin")}
-          disabled={busy}
-        >
-          Sign in
-        </button>
-      </div>
-
-      {isSignup && (
-        <div
-          className="auth-mode-toggle auth-submode-toggle"
-          role="tablist"
-          aria-label="Join a group or create a group"
-        >
-          <button
-            role="tab"
-            aria-selected={isJoin}
-            className={"auth-mode-tab" + (isJoin ? " auth-mode-tab-active" : "")}
-            onClick={() => setSignupMode("join")}
-            disabled={busy}
-          >
-            Join a group
-          </button>
-          <button
-            role="tab"
-            aria-selected={isCreate}
-            className={"auth-mode-tab" + (isCreate ? " auth-mode-tab-active" : "")}
-            onClick={() => setSignupMode("create")}
-            disabled={busy}
-          >
-            Create a group
-          </button>
-        </div>
-      )}
-
-      {isJoin && (
-        <>
-          <label className="field">
-            Group code
-            <input
-              value={groupSlug}
-              onChange={(e) => setGroupSlug(e.target.value)}
-              onKeyDown={onEnter}
-              autoComplete="organization"
-              autoFocus
+          <div className="auth-mode-toggle" role="tablist" aria-label="Sign up or sign in">
+            <button
+              role="tab"
+              aria-selected={isSignup}
+              className={"auth-mode-tab" + (isSignup ? " auth-mode-tab-active" : "")}
+              onClick={() => setMode("signup")}
               disabled={busy}
-            />
-          </label>
-          <label className="field">
-            Full name
-            <input
-              value={joinName}
-              onChange={(e) => setJoinName(e.target.value)}
-              onKeyDown={onEnter}
-              autoComplete="name"
-              disabled={busy}
-            />
-          </label>
-          <label className="field">
-            Phone
-            <input
-              type="tel"
-              inputMode="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              onKeyDown={onEnter}
-              autoComplete="tel"
-              disabled={busy}
-            />
-          </label>
-          <label className="field">
-            Title
-            <TitleSelect value={title} onChange={(e) => setTitle(e.target.value)} disabled={busy} />
-          </label>
-          {titleError && <div className="error-text" role="alert">{titleError}</div>}
-          <label className="field">
-            PIN
-            <input
-              type="password"
-              inputMode="numeric"
-              value={pin}
-              onChange={(e) => setPin(e.target.value)}
-              onKeyDown={onEnter}
-              placeholder="••••"
-              autoComplete="new-password"
-              disabled={busy}
-            />
-          </label>
-          <label className="checkbox-field" style={{ marginBottom: 14 }}>
-            <input
-              type="checkbox"
-              checked={termsAccepted}
-              onChange={(e) => setTermsAccepted(e.target.checked)}
-              disabled={busy}
-            />
-            I agree to the{" "}
-            <button type="button" className="btn-link" onClick={() => setShowTerms(true)}>
-              Terms &amp; Conditions
-            </button>{" "}
-            and{" "}
-            <button type="button" className="btn-link" onClick={() => setShowPrivacy(true)}>
-              Privacy Policy
+            >
+              Sign up
             </button>
-          </label>
-        </>
-      )}
-
-      {isCreate && (
-        <>
-          <label className="field">
-            Group name
-            <input
-              value={groupName}
-              onChange={(e) => setGroupName(e.target.value)}
-              onKeyDown={onEnter}
-              autoComplete="organization"
-              autoFocus
+            <button
+              role="tab"
+              aria-selected={!isSignup}
+              className={"auth-mode-tab" + (!isSignup ? " auth-mode-tab-active" : "")}
+              onClick={() => setMode("signin")}
               disabled={busy}
-            />
-          </label>
-          <label className="field">
-            Your name
-            <input
-              value={adminName}
-              onChange={(e) => setAdminName(e.target.value)}
-              onKeyDown={onEnter}
-              autoComplete="name"
-              disabled={busy}
-            />
-          </label>
-          <label className="field">
-            Title
-            <TitleSelect value={title} onChange={(e) => setTitle(e.target.value)} disabled={busy} />
-          </label>
-          {titleError && <div className="error-text" role="alert">{titleError}</div>}
-          <label className="field">
-            PIN
-            <input
-              type="password"
-              inputMode="numeric"
-              value={pin}
-              onChange={(e) => setPin(e.target.value)}
-              onKeyDown={onEnter}
-              placeholder="••••"
-              autoComplete="new-password"
-              disabled={busy}
-            />
-          </label>
-          <label className="checkbox-field" style={{ marginBottom: 14 }}>
-            <input
-              type="checkbox"
-              checked={termsAccepted}
-              onChange={(e) => setTermsAccepted(e.target.checked)}
-              disabled={busy}
-            />
-            I agree to the{" "}
-            <button type="button" className="btn-link" onClick={() => setShowTerms(true)}>
-              Terms &amp; Conditions
-            </button>{" "}
-            and{" "}
-            <button type="button" className="btn-link" onClick={() => setShowPrivacy(true)}>
-              Privacy Policy
+            >
+              Sign in
             </button>
-          </label>
-        </>
-      )}
+          </div>
 
-      {!isSignup && (
-        <>
-          {isOwner ? (
-            <>
-              <label className="field">
-                Email
-                <input
-                  type="email"
-                  value={ownerEmail}
-                  onChange={(e) => setOwnerEmail(e.target.value)}
-                  onKeyDown={onEnter}
-                  autoComplete="username"
-                  autoFocus
-                  disabled={busy}
-                />
-              </label>
-              <label className="field">
-                Password
-                <input
-                  type="password"
-                  value={ownerPassword}
-                  onChange={(e) => setOwnerPassword(e.target.value)}
-                  onKeyDown={onEnter}
-                  autoComplete="current-password"
-                  disabled={busy}
-                />
-              </label>
-            </>
-          ) : (
+          {isSignup && (
+            <div
+              className="auth-mode-toggle auth-submode-toggle"
+              role="tablist"
+              aria-label="Join a group or create a group"
+            >
+              <button
+                role="tab"
+                aria-selected={isJoin}
+                className={"auth-mode-tab" + (isJoin ? " auth-mode-tab-active" : "")}
+                onClick={() => setSignupMode("join")}
+                disabled={busy}
+              >
+                Join a group
+              </button>
+              <button
+                role="tab"
+                aria-selected={isCreate}
+                className={"auth-mode-tab" + (isCreate ? " auth-mode-tab-active" : "")}
+                onClick={() => setSignupMode("create")}
+                disabled={busy}
+              >
+                Create a group
+              </button>
+            </div>
+          )}
+
+          {isJoin && (
             <>
               <label className="field">
                 Group code
@@ -371,15 +212,32 @@ export default function Login({ onLogin, onJoin, onCreateGroup, onOwnerLogin, se
                 />
               </label>
               <label className="field">
-                Name or phone
+                Full name
                 <input
-                  value={signinIdentifier}
-                  onChange={(e) => setSigninIdentifier(e.target.value)}
+                  value={joinName}
+                  onChange={(e) => setJoinName(e.target.value)}
                   onKeyDown={onEnter}
-                  autoComplete="username"
+                  autoComplete="name"
                   disabled={busy}
                 />
               </label>
+              <label className="field">
+                Phone
+                <input
+                  type="tel"
+                  inputMode="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  onKeyDown={onEnter}
+                  autoComplete="tel"
+                  disabled={busy}
+                />
+              </label>
+              <label className="field">
+                Title
+                <TitleSelect value={title} onChange={(e) => setTitle(e.target.value)} disabled={busy} />
+              </label>
+              {titleError && <div className="error-text" role="alert">{titleError}</div>}
               <label className="field">
                 PIN
                 <input
@@ -389,28 +247,173 @@ export default function Login({ onLogin, onJoin, onCreateGroup, onOwnerLogin, se
                   onChange={(e) => setPin(e.target.value)}
                   onKeyDown={onEnter}
                   placeholder="••••"
-                  autoComplete="current-password"
+                  autoComplete="new-password"
                   disabled={busy}
                 />
               </label>
+              <label className="checkbox-field" style={{ marginBottom: 14 }}>
+                <input
+                  type="checkbox"
+                  checked={termsAccepted}
+                  onChange={(e) => setTermsAccepted(e.target.checked)}
+                  disabled={busy}
+                />
+                I agree to the{" "}
+                <button type="button" className="btn-link" onClick={() => setShowTerms(true)}>
+                  Terms &amp; Conditions
+                </button>{" "}
+                and{" "}
+                <button type="button" className="btn-link" onClick={() => setShowPrivacy(true)}>
+                  Privacy Policy
+                </button>
+              </label>
             </>
           )}
-          <button
-            type="button"
-            className="btn-link"
-            style={{ display: "block", marginBottom: 14 }}
-            onClick={() => setSigninMode(isOwner ? "group" : "owner")}
-            disabled={busy}
-          >
-            {isOwner ? "Sign in to a group instead" : "Platform owner? Sign in here"}
-          </button>
-        </>
-      )}
 
-      {error && <div className="error-text" role="alert" aria-live="assertive">{error}</div>}
-      <button className="btn-primary" disabled={!canSubmit || busy} onClick={submit}>
-        {busy ? "Working…" : isJoin ? "Join group" : isCreate ? "Create group" : isOwner ? "Sign in" : "Continue"}
-      </button>
+          {isCreate && (
+            <>
+              <label className="field">
+                Group name
+                <input
+                  value={groupName}
+                  onChange={(e) => setGroupName(e.target.value)}
+                  onKeyDown={onEnter}
+                  autoComplete="organization"
+                  autoFocus
+                  disabled={busy}
+                />
+              </label>
+              <label className="field">
+                Your name
+                <input
+                  value={adminName}
+                  onChange={(e) => setAdminName(e.target.value)}
+                  onKeyDown={onEnter}
+                  autoComplete="name"
+                  disabled={busy}
+                />
+              </label>
+              <label className="field">
+                Title
+                <TitleSelect value={title} onChange={(e) => setTitle(e.target.value)} disabled={busy} />
+              </label>
+              {titleError && <div className="error-text" role="alert">{titleError}</div>}
+              <label className="field">
+                PIN
+                <input
+                  type="password"
+                  inputMode="numeric"
+                  value={pin}
+                  onChange={(e) => setPin(e.target.value)}
+                  onKeyDown={onEnter}
+                  placeholder="••••"
+                  autoComplete="new-password"
+                  disabled={busy}
+                />
+              </label>
+              <label className="checkbox-field" style={{ marginBottom: 14 }}>
+                <input
+                  type="checkbox"
+                  checked={termsAccepted}
+                  onChange={(e) => setTermsAccepted(e.target.checked)}
+                  disabled={busy}
+                />
+                I agree to the{" "}
+                <button type="button" className="btn-link" onClick={() => setShowTerms(true)}>
+                  Terms &amp; Conditions
+                </button>{" "}
+                and{" "}
+                <button type="button" className="btn-link" onClick={() => setShowPrivacy(true)}>
+                  Privacy Policy
+                </button>
+              </label>
+            </>
+          )}
+
+          {!isSignup && (
+            <>
+              {isOwner ? (
+                <>
+                  <label className="field">
+                    Email
+                    <input
+                      type="email"
+                      value={ownerEmail}
+                      onChange={(e) => setOwnerEmail(e.target.value)}
+                      onKeyDown={onEnter}
+                      autoComplete="username"
+                      autoFocus
+                      disabled={busy}
+                    />
+                  </label>
+                  <label className="field">
+                    Password
+                    <input
+                      type="password"
+                      value={ownerPassword}
+                      onChange={(e) => setOwnerPassword(e.target.value)}
+                      onKeyDown={onEnter}
+                      autoComplete="current-password"
+                      disabled={busy}
+                    />
+                  </label>
+                </>
+              ) : (
+                <>
+                  <label className="field">
+                    Group code
+                    <input
+                      value={groupSlug}
+                      onChange={(e) => setGroupSlug(e.target.value)}
+                      onKeyDown={onEnter}
+                      autoComplete="organization"
+                      autoFocus
+                      disabled={busy}
+                    />
+                  </label>
+                  <label className="field">
+                    Name or phone
+                    <input
+                      value={signinIdentifier}
+                      onChange={(e) => setSigninIdentifier(e.target.value)}
+                      onKeyDown={onEnter}
+                      autoComplete="username"
+                      disabled={busy}
+                    />
+                  </label>
+                  <label className="field">
+                    PIN
+                    <input
+                      type="password"
+                      inputMode="numeric"
+                      value={pin}
+                      onChange={(e) => setPin(e.target.value)}
+                      onKeyDown={onEnter}
+                      placeholder="••••"
+                      autoComplete="current-password"
+                      disabled={busy}
+                    />
+                  </label>
+                </>
+              )}
+              <button
+                type="button"
+                className="btn-link"
+                style={{ display: "block", marginBottom: 14 }}
+                onClick={() => setSigninMode(isOwner ? "group" : "owner")}
+                disabled={busy}
+              >
+                {isOwner ? "Sign in to a group instead" : "Platform owner? Sign in here"}
+              </button>
+            </>
+          )}
+
+          {error && <div className="error-text" role="alert" aria-live="assertive">{error}</div>}
+          <button className="btn-primary" disabled={!canSubmit || busy} onClick={submit}>
+            {busy ? "Working…" : isJoin ? "Join group" : isCreate ? "Create group" : isOwner ? "Sign in" : "Continue"}
+          </button>
+        </div>
+      </div>
 
       {showTerms && <TermsModal onClose={() => setShowTerms(false)} />}
       {showPrivacy && <PrivacyModal onClose={() => setShowPrivacy(false)} />}

@@ -243,6 +243,28 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   border-bottom: 2px solid var(--accent-2);
   box-shadow: 0 5px 0 -3px var(--chrome-trim);
 }
+/* Pre-login only (see App.jsx's !session check) — the chrome gradient,
+   border and brand/tagline row all exist so this header reads on its
+   own on every other screen, but Login.jsx's full-bleed hero now owns
+   brand identity for this one (see .login-top in the block above). This
+   just leaves the Need Help button floating transparently over the
+   photo instead, `position: fixed` so it stays put regardless of the
+   page scrolling underneath it once a tall form pushes past 100dvh. */
+.app-header-login {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  background: none;
+  border-bottom: none;
+  box-shadow: none;
+  padding-top: calc(env(safe-area-inset-top, 0px) + 10px);
+}
+.app-header-login .brand-row,
+.app-header-login .header-tagline {
+  display: none;
+}
 .header-top-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .brand { font-weight: 700; font-size: 0.85rem; line-height: 1; white-space: nowrap; }
 .brand-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
@@ -465,6 +487,14 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .header-role-tag { flex-shrink: 0; }
 
 .app-main { max-width: 880px; margin: 0 auto; padding: 20px; width: 100%; }
+/* Pre-login only — Login.jsx's own .login-screen/.login-content already
+   own full-bleed sizing and safe-area padding; .app-main's own
+   max-width/padding would otherwise inset the hero's *text* content
+   (not the fixed-position photo itself, which ignores it either way)
+   and cap it at 880px on a wide screen. Zeroed out here instead of
+   just not applying .app-main at all, so the element still exists for
+   .app-shell's flex layout without adding any of its own box model. */
+.app-main-login { max-width: none; margin: 0; padding: 0; }
 
 /* A brief fade/rise on whatever tab just mounted — every tab panel is a
    plain conditional render (`{tab === "x" && <div role="tabpanel">…}`),
@@ -636,6 +666,12 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   }
   .app-main {
     padding-bottom: calc(20px + 64px + env(safe-area-inset-bottom, 0px));
+  }
+  /* BottomTabBar never renders pre-login (see App.jsx), so this screen
+     shouldn't reserve space for it either — .login-content's own
+     safe-area-bottom padding is all it needs. */
+  .app-main-login {
+    padding-bottom: 0;
   }
   /* Clears the bottom tab bar instead of sitting half-behind it. */
   .toast {
@@ -954,17 +990,19 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .login-panel { max-width: 380px; margin: 40px auto; text-align: left; }
 
 /* Shared "photo banner bleeding to a panel's own top corners" pattern —
-   used by the login screen's hero (below) and Community's (see
-   .community-hero) so the two don't duplicate the same handful of
-   properties. Negative margins pull the image flush against .panel's
+   used by Community's hero (see .community-hero) and the ledger's
+   slimmer one (.ledger-hero) so the two don't duplicate the same handful
+   of properties. Negative margins pull the image flush against .panel's
    own 20px padding and 10px border-radius rather than sitting inset
    like ordinary panel content; the gradient overlay is a dark-green
    scrim (not black) to match this app's own chrome color rather than a
    generic dark vignette, and exists specifically so the caption text
    sitting on top of it clears AA regardless of how light the photo
    underneath happens to be. object-fit:cover plus an aspect-ratio set
-   per-image (see .login-hero/.community-hero) keeps the reserved space
-   fixed before the image ever loads, so nothing shifts into place. */
+   per-image keeps the reserved space fixed before the image ever loads,
+   so nothing shifts into place. The login screen used to share this
+   exact pattern too (a card-bound hero with a caption) — it's since
+   moved to its own full-bleed treatment, see .login-screen below. */
 .hero-banner {
   position: relative;
   margin: -20px -20px 16px;
@@ -998,22 +1036,6 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   margin-top: 2px;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
-/* Matches login-hero-600.webp/login-hero.webp's actual 600x443/800x590
-   proportions (same source photo, two widths) — see Login.jsx. A subtle
-   teal pattern (pattern-teal.webp) sits behind the photo as this
-   container's own CSS background; the few pixels of padding below let
-   it show through as a thin frame rather than being fully covered, and
-   the same .hero-banner-overlay gradient above already spans this whole
-   container (photo + frame), not just the <img>, so both read as one
-   textured, legible unit rather than two independent layers. */
-.login-hero {
-  aspect-ratio: 600 / 443;
-  padding: 5px;
-  background-image: url("/images/pattern-teal.webp");
-  background-size: cover;
-  background-position: center;
-}
-.login-hero .hero-banner-img { border-radius: 7px; }
 /* Matches community-hero.webp's actual 700x467 proportions — see
    Community.jsx. */
 .community-hero { aspect-ratio: 700 / 467; }
@@ -1075,12 +1097,155 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 /* OpenBookMark.jsx — a quiet, permanent brand mark on the login screen. */
 .open-book-mark { display: block; margin: 0 auto 8px; }
 
-.login-tagline {
-  margin: -4px 0 16px;
-  color: var(--accent);
-  font-weight: 600;
-  font-size: 0.92rem;
+/* Login.jsx — full-bleed hero. Only the photo itself is `position:
+   fixed` to the viewport — genuinely pinned, ignoring .app-main's own
+   padding/max-width and staying put behind .login-content even once a
+   tall sign-up form pushes the page past 100dvh and it has to scroll.
+   .login-screen's own min-height:100dvh guarantees it's at least a full
+   screen even before any content loads under it.
+
+   The scrim is deliberately NOT fixed — it's `position: absolute`
+   against .login-screen instead, sized to the full scrollable height
+   (not just one viewport) so it scrolls together with the text it's
+   protecting. A fixed scrim's gradient bands would stay pinned to fixed
+   *screen* positions while the content scrolled past underneath them —
+   meaning on a long sign-up form, fields would drift through whatever
+   band happened to occupy that part of the screen as the page scrolled,
+   including this gradient's lighter midsection, undermining contrast
+   for exactly the fields it's supposed to protect. Tying the scrim to
+   the content instead means "80% down the page" always means the same
+   part of the form, regardless of scroll position. -2/-1 z-index keeps
+   both permanently behind .login-content (z-index 1) without either one
+   needing to know about the other's stacking context otherwise. */
+.login-screen { position: relative; min-height: 100dvh; }
+.login-hero-bg {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: -2;
 }
+/* Dark-green scrim, same brand color as .hero-banner-overlay elsewhere
+   in the app, but a double-sided vignette rather than a single "to top"
+   gradient: this photo now has to stay legible at both ends at once —
+   the brand mark/tagline sitting near the top of the page and the auth
+   tabs/fields sitting near the bottom — with a lighter midsection so the
+   photo still reads as the dominant visual there. That midsection floor
+   (0.42, not near-zero) is deliberately higher than it looks like it
+   needs to be from the photo alone: every text/field color on this
+   screen was checked against WCAG AA at its *actual* worst-measured
+   position (see the contrast note on .login-form below), and anything
+   lighter than this let a translucent-white input field dip under
+   4.5:1 against a bright patch of sky in the source photo. */
+.login-hero-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(
+    to bottom,
+    rgba(9, 26, 20, 0.62) 0%,
+    rgba(9, 26, 20, 0.48) 18%,
+    rgba(9, 26, 20, 0.5) 55%,
+    rgba(9, 26, 20, 0.86) 85%,
+    rgba(9, 26, 20, 0.94) 100%
+  );
+}
+/* Dark theme's own chrome is already deeper than light mode's brand
+   green (see [data-theme="dark"]'s --chrome-bg-1/2 above) — a slightly
+   stronger, near-black scrim here keeps the same "double vignette"
+   shape consistent with that deeper palette instead of looking washed
+   out next to it, per CLAUDE.md/the design brief's "dark mode can use a
+   stronger overlay if needed". */
+[data-theme="dark"] .login-hero-scrim {
+  background: linear-gradient(
+    to bottom,
+    rgba(3, 10, 8, 0.7) 0%,
+    rgba(3, 10, 8, 0.54) 18%,
+    rgba(3, 10, 8, 0.56) 55%,
+    rgba(3, 10, 8, 0.9) 85%,
+    rgba(3, 10, 8, 0.96) 100%
+  );
+}
+/* The actual scrollable content — normal document flow (not fixed), so
+   on a short device where the form is taller than the screen, this is
+   what grows past 100dvh and lets the page scroll while the fixed photo
+   above stays put behind it (see .login-hero-bg's own comment).
+   justify-content:space-between is what pins .login-top near the top
+   and .login-form near the bottom when everything *does* fit in one
+   screen, with the gap between showing the photo through; once content
+   overflows, flex just stacks the two blocks in order like any other
+   column. */
+.login-content {
+  position: relative;
+  z-index: 1;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 24px;
+  padding:
+    calc(env(safe-area-inset-top, 0px) + 28px)
+    max(20px, env(safe-area-inset-right, 0px))
+    calc(env(safe-area-inset-bottom, 0px) + 24px)
+    max(20px, env(safe-area-inset-left, 0px));
+}
+.login-top { text-align: center; }
+.login-top .open-book-mark { filter: drop-shadow(0 1px 5px rgba(0, 0, 0, 0.5)); }
+.login-tagline {
+  margin: 0;
+  color: #FFFFFF;
+  font-weight: 700;
+  font-size: 0.95rem;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.55);
+}
+
+/* Everything below only applies inside Login.jsx's own .login-form —
+   .field/.checkbox-field/.auth-mode-toggle/.btn-link/.error-text are
+   shared with every other form in the app (Setup, Account, Reminders,
+   ...), all of which still sit on an ordinary light .panel. Scoping
+   every override to .login-form is what lets this one screen read as
+   translucent-white-on-photo without dragging every other form's
+   inputs into a dark theme they were never designed for. */
+/* color set here, not just on .field, so it also reaches .checkbox-field
+   (the terms/privacy checkbox label) — that one deliberately doesn't
+   carry the .field class (see .field.checkbox-field's own comment), so
+   a .login-form .field override alone would miss it and leave its text
+   at the inherited --ink, invisible against the photo. */
+.login-form { width: 100%; max-width: 380px; margin: 0 auto; color: rgba(255, 255, 255, 0.9); }
+/* .field sets its own explicit `color: var(--ink-faint)` for the label
+   text (see the base .field rule) — an explicit declaration on .field
+   itself, not something .login-form's own color above can reach by
+   inheritance, since inheritance only fills in properties an element
+   never set for itself. Left unoverridden, labels read at var(--ink-faint)
+   — a color tuned for a white .panel — which measured as low as ~1:1
+   against this screen's photo in light theme. Overridden explicitly here
+   to the same white used elsewhere on this screen. */
+.login-form .field { color: rgba(255, 255, 255, 0.85); }
+.login-form .field input,
+.login-form .field select {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.45);
+  color: #FFFFFF;
+}
+.login-form .field input::placeholder { color: rgba(255, 255, 255, 0.65); }
+.login-form .field input:disabled,
+.login-form .field select:disabled { opacity: 0.6; }
+.login-form .auth-mode-toggle { background: rgba(255, 255, 255, 0.14); }
+.login-form .auth-mode-tab { color: rgba(255, 255, 255, 0.8); }
+/* Active tab stays a solid light pill regardless of theme (not
+   var(--panel), which is dark in [data-theme="dark"]) — this is the one
+   spot on the screen meant to read as "paper", a deliberate contrast
+   with the translucent fields around it, not something that should
+   flip dark in dark mode. */
+.login-form .auth-mode-tab-active { background: #FFFFFF; color: #1B2E22; box-shadow: none; }
+.login-form .btn-link { color: rgba(255, 255, 255, 0.95); }
+/* var(--red) is tuned per-theme for text on an ordinary light/dark
+   .panel — neither value clears AA against this screen's own dark
+   photo scrim. Hardcoded to dark theme's own --red (#E0897C, already
+   checked for AA against a dark surface) since that's the pairing this
+   screen actually needs regardless of which theme is active. */
+.login-form .error-text { color: #E0897C; }
 
 .panel-title { margin: 0 0 12px; font-size: 1.1rem; }
 .panel-subtitle { margin: 0 0 10px; font-size: 0.92rem; color: var(--ink-faint); }

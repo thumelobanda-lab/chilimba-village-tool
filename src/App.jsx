@@ -401,7 +401,7 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <header className="app-header">
+      <header className={"app-header" + (!session ? " app-header-login" : "")}>
         <div className="header-top-row">
           <div className="brand-row">
             {session && (
@@ -512,7 +512,7 @@ export default function App() {
       )}
       {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
 
-      <main className="app-main">
+      <main className={"app-main" + (!session ? " app-main-login" : "")}>
         {!session ? (
           <Login
             onLogin={handleLogin}
