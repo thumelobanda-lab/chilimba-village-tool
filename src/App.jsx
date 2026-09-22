@@ -22,8 +22,7 @@ import PlatformMessageBanner from "./components/PlatformMessageBanner.jsx";
 import Toast from "./components/Toast.jsx";
 import PaymentOptions from "./components/PaymentOptions.jsx";
 import QuickCalculator from "./components/QuickCalculator.jsx";
-import Walkthrough, { hasSeenWalkthrough } from "./components/Walkthrough.jsx";
-import SpotlightTour from "./components/SpotlightTour.jsx";
+import SpotlightTour, { hasSeenSpotlightTour } from "./components/SpotlightTour.jsx";
 import GroupSwitcher from "./components/GroupSwitcher.jsx";
 import AddGroupModal from "./components/AddGroupModal.jsx";
 import NotificationBell from "./components/NotificationBell.jsx";
@@ -142,7 +141,6 @@ export default function App() {
   // doc comment for why this moved out of that component.
   const [navMenuOpen, setNavMenuOpen] = useState(false);
   const [showCalculator, setShowCalculator] = useState(false);
-  const [showWalkthrough, setShowWalkthrough] = useState(false);
   const [showSpotlightTour, setShowSpotlightTour] = useState(false);
   const [sessionEndedNotice, setSessionEndedNotice] = useState(false);
   const [showAddGroup, setShowAddGroup] = useState(false);
@@ -229,24 +227,15 @@ export default function App() {
   // Profile.jsx's "My Account" rather than the dashboard itself), so this
   // no longer waits on subscription status at all. Reopenable any time from
   // "How this app works" in the nav menu, which is why "seen" is tracked
-  // separately from whether this effect has fired.
+  // separately from whether this effect has fired. There's no pre-login
+  // equivalent (unlike the retired Walkthrough.jsx) — SpotlightTour spotlights
+  // real, already-rendered dashboard elements, which don't exist before
+  // login.
   useEffect(() => {
-    if (session && !onboarding.needsOnboarding && !hasSeenWalkthrough(session)) {
-      setShowWalkthrough(true);
+    if (session && !onboarding.needsOnboarding && !hasSeenSpotlightTour(session)) {
+      setShowSpotlightTour(true);
     }
   }, [session, onboarding.needsOnboarding]);
-
-  // A separate, generic preview shown before anyone's even signed in —
-  // tracked independently (see PRE_LOGIN_SEEN_KEY in Walkthrough.jsx) so
-  // seeing this one doesn't skip the personalized, role-aware one above
-  // once they actually log in. Runs once on mount, only matters if
-  // there's no session yet.
-  useEffect(() => {
-    if (!session && !hasSeenWalkthrough(null)) {
-      setShowWalkthrough(true);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   // Catches up a stale session (most importantly: role, after being
   // promoted/demoted elsewhere) whenever this tab regains focus — covers
@@ -489,9 +478,6 @@ export default function App() {
       <OfflineBanner online={online} pending={pendingSyncCount} syncing={syncing} />
 
       {showCalculator && <QuickCalculator onClose={() => setShowCalculator(false)} />}
-      {showWalkthrough && (
-        <Walkthrough session={session} onClose={() => setShowWalkthrough(false)} />
-      )}
       {showSpotlightTour && (
         <SpotlightTour
           session={session}
@@ -532,7 +518,6 @@ export default function App() {
                 )}
                 activeId={tab}
                 onSelect={setTab}
-                onOpenWalkthrough={() => setShowWalkthrough(true)}
                 onOpenSpotlightTour={() => setShowSpotlightTour(true)}
                 theme={theme}
                 onToggleTheme={toggleTheme}

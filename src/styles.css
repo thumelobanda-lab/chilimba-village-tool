@@ -2003,48 +2003,12 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 }
 .pending-entry:last-child { border-bottom: none; }
 
-/* Walkthrough — reuses .calc-modal-backdrop for the overlay, own styling
-   for the card itself since it needs progress dots and multi-step nav. */
-.walkthrough-modal {
-  background: var(--panel);
-  border-radius: 14px 14px 0 0;
-  width: 100%;
-  max-width: 380px;
-  padding: 24px 22px 18px;
-  box-shadow: 0 -4px 24px rgba(0,0,0,0.2);
-  text-align: center;
-}
-@media (min-width: 480px) {
-  .walkthrough-modal { border-radius: 14px; }
-}
-.walkthrough-dots {
-  display: flex;
-  justify-content: center;
-  gap: 6px;
-  margin-bottom: 18px;
-}
-.walkthrough-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--line);
-}
-.walkthrough-dot-active { background: var(--accent-2); width: 18px; border-radius: 6px; }
-.walkthrough-emoji { font-size: 2.4rem; margin-bottom: 8px; }
-.walkthrough-title { font-size: 1.1rem; font-weight: 700; color: var(--ink); margin: 0 0 10px; }
-.walkthrough-body { font-size: 0.92rem; color: var(--ink-faint); line-height: 1.5; margin: 0 0 20px; }
-.walkthrough-controls {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.walkthrough-nav { display: flex; gap: 8px; margin-left: auto; }
-
-/* SpotlightTour — unlike Walkthrough above, this highlights real
-   already-rendered elements instead of its own illustration, so there's
-   no shared backdrop to reuse: the "dim everything except the target"
-   effect is one oversized box-shadow on the cutout rect itself, cheaper
-   than an SVG mask and needs no extra DOM. */
+/* SpotlightTour — highlights real, already-rendered elements instead of
+   its own illustration (the earlier Walkthrough modal was retired in
+   favor of this), so there's no shared backdrop to reuse: the "dim
+   everything except the target" effect is one oversized box-shadow on
+   the cutout rect itself, cheaper than an SVG mask and needs no extra
+   DOM. */
 .spotlight-overlay {
   position: fixed;
   inset: 0;
@@ -2056,7 +2020,14 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   border: 2px solid var(--accent-2);
   box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6);
   pointer-events: none;
+  /* Subtle by design — just enough to read as "sliding to the next
+     target," not a showy animation. Turned off entirely below for
+     prefers-reduced-motion, same convention as every other motion rule
+     in this file. */
   transition: top 0.2s ease, left 0.2s ease, width 0.2s ease, height 0.2s ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .spotlight-cutout { transition: none; }
 }
 .spotlight-tooltip {
   position: fixed;
@@ -2064,8 +2035,15 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   border-radius: 14px;
   padding: 18px 18px 14px;
   max-width: 300px;
+  width: calc(100vw - 16px);
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
 }
+/* The intro/closing steps, and any normal step whose target couldn't be
+   found (see SpotlightTour.jsx's `stuck`) — same card, just centered on
+   screen with no cutout to anchor to. */
+.spotlight-tooltip-centered { text-align: center; }
+.spotlight-brand { display: flex; justify-content: center; margin-bottom: 10px; }
+.spotlight-tooltip-centered .spotlight-dots { justify-content: center; }
 .spotlight-dots { display: flex; gap: 6px; margin-bottom: 12px; }
 .spotlight-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--line); }
 .spotlight-dot-active { background: var(--accent-2); width: 18px; border-radius: 6px; }

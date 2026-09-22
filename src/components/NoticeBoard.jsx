@@ -47,7 +47,7 @@ export default function NoticeBoard({ isAdmin }) {
   const visible = expanded ? notices : notices.slice(0, 1);
 
   return (
-    <div className="notice-board">
+    <div className="notice-board" data-tour="notice-board">
       {visible.map((n) => (
         <div className="notice-item" key={n.id}>
           <div className="notice-message">

@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { spotlightTourSeenKey, hasSeenSpotlightTour } from "./SpotlightTour.jsx";
 
-// No jsdom in this project's test setup (see Walkthrough.test.js's own
-// comment on that) — a minimal in-memory stand-in is enough to exercise
-// the get/set logic being tested here.
+// No jsdom in this project's test setup (see vite.config.js) — a minimal
+// in-memory stand-in is enough to exercise the get/set logic being
+// tested here.
 function installFakeLocalStorage() {
   const store = new Map();
   globalThis.localStorage = {
@@ -45,12 +45,5 @@ describe("spotlight tour seen tracking", () => {
   it("does not throw and reports unseen when there's no session", () => {
     expect(() => hasSeenSpotlightTour(null)).not.toThrow();
     expect(hasSeenSpotlightTour(null)).toBe(false);
-  });
-
-  it("is tracked independently from the Walkthrough's own seen state", () => {
-    // Walkthrough.jsx uses a "walkthrough-seen" domain; this uses
-    // "spotlight-tour-seen" — confirm they don't collide.
-    localStorage.setItem(spotlightTourSeenKey(session), "1");
-    expect(spotlightTourSeenKey(session)).not.toContain("walkthrough-seen");
   });
 });

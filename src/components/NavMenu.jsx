@@ -4,17 +4,18 @@ import Icon from "./Icon.jsx";
 /**
  * Hamburger nav menu — everything that isn't one of BottomTabBar's 3
  * pinned destinations (Dashboard/Payments/Community — see
- * BottomTabBar.jsx) plus "How this app works" to reopen the walkthrough.
- * Admin-only items render under their own "Admin Tools" heading rather
- * than blending into the member-facing list, so the two audiences read
- * as visually distinct groups in what's otherwise one flat menu.
+ * BottomTabBar.jsx) plus "How this app works" to reopen the spotlight
+ * tour (see SpotlightTour.jsx). Admin-only items render under their own
+ * "Admin Tools" heading rather than blending into the member-facing
+ * list, so the two audiences read as visually distinct groups in what's
+ * otherwise one flat menu.
  *
  * Open/closed state is owned by App.jsx (not this component) so
  * BottomTabBar's Menu tab and the header's hamburger trigger can control
  * the exact same panel instead of each having their own independent one.
  * Closes on selection, Escape, or a click outside the panel.
  */
-export default function NavMenu({ items, activeId, onSelect, onOpenWalkthrough, onOpenSpotlightTour, theme, onToggleTheme, open, onToggle, onClose }) {
+export default function NavMenu({ items, activeId, onSelect, onOpenSpotlightTour, theme, onToggleTheme, open, onToggle, onClose }) {
   const wrapRef = useRef(null);
 
   useEffect(() => {
@@ -98,21 +99,11 @@ export default function NavMenu({ items, activeId, onSelect, onOpenWalkthrough, 
             role="menuitem"
             className="nav-menu-item"
             onClick={() => {
-              onOpenWalkthrough();
-              onClose();
-            }}
-          >
-            How this app works
-          </button>
-          <button
-            role="menuitem"
-            className="nav-menu-item"
-            onClick={() => {
               onOpenSpotlightTour();
               onClose();
             }}
           >
-            Show me around
+            How this app works
           </button>
         </div>
       )}

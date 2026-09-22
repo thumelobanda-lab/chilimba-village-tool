@@ -1,7 +1,7 @@
 /**
  * Geometry for SpotlightTour.jsx's cutout + tooltip — pure so it's
  * testable without a real DOM/jsdom (this project's test setup doesn't
- * include jsdom, see Walkthrough.test.js's own comment on that).
+ * include jsdom, see SpotlightTour.test.js's own comment on that).
  */
 
 // A little breathing room around the target so the cutout doesn't hug

@@ -2,7 +2,7 @@
  * Pure text-building logic for the group invite — separated from the
  * actual canvas drawing in InviteCard.jsx because canvas isn't available
  * in this project's test environment (no jsdom/canvas polyfill; see the
- * note in Walkthrough.test.js). This half is what's actually worth
+ * note in SpotlightTour.test.js). This half is what's actually worth
  * testing: the wording and structure, not the pixel rendering.
  */
 

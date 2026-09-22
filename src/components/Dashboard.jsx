@@ -266,7 +266,7 @@ export default function Dashboard({
           above (see the comment there). */}
       {session?.role === "admin" && onOpenGroupSetup && (
         <div className="dashboard-strip">
-          <button className="btn-link dashboard-strip-manage" onClick={onOpenGroupSetup}>
+          <button className="btn-link dashboard-strip-manage" onClick={onOpenGroupSetup} data-tour="manage-group">
             <Icon name="tools" size={12} className="icon-inline" /> Manage
           </button>
         </div>
@@ -275,7 +275,7 @@ export default function Dashboard({
       {/* A1 — what I owe right now */}
       {nextDue ? (
         onLogPayment && (
-          <button type="button" className="log-payment-cta" onClick={onLogPayment}>
+          <button type="button" className="log-payment-cta" onClick={onLogPayment} data-tour="log-payment-cta">
             <span className="log-payment-cta-icon" aria-hidden="true"><Icon name="money" size={20} /></span>
             <span className="log-payment-cta-text">
               <span className="log-payment-cta-title">You Owe {money(nextDue.balance)}</span>
@@ -285,7 +285,7 @@ export default function Dashboard({
           </button>
         )
       ) : (
-        <div className="owed-now-clear">✓ Nothing owed right now</div>
+        <div className="owed-now-clear" data-tour="log-payment-cta">✓ Nothing owed right now</div>
       )}
 
       {/* A2 — what I've contributed this round, ring alongside the figure */}
@@ -296,6 +296,7 @@ export default function Dashboard({
         role={onOpenLedger ? "button" : undefined}
         tabIndex={onOpenLedger ? 0 : undefined}
         title={onOpenLedger ? "Go to My Payment History" : undefined}
+        data-tour="cycle-progress-ring"
       >
         <div className="vital-ring-labeled">
           <ProgressRing percent={roundPercent} size={78} strokeWidth={7} glow={ringGlow} arcColor="var(--accent-2)" filled />
