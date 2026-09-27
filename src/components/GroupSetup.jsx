@@ -5,6 +5,7 @@ import { useMemberRoster } from "../hooks/useMemberRoster.js";
 import AdminManagement from "./AdminManagement.jsx";
 import CollapsibleSection from "./CollapsibleSection.jsx";
 import InviteCard from "./InviteCard.jsx";
+import PaymentMethodsList from "./PaymentMethodsList.jsx";
 import Toast from "./Toast.jsx";
 import Icon from "./Icon.jsx";
 import InfoTip from "./InfoTip.jsx";
@@ -458,23 +459,7 @@ export default function GroupSetup({ config, onSaved, session, premiumActive, on
             Managed from the separate Payment Options screen; this is just a summary.
           </InfoTip>
         </p>
-        {config.paymentMethods && config.paymentMethods.length > 0 ? (
-          <div className="payment-methods-list">
-            {config.paymentMethods.map((m) => (
-              <div className="payment-method-card" key={m.id}>
-                <div className="payment-method-type">
-                  <Icon name={m.type === "bank" ? "bank" : "phone"} size={14} className="icon-inline" />{" "}
-                  {m.type === "bank" ? "Bank" : "Mobile Money"}
-                </div>
-                <div className="payment-method-label">{m.label}</div>
-                <div className="muted small">{m.accountName}</div>
-                <div className="payment-method-number">{m.accountNumber}</div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="muted small">No payment details set up yet.</p>
-        )}
+        <PaymentMethodsList methods={config.paymentMethods} emptyMessage="No payment details set up yet." />
         {onOpenPaymentOptions && (
           <button type="button" className="btn-link" style={{ marginTop: 10 }} onClick={onOpenPaymentOptions}>
             Manage in Payment Options →

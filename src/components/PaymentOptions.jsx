@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { saveSchedule } from "../lib/api.js";
 import PaymentMethodsEditor from "./PaymentMethodsEditor.jsx";
+import PaymentMethodsList from "./PaymentMethodsList.jsx";
 import Toast from "./Toast.jsx";
-import Icon from "./Icon.jsx";
 import InfoTip from "./InfoTip.jsx";
 
 /**
@@ -52,25 +52,10 @@ export default function PaymentOptions({ session, config, onSaved }) {
           Where to send your contribution — mobile money and/or bank details, set
           up by your group's leader.
         </p>
-        {config.paymentMethods && config.paymentMethods.length > 0 ? (
-          <div className="payment-methods-list">
-            {config.paymentMethods.map((m) => (
-              <div className="payment-method-card" key={m.id}>
-                <div className="payment-method-type">
-                  <Icon name={m.type === "bank" ? "bank" : "phone"} size={14} className="icon-inline" />{" "}
-                  {m.type === "bank" ? "Bank" : "Mobile Money"}
-                </div>
-                <div className="payment-method-label">{m.label}</div>
-                <div className="muted small">{m.accountName}</div>
-                <div className="payment-method-number">{m.accountNumber}</div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="muted small">
-            No payment details set up yet — ask your group leader where to send your contribution.
-          </p>
-        )}
+        <PaymentMethodsList
+          methods={config.paymentMethods}
+          emptyMessage="No payment details set up yet — ask your group leader where to send your contribution."
+        />
       </div>
     );
   }
