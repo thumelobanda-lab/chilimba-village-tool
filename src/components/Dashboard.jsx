@@ -10,26 +10,21 @@ import {
   roundProgressPercent,
   buildCycleTimeline,
   findRecentPayout,
-  isMemberTurnSoon,
-  isCycleNearingCompletion,
   myOutstandingLoanTotal,
   buildPayoutAvatarRow,
   membersMissingMomo,
+  capitalizeName,
 } from "../lib/dashboardMath.js";
 import { useCountUp } from "../hooks/useCountUp.js";
 import { computeMemberStreak } from "../lib/streakMath.js";
 import { resolveMilestoneEvent } from "../lib/milestones.js";
-import ProgressRing from "./ProgressRing.jsx";
 import CycleTimeline from "./CycleTimeline.jsx";
-import GroupPulse from "./GroupPulse.jsx";
 import PayoutAcknowledgment from "./PayoutAcknowledgment.jsx";
 import MilestoneMoment from "./MilestoneMoment.jsx";
-import QuickActions from "./QuickActions.jsx";
-import PayoutAvatarRow from "./PayoutAvatarRow.jsx";
+import PayoutTimeline from "./PayoutTimeline.jsx";
 import DashboardStatBlock from "./DashboardStatBlock.jsx";
 import MyNextPaymentsTable from "./MyNextPaymentsTable.jsx";
 import NoticeBoard from "./NoticeBoard.jsx";
-import DashboardCoverBanner from "./DashboardCoverBanner.jsx";
 import Icon from "./Icon.jsx";
 import { withViewTransition } from "../lib/viewTransition.js";
 
@@ -39,34 +34,40 @@ function formatDate(dateISO) {
   return d.toLocaleDateString("en-ZM", { weekday: "short", day: "numeric", month: "short" });
 }
 
+function formatToday() {
+  return new Date().toLocaleDateString("en-ZM", { weekday: "long", day: "numeric", month: "long" });
+}
+
 /**
- * The home screen — a 3-second glance, not a wall of cards. Four focal
- * points, in order, all meant to fit one phone screen without scrolling:
- *   1. What I owe right now — the "Log a Payment" CTA, amount + date +
- *      one button, or a slim all-caught-up line when there's nothing to
- *      pay.
- *   2. What I've contributed this round — the cycle-progress ring lives
- *      HERE now, beside the figure rather than above it in its own hero
- *      block (see the ring-placement note below), with what's still
- *      owed demoted to a small sub-label underneath.
- *   3. Payout rotation — who's next and when (PayoutAvatarRow.jsx).
- *   4. One-line group snapshot (GroupPulse.jsx) — total contributed this
- *      round, members paid.
- * Below that: notices/alerts, quick actions, then "See full breakdown"
- * holds the reassuring-but-not-actionable stuff — lifetime totals,
- * streak, estimated future payments, the full cycle timeline — restated
- * as three plain tabular blocks (Your Money / Your Next Payments / The
- * Group) rather than loose stat cards.
+ * The home screen — a calm-ledger read, not a wall of cards (see
+ * styles.css's .dashboard-ledger block for the warm-paper/serif-numerals
+ * design tokens this pass introduced). In order:
+ *   1. Status block — one sentence answering "where do I stand" (owed or
+ *      caught up, from the same findNextDue logic as before), a sub-line
+ *      with the next contribution due, and the one primary action
+ *      ("Log a payment"). Replaces the old CTA + separate progress ring
+ *      + "contributed"/"caught up" chips, which all restated pieces of
+ *      this same question — consolidated into one block.
+ *   2. This round — collected vs. target, members paid, as plain ruled
+ *      rows with a thin progress bar instead of a boxed card with a
+ *      circular ring.
+ *   3. Who receives (PayoutTimeline.jsx) — the payout rotation as a
+ *      vertical timeline instead of a horizontal avatar strip; same
+ *      underlying rotation data and interactions (tap to preview,
+ *      long-press to remind), just displayed differently.
+ *   4. More — Payment options / Roster & admins / Community fund / Full
+ *      breakdown as plain list rows instead of boxed quick-action
+ *      buttons; each still calls the exact same handler as before.
+ * Notices/alerts (pending confirmations, the milestone moment, payout
+ * acknowledgment, unassigned members, missing mobile-money numbers, an
+ * outstanding loan) keep their own existing look and slot in around
+ * these sections unchanged — this pass restructures the core dashboard,
+ * not every alert banner's own styling.
  *
- * Ring placement: a large ring costs real vertical space, and item 1
- * above it already competes for the same "must fit on one screen"
- * budget as items 2-4. Putting the ring in its own hero block (the old
- * layout) meant paying for two stacked blocks — greeting+ring, then
- * contribution — for what's really one idea ("your progress this
- * round"). Folding the ring into the contribution card instead removes
- * an entire block's worth of height rather than just shrinking one;
- * the greeting itself moves to a plain one-line strip (no ring, no
- * gradient panel) since it no longer needs to host anything visual.
+ * The group name/switcher and member avatar this screen used to repeat
+ * in its own cover banner now live only in the app header (App.jsx),
+ * on every tab — see the group-name-duplication fix earlier in this
+ * project's history; nothing here repeats that again.
  */
 export default function Dashboard({
   session,
@@ -82,10 +83,10 @@ export default function Dashboard({
   onSendReminder,
 }) {
   const { data: fundsData } = useApiData(getGroupFunds, []);
-  const { data: pulseData, loading: pulseLoading } = useApiData(getGroupPulse, []);
+  const { data: pulseData } = useApiData(getGroupPulse, []);
   // Every signed-in member can see this (unlike getGroupMembers below,
   // admin-only) — just name + hasPhoto/photoDataUrl, enough to put real
-  // photos on the rotation stepper instead of initials-only circles.
+  // photos on the rotation timeline instead of initials-only circles.
   const { data: rosterData } = useApiData(getGroupRoster, []);
   // Admin-only — a regular member has no access to this endpoint (see
   // getPendingPayments in reconciliation.js), so this only ever fetches
@@ -101,23 +102,23 @@ export default function Dashboard({
     session?.role === "admin" ? getGroupMembers : () => Promise.resolve(null),
     [session?.role]
   );
+  const isAdmin = session?.role === "admin";
   const unassigned = membersData
     ? unassignedMembers(config.schedule.map(getPayees), membersData.members.map((m) => m.name))
     : [];
-  // "This round" (the ring + the figures beside it) means one specific
-  // schedule row — the same row Reconciliation.jsx's Payment Review
-  // defaults to — not totals.balance/totals.paid below, which are
-  // summed across every row in config.schedule ever generated. See
-  // currentRoundRow's doc comment for why conflating the two made the
-  // ring and "contributed/remaining" disagree with each other and with
-  // Payment Review.
+  // "This round" means one specific schedule row — the same row
+  // Reconciliation.jsx's Payment Review defaults to — not
+  // totals.balance/totals.paid below, which are summed across every row
+  // in config.schedule ever generated. See currentRoundRow's doc comment
+  // for why conflating the two made this section and Payment Review
+  // disagree with each other.
   const roundRow = currentRoundRow(totals.rowsComputed);
   const roundPercent = roundProgressPercent(roundRow);
   const balanceDisplay = useCountUp(roundRow?.balance ?? 0);
   const paidDisplay = useCountUp(roundRow?.paid ?? 0);
   const myLoanTotal = fundsData ? myOutstandingLoanTotal(fundsData.loans, session?.name) : 0;
   const loanTotalDisplay = useCountUp(myLoanTotal);
-  // Collapsed by default — see the module doc comment above for why.
+  // Collapsed by default — "Full breakdown" in the More list toggles it.
   const [expanded, setExpanded] = useState(false);
 
   const paidByRowId = Object.fromEntries(totals.rowsComputed.map((r) => [r.id, r.paid]));
@@ -136,12 +137,24 @@ export default function Dashboard({
     paidByRowId,
     3
   );
+  // The status block's sub-line: the amount/date actually owed right
+  // now if there is one, otherwise the next scheduled contribution even
+  // though nothing's due yet — same two data sources (findNextDue /
+  // myNextDueDates) the old CTA and "Your Next Payments" table already
+  // used, just read together here for one always-present line.
+  const nextContribution = nextDue
+    ? { amount: nextDue.balance, date: nextDue.row.date }
+    : myNextPayments[0]
+    ? { amount: myNextPayments[0].due, date: myNextPayments[0].date }
+    : null;
+  const firstName = capitalizeName((session?.name || "").trim().split(/\s+/)[0] || "");
+  const statusLine = nextDue
+    ? `You owe ${money(nextDue.balance)}${firstName ? `, ${firstName}` : ""}.`
+    : `You're all paid up${firstName ? `, ${firstName}` : ""}.`;
 
   const cycle = computeCycleProgress(config.schedule);
-  // The cover banner's second line — same cycle-progress data as the
-  // rest of this file, formatted once here rather than duplicated in
-  // both places. null (no cycle data yet) means the banner falls back
-  // to showing only the group name.
+  // "This round" section's small caption — same cycle-progress data as
+  // the rest of this file, formatted once here.
   const cycleEnd = cycleEndDate(config.schedule);
   const cycleLine = bannerCycleLine({
     cycleName: config.cycleName,
@@ -150,8 +163,8 @@ export default function Dashboard({
     formattedEndDate: cycleEnd ? formatDate(cycleEnd) : null,
   });
   // Both derived from config.schedule, already loaded for the rest of
-  // the dashboard — no extra request, so the cycle section renders in
-  // the same instant as everything else here.
+  // the dashboard — no extra request, so this section renders in the
+  // same instant as everything else here.
   const timelineRows = buildCycleTimeline(config.schedule);
   const nextUpRow = timelineRows.find((r) => r.status === "next");
   const recentPayout = findRecentPayout(config.schedule);
@@ -164,19 +177,11 @@ export default function Dashboard({
   // surfaced during the countdown to the next payout, not discovered
   // only once the group actually tries to pay someone.
   const missingMomo =
-    session?.role === "admin" && membersData && nextUpRow
-      ? membersMissingMomo(getPayees(nextUpRow), membersData.members)
-      : [];
-  // Golden ring glow: only when something's actually worth highlighting —
-  // the viewer's own turn is close, the cycle's in its final stretch, or
-  // someone was just paid out — so it draws the eye when it lights up
-  // rather than being a constant, meaningless decoration.
-  const ringGlow =
-    isMemberTurnSoon(timelineRows, session?.name) || isCycleNearingCompletion(cycle) || Boolean(recentPayout);
+    isAdmin && membersData && nextUpRow ? membersMissingMomo(getPayees(nextUpRow), membersData.members) : [];
   const photoByName = new Map(
     (rosterData?.members || []).map((m) => [m.name.trim().toLowerCase(), m])
   );
-  const payoutAvatarRows = buildPayoutAvatarRow(timelineRows, session?.name, {
+  const payoutTimelineRows = buildPayoutAvatarRow(timelineRows, session?.name, {
     rowsComputed: totals.rowsComputed,
   }).map((r) => {
     const match = photoByName.get(r.name.trim().toLowerCase());
@@ -184,19 +189,19 @@ export default function Dashboard({
   });
   const myStreak = computeMemberStreak(totals.rowsComputed);
 
-  // Cycle-completion trigger for the rotation strip's pop/checkmark/
-  // travel-dot animation: fires once, the moment this round's balance
-  // reads 0 (i.e. buildPayoutAvatarRow's rowsComputed option already
-  // promoted it to "received" above), by comparing against the last
-  // round id this browser recorded as animated. Deliberately
-  // localStorage, not React state alone — the confirming action usually
-  // happens on the Reconciliation tab, a different mount of this
-  // component entirely, so there's no in-memory "previous roundRow" to
-  // diff against; persisting the last-seen id is what makes this survive
-  // the tab switch. Scoped per-group, not per-member: this celebrates a
-  // group-level event (the round is fully collected), not a personal one,
-  // so whichever member happens to open the dashboard first after
-  // confirmation is the one who sees it play.
+  // Cycle-completion trigger for the timeline's pop/highlight animation:
+  // fires once, the moment this round's balance reads 0 (i.e.
+  // buildPayoutAvatarRow's rowsComputed option already promoted it to
+  // "received" above), by comparing against the last round id this
+  // browser recorded as animated. Deliberately localStorage, not React
+  // state alone — the confirming action usually happens on the
+  // Reconciliation tab, a different mount of this component entirely, so
+  // there's no in-memory "previous roundRow" to diff against; persisting
+  // the last-seen id is what makes this survive the tab switch. Scoped
+  // per-group, not per-member: this celebrates a group-level event (the
+  // round is fully collected), not a personal one, so whichever member
+  // happens to open the dashboard first after confirmation is the one
+  // who sees it play.
   const [animateTransition, setAnimateTransition] = useState(null);
   useEffect(() => {
     if (!session?.groupSlug || !roundRow || roundRow.due <= 0 || roundRow.balance > 0) return;
@@ -210,20 +215,19 @@ export default function Dashboard({
     // very first load — only play it once there's something to actually
     // compare against.
     if (isFirstEverCheck) return;
-    const completedNames = payoutAvatarRows.filter((r) => r.date === roundRow.date).map((r) => r.name);
-    const nextNames = payoutAvatarRows.filter((r) => r.status === "next").map((r) => r.name);
+    const completedNames = payoutTimelineRows.filter((r) => r.date === roundRow.date).map((r) => r.name);
+    const nextNames = payoutTimelineRows.filter((r) => r.status === "next").map((r) => r.name);
     if (completedNames.length === 0) return;
     // Layers a native View Transitions crossfade (browser support/
     // reduced-motion permitting — see lib/viewTransition.js) underneath
-    // the rotation strip's own CSS pop/connector-dot animation above,
-    // rather than replacing it: this call is what actually flips avatars
-    // from "paid" to "next-up", the CSS classes are what animate the
-    // result.
+    // the timeline's own CSS pop/connector animation above, rather than
+    // replacing it: this call is what actually flips rows from "paid" to
+    // "next-up", the CSS classes are what animate the result.
     withViewTransition(() => setAnimateTransition({ completedNames, nextNames }));
     // Safety-net clear in case the connector's onAnimationEnd never fires
-    // (e.g. the two avatars aren't adjacent in the strip, so no connector
-    // is even rendered) — the localStorage marker above already prevents
-    // a replay regardless, this just tidies up the transient pop classes.
+    // (e.g. the two rows aren't adjacent in the list, so no connector is
+    // even rendered) — the localStorage marker above already prevents a
+    // replay regardless, this just tidies up the transient pop classes.
     const t = setTimeout(() => setAnimateTransition(null), 1500);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -232,8 +236,8 @@ export default function Dashboard({
   // "Still owing" and "Paid all time" stay lifetime figures (summed
   // across every row in config.schedule, which just keeps growing —
   // this app has no cycle-archiving concept yet) — a legitimately
-  // different, useful question from "Paid this round" above it, which
-  // uses roundRow the same way the ring does.
+  // different, useful question from "Collected" in This Round above,
+  // which uses roundRow the same way the progress bar does.
   const yourMoneyRows = [
     { label: "Paid this round", value: money(roundRow?.paid ?? 0) },
     { label: "Still owing", value: money(totals.balance), warn: totals.balance > 0 },
@@ -246,15 +250,11 @@ export default function Dashboard({
       label: "Members paid this week",
       value: pulseData ? `${pulseData.membersPaidThisWeek} of ${pulseData.totalActiveMembers}` : "…",
     },
-    {
-      label: "Next payout",
-      value: nextUpRow ? `${payeesLabel(nextUpRow)}, ${formatDate(nextUpRow.date)}` : "—",
-    },
   ];
 
   return (
-    <>
-      {session?.role === "admin" && pendingData && pendingData.pending.length > 0 && (
+    <div className="dashboard-ledger">
+      {isAdmin && pendingData && pendingData.pending.length > 0 && (
         <div
           className="pending-queue-banner"
           onClick={onOpenReconciliation}
@@ -267,48 +267,31 @@ export default function Dashboard({
         </div>
       )}
 
-      {/* B — the cover banner: the cycle-progress line that used to sit
-          loose in the strip below (see cycleLine above). Doesn't show the
-          group name — the header's GroupSwitcher already does, on every
-          tab, right above this. The greeting itself also lives in the
-          header (App.jsx), alongside the OpenBook wordmark — this banner
-          is identity/orientation only, never the visual focus (the ring
-          and "Nothing owed" below it are). */}
-      <DashboardCoverBanner cycleLine={cycleLine} />
-
       {milestoneEvent && <MilestoneMoment groupSlug={session.groupSlug} event={milestoneEvent} />}
 
       {recentPayout && <PayoutAcknowledgment groupSlug={session.groupSlug} row={recentPayout} />}
 
-      {/* C — just "Manage" now — the cycle line moved into the banner
-          above (see the comment there). */}
-      {session?.role === "admin" && onOpenGroupSetup && (
-        <div className="dashboard-strip">
-          <button className="btn-link dashboard-strip-manage" onClick={onOpenGroupSetup} data-tour="manage-group">
-            <Icon name="tools" size={12} className="icon-inline" /> Manage
+      {/* 1 — status block: where do I stand, one sentence, one action */}
+      <div className="ledger-status-block">
+        <div className="ledger-status-date">{formatToday()}</div>
+        <p className="ledger-status-line">{statusLine}</p>
+        {nextContribution && (
+          <p className="ledger-status-sub">
+            Next: {money(nextContribution.amount)} due {formatDate(nextContribution.date)}
+          </p>
+        )}
+        {onLogPayment && (
+          <button type="button" className="ledger-primary-btn" onClick={onLogPayment} data-tour="log-payment-cta">
+            Log a payment
           </button>
-        </div>
-      )}
+        )}
+      </div>
 
-      {/* A1 — what I owe right now */}
-      {nextDue ? (
-        onLogPayment && (
-          <button type="button" className="log-payment-cta" onClick={onLogPayment} data-tour="log-payment-cta">
-            <span className="log-payment-cta-icon" aria-hidden="true"><Icon name="money" size={20} /></span>
-            <span className="log-payment-cta-text">
-              <span className="log-payment-cta-title">You Owe {money(nextDue.balance)}</span>
-              <span className="log-payment-cta-sub">Due {formatDate(nextDue.row.date)}</span>
-            </span>
-            <span className="log-payment-cta-arrow" aria-hidden="true">›</span>
-          </button>
-        )
-      ) : (
-        <div className="owed-now-clear" data-tour="log-payment-cta">✓ Nothing owed right now</div>
-      )}
-
-      {/* A2 — what I've contributed this round, ring alongside the figure */}
+      {/* 2 — this round: collected vs target, thin progress bar. Still
+          opens My Payment History on tap/Enter, same shortcut the old
+          ring card offered — only the visual changed. */}
       <div
-        className={"vital-primary vital-primary-with-ring" + (onOpenLedger ? " vital-card-clickable" : "")}
+        className={"ledger-section" + (onOpenLedger ? " ledger-section-clickable" : "")}
         onClick={onOpenLedger}
         onKeyDown={onOpenLedger ? (e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onOpenLedger()) : undefined}
         role={onOpenLedger ? "button" : undefined}
@@ -316,39 +299,49 @@ export default function Dashboard({
         title={onOpenLedger ? "Go to My Payment History" : undefined}
         data-tour="cycle-progress-ring"
       >
-        <div className="vital-ring-labeled">
-          <ProgressRing percent={roundPercent} size={78} strokeWidth={7} glow={ringGlow} arcColor="var(--accent-2)" filled />
-          <span className="vital-ring-caption">Cycle progress</span>
+        <div className="ledger-section-heading">
+          <span className="ledger-section-label">This round</span>
+          {cycleLine && <span className="ledger-section-caption">{cycleLine}</span>}
         </div>
-        <div className="vital-primary-body">
-          <div className="vital-card-label">This Round</div>
-          <div className="vital-primary-value vital-card-value-ok">
-            {money(paidDisplay)} <span className="vital-primary-value-suffix">contributed <Icon name="sparkle" size={13} className="icon-inline" /></span>
-          </div>
-          <div className={"vital-primary-sub" + ((roundRow?.balance ?? 0) > 0 ? " vital-card-value-warn" : " vital-card-value-ok")}>
-            {(roundRow?.balance ?? 0) > 0 ? (
-              `${money(balanceDisplay)} remaining`
-            ) : (
-              <>All caught up <Icon name="sparkle" size={13} className="icon-inline" /></>
-            )}
-          </div>
+        <div className="ledger-row">
+          <span className="ledger-row-label">Collected</span>
+          <span className="ledger-row-value">{money(paidDisplay)}</span>
+        </div>
+        <div className="ledger-row">
+          <span className="ledger-row-label">Target</span>
+          <span className="ledger-row-value">{money(roundRow?.due ?? 0)}</span>
+        </div>
+        <div
+          className="ledger-progress-track"
+          role="progressbar"
+          aria-label="Round progress"
+          aria-valuenow={Math.round(roundPercent)}
+          aria-valuemin={0}
+          aria-valuemax={100}
+        >
+          <div className="ledger-progress-fill" style={{ width: `${roundPercent}%` }} />
+        </div>
+        <div className="ledger-row ledger-row-muted">
+          <span className="ledger-row-label">
+            {(roundRow?.balance ?? 0) > 0 ? `${money(balanceDisplay)} still owed this round` : "All caught up this round"}
+          </span>
+          <span className="ledger-row-value">
+            {pulseData ? `${pulseData.membersPaidThisWeek} of ${pulseData.totalActiveMembers} paid` : "…"}
+          </span>
         </div>
       </div>
 
-      {/* A3 — who's next in the payout rotation */}
-      <PayoutAvatarRow
-        rows={payoutAvatarRows}
+      {/* 3 — who receives: vertical rotation timeline */}
+      <PayoutTimeline
+        rows={payoutTimelineRows}
         animateTransition={animateTransition}
         onAnimationDone={() => setAnimateTransition(null)}
-        onSendReminder={session?.role === "admin" ? onSendReminder : undefined}
+        onSendReminder={isAdmin ? onSendReminder : undefined}
       />
 
-      {/* A4 — one-line group snapshot */}
-      <GroupPulse data={pulseData} loading={pulseLoading} />
+      <NoticeBoard isAdmin={isAdmin} />
 
-      <NoticeBoard isAdmin={session?.role === "admin"} />
-
-      {session?.role === "admin" && unassigned.length > 0 && (
+      {isAdmin && unassigned.length > 0 && (
         <p className="inline-alert">
           <Icon name="warning" size={14} className="icon-inline" /> <strong>{unassigned.length}</strong> member{unassigned.length === 1 ? "" : "s"} not on the payout
           schedule —{" "}
@@ -362,7 +355,7 @@ export default function Dashboard({
         </p>
       )}
 
-      {session?.role === "admin" && missingMomo.length > 0 && (
+      {isAdmin && missingMomo.length > 0 && (
         <p className="inline-alert">
           <Icon name="warning" size={14} className="icon-inline" /> <strong>{missingMomo.join(", ")}</strong>{" "}
           {missingMomo.length === 1 ? "hasn't" : "haven't"} set a mobile money payout number yet, and{" "}
@@ -383,22 +376,47 @@ export default function Dashboard({
         </div>
       )}
 
-      <QuickActions
-        isAdmin={session?.role === "admin"}
-        onOpenLedger={onOpenLedger}
-        onOpenPaymentOptions={onOpenPaymentOptions}
-        onOpenGroupSetup={onOpenGroupSetup}
-        onOpenCommunity={onOpenCommunity}
-      />
-
-      <button
-        type="button"
-        className="dashboard-more-toggle"
-        onClick={() => setExpanded((v) => !v)}
-        aria-expanded={expanded}
-      >
-        {expanded ? "Hide full breakdown ▲" : "See full breakdown ▾"}
-      </button>
+      {/* 4 — more: plain list rows, same handlers as before */}
+      <div className="ledger-section">
+        <div className="ledger-section-label">More</div>
+        <ul className="ledger-list" role="list">
+          {onOpenPaymentOptions && (
+            <li>
+              <button type="button" className="ledger-list-row" onClick={onOpenPaymentOptions}>
+                <span>Payment options</span>
+                <span className="ledger-list-chevron" aria-hidden="true">›</span>
+              </button>
+            </li>
+          )}
+          {isAdmin && onOpenGroupSetup && (
+            <li>
+              <button type="button" className="ledger-list-row" onClick={onOpenGroupSetup} data-tour="manage-group">
+                <span>Roster &amp; admins</span>
+                <span className="ledger-list-chevron" aria-hidden="true">›</span>
+              </button>
+            </li>
+          )}
+          {onOpenCommunity && (
+            <li>
+              <button type="button" className="ledger-list-row" onClick={onOpenCommunity}>
+                <span>Community fund</span>
+                <span className="ledger-list-chevron" aria-hidden="true">›</span>
+              </button>
+            </li>
+          )}
+          <li>
+            <button
+              type="button"
+              className="ledger-list-row"
+              onClick={() => setExpanded((v) => !v)}
+              aria-expanded={expanded}
+            >
+              <span>Full breakdown</span>
+              <span className={"ledger-list-chevron" + (expanded ? " ledger-list-chevron-open" : "")} aria-hidden="true">›</span>
+            </button>
+          </li>
+        </ul>
+      </div>
 
       {expanded && (
         <div className="dashboard-more-section">
@@ -418,6 +436,6 @@ export default function Dashboard({
           <DashboardStatBlock title="The Group" rows={theGroupRows} />
         </div>
       )}
-    </>
+    </div>
   );
 }

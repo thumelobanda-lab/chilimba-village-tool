@@ -1104,45 +1104,6 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
    .hero-banner-img handles the crop. */
 .ledger-hero { aspect-ratio: 600 / 200; }
 
-/* Dashboard cover banner (DashboardCoverBanner.jsx) — Dashboard.jsx
-   only, directly under the app header. Fixed aspect ratio matches
-   cover-victoria-falls.webp's own 960x300 crop, reserving its height
-   before the photo loads so nothing below it (the payment ring,
-   "Nothing owed right now") ever shifts. Deliberately slimmer than the
-   other hero banners above — identity/orientation, not the screen's
-   visual focus. */
-.dashboard-cover-banner {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 960 / 300;
-  overflow: hidden;
-  /* Shown as-is, overlay and all, if the photo fails to load — see
-     DashboardCoverBanner.jsx's imgFailed state. */
-  background: #1F4B3F;
-  margin: 0 0 14px;
-}
-.dashboard-cover-banner-img { display: block; width: 100%; height: 100%; object-fit: cover; }
-.dashboard-cover-banner-overlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  padding: 10px 14px;
-  /* About 55% on average, darker toward the bottom where the text sits
-     — same "to top" gradient shape as .hero-banner-overlay, tuned
-     lighter at the top since this banner is shorter and the text never
-     sits up there. */
-  background: linear-gradient(to top, rgba(15, 51, 38, 0.82) 0%, rgba(15, 51, 38, 0.35) 100%);
-}
-.dashboard-cover-banner-cycle {
-  display: block;
-  color: rgba(255, 255, 255, 0.92);
-  font-weight: 600;
-  font-size: 0.75rem;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
-}
-
 /* OpenBookMark.jsx — a quiet, permanent brand mark on the login screen. */
 .open-book-mark { display: block; margin: 0 auto 8px; }
 
@@ -2302,72 +2263,260 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   justify-content: center;
 }
 
-/* Home dashboard — the "vital records" the app opens to: what's owed,
-   contribution progress, the payout rotation, cycle progress. Everything
-   else lives behind the nav menu, so this is the only content competing
-   for space here. */
+/* Home dashboard — the calm-ledger redesign (Dashboard.jsx,
+   PayoutTimeline.jsx). Warm paper background bled to the screen edges
+   (negative margins matching .app-main's own 20px padding, same trick
+   .hero-banner elsewhere already uses) rather than another card sitting
+   on the app's ordinary --bg, serif numerals for money/status, thin
+   dashed rules instead of boxed cards. See the --ledger-* token block
+   near the top of this file for the full color rationale/contrast
+   numbers. Alert banners (pending confirmations, notices, unassigned-
+   member/loan warnings) keep their own existing look on purpose — this
+   pass restructures the core dashboard, not every alert's styling. */
+.dashboard-ledger {
+  background: var(--ledger-paper);
+  color: var(--ledger-ink);
+  margin: -20px -20px 0;
+  padding: 18px 20px 4px;
+}
 
-/* Compact cycle strip — one line, no gradient panel. The ring used to
-   live in a dedicated hero block above the contribution card; it moved
-   INTO that card instead (see .vital-primary-with-ring below) so this
-   strip only ever needs to hold text, freeing an entire block's worth of
-   vertical height for the "must fit on one screen" budget above. The
-   greeting that used to open this strip now lives in the header instead
-   (see .header-greeting). */
-.dashboard-strip {
+/* 1 — status block: one sentence for "where do I stand", a sub-line,
+   one primary action. Replaces the old CTA + ring + "contributed"/
+   "caught up" chips, which each restated a piece of this same
+   question. */
+.ledger-status-block { padding-bottom: 18px; }
+.ledger-status-date {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ledger-muted);
+  margin-bottom: 6px;
+}
+.ledger-status-line {
+  font-family: var(--ledger-serif);
+  font-size: 1.4rem;
+  line-height: 1.3;
+  font-weight: 700;
+  color: var(--ledger-ink);
+  margin: 0 0 4px;
+}
+.ledger-status-sub {
+  font-family: var(--ledger-serif);
+  font-size: 0.9rem;
+  color: var(--ledger-muted);
+  margin: 0 0 16px;
+}
+.ledger-primary-btn {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  background: var(--ledger-ink);
+  color: var(--ledger-paper);
+  border: none;
+  border-radius: 8px;
+  padding: 13px 18px;
+  font-family: "Inter", "IBM Plex Sans", system-ui, sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.ledger-primary-btn:hover, .ledger-primary-btn:focus-visible { opacity: 0.88; }
+.ledger-primary-btn:focus-visible { outline: 2px solid var(--ledger-gold); outline-offset: 2px; }
+
+/* 2 (This round) / 3 (Who receives, PayoutTimeline.jsx) / 4 (More) all
+   share this same plain-ruled-section shape: a thin top rule instead of
+   a card border, a small-caps label, content, done. */
+.ledger-section { padding: 16px 0; border-top: 1px solid var(--ledger-border); }
+.ledger-section-clickable { cursor: pointer; }
+.ledger-section-clickable:hover { background: var(--ledger-divider); }
+.ledger-section-clickable:focus-visible { outline: 2px solid var(--ledger-gold); outline-offset: -2px; }
+.ledger-section-heading {
   display: flex;
   align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 6px;
-  font-size: 0.85rem;
+  margin-bottom: 10px;
 }
-.dashboard-strip-cycle { flex-basis: 100%; }
-.dashboard-strip-manage { margin-left: auto; font-size: 0.8rem; }
-
-/* "What I owe right now", when there's nothing to pay — a single quiet
-   line, not a card, since there's no action to take here. */
-.owed-now-clear {
-  padding: 10px 4px;
-  margin-bottom: 14px;
-  color: var(--green);
+.ledger-section-label {
+  display: block;
+  font-size: 0.72rem;
   font-weight: 700;
-  font-size: 0.92rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ledger-muted);
+  margin-bottom: 10px;
 }
+.ledger-section-heading .ledger-section-label { margin-bottom: 0; }
+.ledger-section-caption { font-size: 0.75rem; color: var(--ledger-muted); }
 
-/* The contribution card with the cycle-progress ring folded in beside
-   the figure rather than above it in its own hero (see the dashboard
-   home-screen doc comment in Dashboard.jsx for the full reasoning).
-   Tighter padding and a smaller figure than the base .vital-primary
-   (Reconciliation.jsx's own, untouched) — the dashboard's four
-   above-the-fold items are on a real vertical budget, this card isn't
-   used anywhere that budget doesn't apply. */
-.vital-primary-with-ring {
+.ledger-row {
   display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 10px 14px;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 0;
+  border-bottom: 1px dashed var(--ledger-divider);
 }
-.vital-primary-with-ring .vital-primary-value { font-size: 2.1rem; }
-.vital-primary-body { flex: 1; min-width: 0; }
-.vital-ring-labeled {
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+.ledger-row-label { font-size: 0.85rem; color: var(--ledger-ink); }
+.ledger-row-value {
+  font-family: var(--ledger-serif);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--ledger-ink);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
 }
-.vital-ring-caption {
-  margin-top: 2px;
-  font-size: 0.68rem;
+.ledger-row-muted .ledger-row-label,
+.ledger-row-muted .ledger-row-value {
+  color: var(--ledger-muted);
+  font-family: inherit;
   font-weight: 600;
-  color: var(--ink-faint);
-  text-align: center;
-}
-@media (max-width: 400px) {
-  .vital-primary-with-ring { gap: 10px; }
+  font-size: 0.8rem;
 }
 
-/* Section-labeled tabular blocks (Dashboard.jsx's "See full breakdown"
+.ledger-progress-track {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--ledger-divider);
+  overflow: hidden;
+  margin: 10px 0;
+}
+.ledger-progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--ledger-ink);
+  transition: width 0.6s ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ledger-progress-fill { transition: none; }
+}
+
+/* Who receives (PayoutTimeline.jsx) — a plain vertical timeline: a dot
+   per row (filled ink = received, gold ring = next, hollow = upcoming),
+   name, status/date. Replaces the old horizontally-scrolling avatar
+   strip; same rotation data/interactions (tap to preview, long-press to
+   remind), just displayed as a list instead of a row of circles. */
+.ledger-timeline-headline { font-size: 0.85rem; color: var(--ledger-ink); margin: 0 0 10px; }
+.ledger-timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.ledger-timeline-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px dashed var(--ledger-divider);
+}
+.ledger-timeline-item:last-child { border-bottom: none; }
+.ledger-timeline-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ledger-border);
+}
+.ledger-timeline-received .ledger-timeline-dot { background: var(--ledger-ink); }
+.ledger-timeline-next .ledger-timeline-dot { width: 10px; height: 10px; background: var(--ledger-gold); }
+.ledger-timeline-avatar { flex-shrink: 0; }
+.ledger-timeline-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--ledger-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ledger-timeline-you-tag {
+  margin-left: 6px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--ledger-muted);
+}
+.ledger-timeline-status { flex-shrink: 0; font-size: 0.76rem; color: var(--ledger-muted); }
+/* One-shot transition when a payment confirmation completes the
+   current round — understated on purpose (a brief dot pop and row
+   highlight, no bounce/confetti), same trigger Dashboard.jsx has always
+   used, just a vertical-list version of the old horizontal one. */
+.ledger-timeline-pop .ledger-timeline-dot { animation: ledger-timeline-pop 0.6s ease-out; }
+@keyframes ledger-timeline-pop {
+  0% { transform: scale(1); }
+  45% { transform: scale(1.7); }
+  100% { transform: scale(1); }
+}
+.ledger-timeline-just-next { animation: ledger-timeline-highlight 1.2s ease-out; }
+@keyframes ledger-timeline-highlight {
+  0% { background: var(--ledger-divider); }
+  100% { background: transparent; }
+}
+.ledger-timeline-connector {
+  position: absolute;
+  left: 3px;
+  top: 100%;
+  width: 2px;
+  height: 8px;
+  background: var(--ledger-gold);
+  animation: ledger-timeline-connector-fade 0.7s ease-in-out both;
+}
+@keyframes ledger-timeline-connector-fade {
+  0% { opacity: 0; }
+  40% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ledger-timeline-pop .ledger-timeline-dot { animation: none; }
+  .ledger-timeline-just-next { animation: none; }
+  .ledger-timeline-connector { animation: none; opacity: 0; }
+}
+
+/* More — plain list rows (label + chevron) instead of boxed
+   quick-action buttons; each row still calls the exact same handler as
+   before (Payment Options / Roster & Admins / Community Fund), plus
+   "Full breakdown" toggling the same expanded section the old
+   .dashboard-more-toggle did. */
+.ledger-list { list-style: none; margin: 0; padding: 0; }
+.ledger-list-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 2px;
+  border-bottom: 1px dashed var(--ledger-divider);
+  background: none;
+  border-left: none;
+  border-right: none;
+  border-top: none;
+  font-family: "Inter", "IBM Plex Sans", system-ui, sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--ledger-ink);
+  cursor: pointer;
+  text-align: left;
+}
+.ledger-list li:last-child .ledger-list-row { border-bottom: none; }
+.ledger-list-row:hover, .ledger-list-row:focus-visible { background: var(--ledger-divider); }
+.ledger-list-row:focus-visible { outline: 2px solid var(--ledger-gold); outline-offset: -2px; }
+.ledger-list-chevron {
+  color: var(--ledger-muted);
+  font-size: 1.15rem;
+  line-height: 1;
+  transition: transform 0.2s ease;
+}
+.ledger-list-chevron-open { transform: rotate(90deg); }
+@media (prefers-reduced-motion: reduce) {
+  .ledger-list-chevron { transition: none; }
+}
+
+/* Section-labeled tabular blocks (Dashboard.jsx's "Full breakdown"
    section, via DashboardStatBlock.jsx / MyNextPaymentsTable.jsx) —
    table-layout: fixed with an explicit <colgroup> so a longer label
    ("Members paid this week") never truncates the way free-width columns
@@ -2396,33 +2545,6 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .dashboard-stat-table tr:last-child td { border-bottom: none; }
 .dashboard-stat-table td.ar { font-variant-numeric: tabular-nums; font-weight: 700; }
 .dashboard-stat-table-3col td:nth-child(2) { font-size: 0.8rem; }
-
-/* Log a Payment — a persistent, high-contrast call to action right below
-   the hero, not nested inside a collapsed ledger date row. Solid accent
-   fill (same gold as .btn-primary) rather than a card outline, so it's
-   the single most visually prominent tappable thing on the home screen
-   after the hero itself. Clicking it (see App.jsx's openLedgerToPay)
-   deep-links into the ledger with the member's next-due row already
-   expanded and scrolled into view — this button is the "no hunting"
-   fix, not just a shortcut to the same collapsed table. */
-.log-payment-cta {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  background: var(--accent);
-  border: none;
-  border-radius: 12px;
-  padding: 10px 16px;
-  margin-bottom: 8px;
-  cursor: pointer;
-  text-align: left;
-}
-.log-payment-cta-icon { font-size: 1.5rem; flex-shrink: 0; }
-.log-payment-cta-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
-.log-payment-cta-title { font-weight: 800; font-size: 1rem; color: var(--on-accent); }
-.log-payment-cta-sub { font-size: 0.8rem; font-weight: 600; color: var(--on-accent); opacity: 0.82; }
-.log-payment-cta-arrow { margin-left: auto; font-size: 1.4rem; font-weight: 700; color: var(--on-accent); flex-shrink: 0; }
 
 /* Ledger tab redesign (LedgerTable.jsx) — replaces the old dense
    label/value table with a hero ("do I owe anything right now") plus one
@@ -2612,157 +2734,10 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 }
 .empty-state-message { margin: 0; color: var(--ink-faint); font-size: 0.85rem; max-width: 240px; }
 
-/* Payout avatar row — where the rotation actually is right now, right
-   under the ring: the last couple already paid, who's next, who's
-   coming up. Compact and horizontally scrollable rather than wrapping,
-   so a big group never turns this into a block of its own. */
-.payout-avatar-block { margin-bottom: 8px; }
-/* "<Name> receives in N days" — the one-line answer to "when's my turn"
-   pulled out of the strip below into its own headline, so it reads
-   without having to decode the stepper's colors first. */
-.payout-avatar-headline {
-  font-size: 0.8rem;
-  color: var(--ink);
-  margin: 0 0 8px;
-}
-.payout-avatar-headline strong { color: var(--accent-2-light); }
-.payout-avatar-row {
-  display: flex;
-  gap: 10px;
-  overflow-x: auto;
-  /* Top padding matches the 6px max spread of .payout-avatar-pulse's
-     box-shadow ring below — overflow-x:auto forces overflow-y to auto
-     too (a well-known CSS quirk: only one axis can stay "visible"), so
-     anything short of that flattens the "next" avatar's pulsing glow
-     against this row's top edge instead of letting it bloom. */
-  padding: 8px 2px 6px;
-  -webkit-overflow-scrolling: touch;
-}
-/* Each member's spot in the rotation: avatar plus a "when" label
-   underneath, turning the strip into an actual stepper rather than a
-   bare row of circles. */
-.payout-avatar-step {
-  flex: 0 0 auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
-}
-.payout-avatar-step-label {
-  font-size: 0.68rem;
-  color: var(--ink-faint);
-  white-space: nowrap;
-}
-.payout-avatar-step-label-next { color: var(--accent-2); font-weight: 700; }
-.payout-avatar {
-  position: relative;
-  flex: 0 0 auto;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.68rem;
-  font-weight: 700;
-  color: #FAF7F0;
-  background: var(--accent-dark);
-  border: 2px solid var(--line);
-  transition: transform 0.15s ease;
-  cursor: pointer;
-}
-.payout-avatar-received { border-color: var(--green); }
-.payout-avatar-next {
-  border-color: var(--accent-2);
-  box-shadow: 0 0 0 2px rgba(212, 169, 74, 0.25);
-  animation: payout-avatar-pulse 2.2s ease-in-out infinite;
-}
-/* "Plain gray" per the design ask — this app has no true achromatic
-   gray in its palette (it's green/gold throughout), so "plain" here
-   means the same neutral --line tone Avatar.jsx's own default,
-   no-status border already uses, not a colored/dashed accent the way
-   the old tan dashes read as a (meaningless) third color. */
-.payout-avatar-upcoming { border-style: solid; border-color: var(--line); }
-/* The signed-in member — larger and gold-glowing so they're
-   unmistakable no matter which status ring they otherwise have. */
-.payout-avatar-you {
-  width: 42px;
-  height: 42px;
-  font-size: 0.75rem;
-  box-shadow: 0 0 0 3px rgba(212, 169, 74, 0.35);
-}
-@keyframes payout-avatar-pulse {
-  0%, 100% { box-shadow: 0 0 0 2px rgba(212, 169, 74, 0.25); }
-  50% { box-shadow: 0 0 0 6px rgba(212, 169, 74, 0.12); }
-}
-/* One-shot transition when a payment confirmation completes the
-   current round — the freshly-"received" avatar pops and its ring
-   settles from amber to green as .payout-avatar-received's own color
-   takes over post-animation. Understated on purpose (a single ease-out
-   pop, no bounce/confetti) — see PayoutAvatarRow.jsx's doc comment. */
-.payout-avatar-pop { animation: payout-avatar-pop 0.6s ease-out; }
-@keyframes payout-avatar-pop {
-  0% { transform: scale(1); border-color: var(--accent-2); box-shadow: 0 0 0 2px rgba(212, 169, 74, 0.25); }
-  45% { transform: scale(1.16); box-shadow: 0 0 0 4px rgba(63, 107, 46, 0.18); }
-  100% { transform: scale(1); border-color: var(--green); box-shadow: none; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .payout-avatar-next { animation: none; }
-  .payout-avatar-pop { animation: none; }
-}
-/* Small checkmark badge on a received avatar — pairs the green ring
-   with a shape, not just a color, per the same colorblind-legibility
-   rule the confirm-bulb icons follow (see LedgerTable.jsx). */
-.payout-avatar-check-badge {
-  position: absolute;
-  bottom: -2px;
-  right: -2px;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: var(--green);
-  color: #FAF7F0;
-  border: 2px solid var(--panel);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-/* The traveling dot between a just-completed avatar and the new
-   next-up one — only rendered as a real flex sibling between those two
-   .payout-avatar-step elements (see PayoutAvatarRow.jsx), so it always
-   sits in the right spot with no manual position measuring. */
-.payout-avatar-connector {
-  position: relative;
-  flex: 0 0 auto;
-  width: 18px;
-  align-self: flex-start;
-  height: 36px;
-}
-.payout-avatar-connector-dot {
-  position: absolute;
-  top: 16px;
-  left: 0;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--accent-2);
-  animation: payout-avatar-dot-travel 0.7s ease-in-out both;
-}
-@keyframes payout-avatar-dot-travel {
-  0% { left: 0; opacity: 0; }
-  15% { opacity: 1; }
-  85% { opacity: 1; }
-  100% { left: calc(100% - 6px); opacity: 0; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .payout-avatar-connector-dot { display: none; }
-}
-
-/* Avatar.jsx — a member's photo, or the same initials-circle language
-   as .payout-avatar above when they don't have one. Sizing comes from
-   the component's own inline style (a size prop), not fixed here, since
-   this gets reused at different sizes (roster row vs. My Account's own
-   preview). */
+/* Avatar.jsx — a member's photo, or the same initials-circle fallback
+   language when they don't have one. Sizing comes from the component's
+   own inline style (a size prop), not fixed here, since this gets
+   reused at different sizes (roster row vs. My Account's own preview). */
 .avatar-photo {
   border-radius: 50%;
   object-fit: cover;
@@ -2818,8 +2793,9 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
    positive-reframe of contribution progress ("You've Contributed This
    Round"), not the deficit — everything else that used to sit beside it
    as an equal-weight card is either a small compact stat (next date,
-   fund total) or moved behind "See full breakdown"
-   (.dashboard-more-toggle / .dashboard-more-section below). */
+   fund total) or moved behind "Full breakdown" (see the dashboard's own
+   .ledger-list-row and .dashboard-more-section below). Still used
+   outside the dashboard too (Payment Summary, Reconciliation.jsx). */
 .vital-primary {
   background: var(--panel);
   background-image: var(--paper-grain);
@@ -2840,23 +2816,6 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   letter-spacing: -0.01em;
   line-height: 1.1;
 }
-/* Trails the big contributed figure ("K1,770 contributed 🎉") — a
-   smaller, lighter-weight companion so the number itself stays the
-   dominant thing on the card rather than competing with a same-size
-   word. font-variant-numeric/letter-spacing aren't inherited-and-wanted
-   here the way they are for the number, so this resets both. */
-.vital-primary-value-suffix {
-  font-size: 1rem;
-  font-weight: 700;
-  font-variant-numeric: normal;
-  letter-spacing: normal;
-  opacity: 0.75;
-}
-.vital-primary-sub {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--ink-faint);
-}
 .loan-alert-banner {
   background: var(--surface-amber);
   border: 1px solid var(--pending);
@@ -2866,24 +2825,6 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   font-size: 0.85rem;
   color: var(--ink);
 }
-.dashboard-more-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  min-height: 44px;
-  text-align: center;
-  background: none;
-  border: 1px dashed var(--line);
-  border-radius: 12px;
-  padding: 10px;
-  margin-top: 14px;
-  color: var(--accent);
-  font-weight: 600;
-  font-size: 0.85rem;
-  cursor: pointer;
-}
-.dashboard-more-toggle:hover { background: var(--bg); }
 .dashboard-more-section { margin-top: 4px; }
 
 /* Cycle Progress — its own full-width panel below the vital-card grid
@@ -2988,67 +2929,6 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   flex-shrink: 0;
 }
 
-/* Quick Actions — compact one-tap icon row, right on the dashboard
-   (not behind the "See full breakdown" tap) but sized to not compete
-   with the primary stat above it. Deep-green fill on hover (same brand
-   gradient as the hero/header), not a new visual language. */
-.quick-actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 10px;
-  flex-wrap: wrap;
-}
-.quick-action-btn {
-  flex: 0 0 auto;
-  width: 60px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 6px 4px;
-  cursor: pointer;
-  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
-}
-.quick-action-btn:hover:not(:disabled), .quick-action-btn:focus-visible:not(:disabled) {
-  background: var(--accent);
-  border-color: var(--accent);
-  transform: translateY(-1px);
-}
-.quick-action-btn:hover:not(:disabled) .quick-action-label,
-.quick-action-btn:focus-visible:not(:disabled) .quick-action-label {
-  color: var(--on-accent);
-}
-.quick-action-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-.quick-action-icon { font-size: 1.2rem; }
-.quick-action-label {
-  font-weight: 600;
-  font-size: 0.68rem;
-  color: var(--ink);
-  text-align: center;
-  transition: color 0.15s ease;
-}
-
-/* Group Pulse — the communal layer: an aggregate total and a plain
-   activity count, deliberately never who specifically has paid. A
-   single slim strip (icon + one line), not a card — this is a
-   nice-to-know, not the number someone opens the app to check. */
-.group-pulse-strip {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 4px;
-  padding: 6px 12px;
-  background: var(--bg);
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  font-size: 0.8rem;
-  color: var(--ink);
-}
-.group-pulse-strip strong { font-variant-numeric: tabular-nums; }
-
 /* Payout acknowledgment — a brief, dismissible banner, not a persistent
    fixture. Sits above the vital-card grid, below the Home heading. */
 .payout-ack {
@@ -3139,43 +3019,6 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   color: #FFFFFF;
   cursor: pointer;
   font-size: 0.95rem;
-}
-
-.progress-ring-wrap { position: relative; display: inline-flex; align-items: center; justify-content: center; margin-top: 4px; }
-.progress-ring-arc { transition: stroke-dashoffset 0.9s ease; }
-.progress-ring-center {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.progress-ring-percent { font-size: 1rem; font-weight: 700; color: var(--ink); }
-.progress-ring-sublabel { margin-top: 6px; }
-/* Translucent gold disc behind the ring — the dashboard's hero placement
-   (Dashboard.jsx's `filled` prop), giving it more visual weight than the
-   plain stroke-only ring used elsewhere. */
-.progress-ring-filled {
-  background: radial-gradient(circle, rgba(212, 169, 74, 0.22), rgba(212, 169, 74, 0.05) 68%, transparent 100%);
-  border-radius: 50%;
-  padding: 4px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .progress-ring-arc { transition: none; }
-}
-
-.progress-ring-glow .progress-ring-arc {
-  filter: drop-shadow(0 0 6px rgba(212, 169, 74, 0.65));
-}
-@media (prefers-reduced-motion: no-preference) {
-  .progress-ring-glow .progress-ring-arc {
-    animation: progress-ring-pulse 2.4s ease-in-out infinite;
-  }
-}
-@keyframes progress-ring-pulse {
-  0%, 100% { filter: drop-shadow(0 0 4px rgba(212, 169, 74, 0.5)); }
-  50% { filter: drop-shadow(0 0 10px rgba(212, 169, 74, 0.9)); }
 }
 
 /* Payment receipt — modal reuses .calc-modal-backdrop/.calc-modal (see
