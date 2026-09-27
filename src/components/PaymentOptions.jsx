@@ -49,7 +49,7 @@ export default function PaymentOptions({ session, config, onSaved }) {
       <div className="panel">
         <h2 className="panel-title">Payment Options</h2>
         <p className="muted small" style={{ marginBottom: 14 }}>
-          Where to actually send your contribution — mobile money and/or bank details, set
+          Where to send your contribution — mobile money and/or bank details, set
           up by your group's leader.
         </p>
         {config.paymentMethods && config.paymentMethods.length > 0 ? (

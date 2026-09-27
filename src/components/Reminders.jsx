@@ -97,11 +97,8 @@ export default function Reminders({ config, premiumActive }) {
   return (
     <div className="panel">
       <h2 className="panel-title">Payment Reminders</h2>
-      <p className="muted small">
-        Get a nudge a few days before each due date so nothing gets missed.
-      </p>
 
-      <label className="field checkbox-field" style={{ marginTop: 14 }}>
+      <label className="field checkbox-field">
         <input
           type="checkbox"
           checked={prefs.pushEnabled}
@@ -163,7 +160,7 @@ export default function Reminders({ config, premiumActive }) {
         <>
           <h3 className="panel-subtitle" style={{ marginTop: 24 }}>Per-Date Reminders</h3>
           <p className="muted tiny" style={{ marginBottom: 10 }}>
-            Override your default above for one specific date.
+            Override your default for one date.
             <InfoTip label="More about per-date reminders">
               A different lead time, or no reminder at all — handy for your own payout
               date, if you don't need a nudge about it.

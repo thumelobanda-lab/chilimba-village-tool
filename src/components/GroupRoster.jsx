@@ -45,9 +45,6 @@ export default function GroupRoster({ schedule, currentMemberName, isAdmin, onOp
   return (
     <>
       <h3 className="panel-subtitle">Payout Rotation</h3>
-      <p className="muted small" style={{ marginBottom: 10 }}>
-        Every member, and when they're scheduled to receive the group's payout.
-      </p>
       <div className="feed-list" style={{ marginBottom: 20 }}>
         {roster.map((r) => (
           <div

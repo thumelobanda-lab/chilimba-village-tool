@@ -42,7 +42,7 @@ export default function Community({ schedule, currentMemberName, isAdmin, onOpen
       </div>
       <h2 className="panel-title">Community</h2>
       <p className="muted small" style={{ marginBottom: 16 }}>
-        Visible to everyone — names, amounts, and dates only, never a full payment history or balance.
+        Shows names, amounts, and dates only — never a full history or balance.
         <InfoTip label="What this tab shows">
           Fund balances, recent settlements, and any loans against a fund that's open for
           borrowing.

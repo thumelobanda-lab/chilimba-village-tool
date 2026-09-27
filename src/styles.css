@@ -647,7 +647,12 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
    that the header hamburger alone is a fine primary-nav affordance.
    Fixed, not part of normal flow, so .app-main gets matching bottom
    padding below to keep the last bit of every screen's content from
-   sitting underneath it. */
+   sitting underneath it.
+   Bar height trimmed from ~55px to ~48px (Part 3 declutter pass):
+   outer padding 4px->2px and the decorative drop shadow removed (the
+   border-top alone already separates it from content) shrink the
+   visual footprint; .bottom-tab's own min-height keeps every button's
+   actual tap target at the 44px accessible floor regardless. */
 .bottom-tab-bar {
   display: none;
 }
@@ -661,11 +666,10 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
     z-index: 50;
     background: var(--panel);
     border-top: 1px solid var(--line);
-    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.08);
-    padding: 4px 4px calc(4px + env(safe-area-inset-bottom, 0px));
+    padding: 2px 4px calc(2px + env(safe-area-inset-bottom, 0px));
   }
   .app-main {
-    padding-bottom: calc(20px + 64px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(20px + 48px + env(safe-area-inset-bottom, 0px));
   }
   /* BottomTabBar never renders pre-login (see App.jsx), so this screen
      shouldn't reserve space for it either — .login-content's own
@@ -675,7 +679,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   }
   /* Clears the bottom tab bar instead of sitting half-behind it. */
   .toast {
-    bottom: calc(24px + 64px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(24px + 48px + env(safe-area-inset-bottom, 0px));
   }
 }
 .bottom-tab {
@@ -684,8 +688,10 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 2px;
-  padding: 6px 2px;
+  min-height: 44px;
+  padding: 4px 2px;
   border: none;
   background: none;
   color: var(--ink-faint);
@@ -1245,7 +1251,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
    spot on the screen meant to read as "paper", a deliberate contrast
    with the translucent fields around it, not something that should
    flip dark in dark mode. */
-.login-form .auth-mode-tab-active { background: #FFFFFF; color: #1B2E22; box-shadow: none; }
+.login-form .auth-mode-tab-active { background: #FFFFFF; color: #1B2E22; }
 .login-form .btn-link { color: rgba(255, 255, 255, 0.95); }
 /* var(--red) is tuned per-theme for text on an ordinary light/dark
    .panel — neither value clears AA against this screen's own dark
@@ -3175,18 +3181,22 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 }
 
 /* Sign up / Sign in mode toggle atop the login form — one shared form
-   underneath (see Login.jsx), this only swaps which framing is shown. */
+   underneath (see Login.jsx), this only swaps which framing is shown.
+   Part 3 declutter pass: dropped the active tab's drop shadow (the
+   background swap already reads as "selected" on its own) and trimmed
+   the pill's own padding/gap — .auth-mode-tab's min-height still floors
+   every tab at the 44px accessible tap target regardless. */
 .auth-mode-toggle {
   display: flex;
-  gap: 4px;
+  gap: 3px;
   background: var(--surface-hover);
   border-radius: 10px;
-  padding: 4px;
+  padding: 3px;
   margin-bottom: 16px;
 }
 .auth-mode-tab {
   flex: 1;
-  padding: 8px 12px;
+  padding: 6px 10px;
   min-height: 44px;
   border: none;
   background: transparent;
@@ -3199,14 +3209,16 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .auth-mode-tab-active {
   background: var(--panel);
   color: var(--accent);
-  box-shadow: 0 1px 3px rgba(0,0,0,0.12);
 }
 /* Sign up's secondary Join/Create switch (Login.jsx) — same look as
    .auth-mode-toggle above, just visually subordinate: smaller and
    tighter so it doesn't compete with the primary Sign up/Sign in tabs
-   sitting directly above it. */
+   sitting directly above it. min-height was 38px (below the 44px
+   accessible tap-target floor every other control in the app holds to)
+   — raised to match; the smaller font/padding still keep it visually
+   subordinate. */
 .auth-submode-toggle { padding: 3px; margin-bottom: 14px; }
-.auth-submode-toggle .auth-mode-tab { min-height: 38px; padding: 6px 10px; font-size: 0.8rem; }
+.auth-submode-toggle .auth-mode-tab { min-height: 44px; padding: 6px 10px; font-size: 0.8rem; }
 
 /* Save-confirmation toast (Toast.jsx) — floats bottom-center above
    everything else, brief and self-dismissing (each caller owns its own

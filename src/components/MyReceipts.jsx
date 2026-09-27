@@ -25,8 +25,7 @@ export default function MyReceipts({ receipts, memberName, groupName, cycleName,
     return (
       <div>
         <p className="muted small">
-          Receipts are a Premium feature. Upgrade your group's plan to view, download, and share a
-          receipt for every confirmed payment.
+          Receipts are a Premium feature — upgrade to view, download, and share them.
         </p>
         {onUpgrade && (
           <button className="btn-primary" style={{ width: "auto" }} onClick={onUpgrade}>

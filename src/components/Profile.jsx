@@ -148,7 +148,7 @@ export default function Profile({ session, onRenamed, onLogout, subscriptionStat
     <div className="panel">
       <h2 className="panel-title">My Account</h2>
       <p className="muted small">
-        Update your name, title, or PIN — this only ever affects your own account.
+        Changes here only ever affect your own account.
       </p>
 
       {/* Moved off the dashboard — it was permanent, always-visible real

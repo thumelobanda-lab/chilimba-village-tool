@@ -212,9 +212,8 @@ export default function GroupSetup({ config, onSaved, session, premiumActive, on
       <div className="setup-hero">
         <h2 className="setup-hero-title">Let's get your group set up</h2>
         <p className="setup-hero-sub">
-          A few short sections below — payout dates, savings funds, and where members should
-          send their contributions. Nothing here is permanent; come back and change any of it
-          any time.
+          A few short sections below — nothing here is permanent, so come back and change
+          any of it any time.
         </p>
         <span className="setup-hero-progress">{essentialDone} of {essentialTotal} sections set up</span>
       </div>
@@ -273,7 +272,7 @@ export default function GroupSetup({ config, onSaved, session, premiumActive, on
         )}
         <h3 className="panel-subtitle">Generate Payout Dates</h3>
         <p className="muted tiny" style={{ marginBottom: 10 }}>
-          Auto-fills a run of dates instead of typing them one by one.
+          Fills in a run of dates at once.
           <InfoTip label="More about generated dates">
             Every generated date stays a normal, editable row below, same as if you'd
             typed it in yourself.

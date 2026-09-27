@@ -51,13 +51,10 @@ export default function ToolsPanel({ theme, onToggleTheme }) {
     <div className="panel">
       <h2 className="panel-title">Tools</h2>
       <p className="muted small">
-        A few small utilities — nothing here touches your group's payments or schedule.
+        A few small utilities.
       </p>
 
       <h3 className="panel-subtitle"><Icon name="calculator" size={16} className="icon-inline" /> Calculator</h3>
-      <p className="muted tiny" style={{ marginBottom: 10 }}>
-        A genuine arithmetic calculator — the same one behind the calculator icon at the top of the app.
-      </p>
       <button className="btn-ghost-dark" onClick={() => setShowCalculator(true)}>
         Open Calculator
       </button>
