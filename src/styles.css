@@ -1231,7 +1231,14 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .login-form .field input::placeholder { color: rgba(255, 255, 255, 0.65); }
 .login-form .field input:disabled,
 .login-form .field select:disabled { opacity: 0.6; }
-.login-form .auth-mode-toggle { background: rgba(255, 255, 255, 0.14); }
+/* Dark tint, not light — a white-tinted pill measured as low as ~3.4:1
+   for the inactive tab's rgba(255,255,255,0.8) label in light theme,
+   where the scrim's lighter midsection lets a bright patch of sky show
+   through; even opaque white text on that combination topped out
+   around 4.3:1, short of AA. Same brand-dark color as .login-hero-scrim
+   at the same alpha fixes it in both themes without touching the text
+   itself. */
+.login-form .auth-mode-toggle { background: rgba(9, 26, 20, 0.14); }
 .login-form .auth-mode-tab { color: rgba(255, 255, 255, 0.8); }
 /* Active tab stays a solid light pill regardless of theme (not
    var(--panel), which is dark in [data-theme="dark"]) — this is the one
