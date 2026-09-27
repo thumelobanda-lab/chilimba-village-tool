@@ -3036,6 +3036,68 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   justify-content: center;
 }
 
+/* MilestoneMoment.jsx — the once-per-event "payout day" photo, picked at
+   random from public/images/milestones/ (4 self-hosted shots — see
+   lib/milestones.js). One fixed aspect-ratio on the card itself, not
+   matched to any single photo's native crop, since the choice is random
+   and the reserved space can't depend on which one gets picked;
+   .hero-banner-img's own width/height:100% + object-fit:cover (reused
+   here) does the actual per-photo cropping. Same dark-green overlay
+   color as .hero-banner-overlay/.login-hero-scrim elsewhere in the app. */
+.milestone-card {
+  position: relative;
+  aspect-ratio: 3 / 2;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+/* No motion at all unless the OS/browser reports no reduced-motion
+   preference — prefers-reduced-motion: no-preference only matches for
+   someone who hasn't asked for reduced motion, so this is opt-in by
+   default rather than needing to detect and suppress the reduce case. */
+@media (prefers-reduced-motion: no-preference) {
+  .milestone-card { animation: milestone-fade-in 0.4s ease; }
+}
+@keyframes milestone-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.milestone-card-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  padding: 14px;
+  background: linear-gradient(to top, rgba(9, 26, 20, 0.88), rgba(9, 26, 20, 0) 60%);
+}
+.milestone-card-caption {
+  color: #FFFFFF;
+  font-weight: 700;
+  font-size: 1rem;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+.milestone-card-dismiss {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  /* 0.6, not the overlay's own 0.45 — this button sits near the top of
+     the image, outside .milestone-card-overlay's "to top" fade (fully
+     transparent by 60% up), so it needs to hold its own contrast against
+     a bright sky background on its own, not borrow the caption's. */
+  background: rgba(9, 26, 20, 0.6);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  color: #FFFFFF;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
 .progress-ring-wrap { position: relative; display: inline-flex; align-items: center; justify-content: center; margin-top: 4px; }
 .progress-ring-arc { transition: stroke-dashoffset 0.9s ease; }
 .progress-ring-center {

@@ -19,10 +19,12 @@ import {
 import { useCountUp } from "../hooks/useCountUp.js";
 import { computeMemberStreak } from "../lib/streakMath.js";
 import { resolveGroupName } from "../lib/groupName.js";
+import { resolveMilestoneEvent } from "../lib/milestones.js";
 import ProgressRing from "./ProgressRing.jsx";
 import CycleTimeline from "./CycleTimeline.jsx";
 import GroupPulse from "./GroupPulse.jsx";
 import PayoutAcknowledgment from "./PayoutAcknowledgment.jsx";
+import MilestoneMoment from "./MilestoneMoment.jsx";
 import QuickActions from "./QuickActions.jsx";
 import PayoutAvatarRow from "./PayoutAvatarRow.jsx";
 import DashboardStatBlock from "./DashboardStatBlock.jsx";
@@ -154,6 +156,11 @@ export default function Dashboard({
   const timelineRows = buildCycleTimeline(config.schedule);
   const nextUpRow = timelineRows.find((r) => r.status === "next");
   const recentPayout = findRecentPayout(config.schedule);
+  // The richer, once-per-event milestone moment (MilestoneMoment.jsx) —
+  // a separate signal from recentPayout above even though both come
+  // from the same underlying data, since this one also needs to know
+  // whether the payout completed the whole cycle.
+  const milestoneEvent = resolveMilestoneEvent(config.schedule);
   // Admin-only heads-up, same gating/data source as `unassigned` above —
   // surfaced during the countdown to the next payout, not discovered
   // only once the group actually tries to pay someone.
@@ -269,6 +276,8 @@ export default function Dashboard({
           resolveGroupName prefers config over session so a rename in
           Group Setup shows up here immediately — see lib/groupName.js. */}
       <DashboardCoverBanner groupName={resolveGroupName(config, session)} cycleLine={cycleLine} />
+
+      {milestoneEvent && <MilestoneMoment groupSlug={session.groupSlug} event={milestoneEvent} />}
 
       {recentPayout && <PayoutAcknowledgment groupSlug={session.groupSlug} row={recentPayout} />}
 

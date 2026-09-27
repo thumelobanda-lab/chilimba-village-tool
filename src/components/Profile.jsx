@@ -292,8 +292,8 @@ export default function Profile({ session, onRenamed, onLogout, subscriptionStat
       {showPrivacy && <PrivacyModal onClose={() => setShowPrivacy(false)} />}
 
       <p className="muted tiny photo-credit">
-        Photos by Logan Voss, Brice Cooper, Aaron Burden, Ron Smit, Barney Goodman and Musonda
-        Kankomba via Unsplash.
+        Photos by Logan Voss, Brice Cooper, Aaron Burden, Ron Smit, Barney Goodman, Musonda
+        Kankomba, Lukáš Kadava, Akash Ghosh, Peter Robbins and Ethan Dow via Unsplash.
       </p>
 
       {onLogout && (
