@@ -18,7 +18,6 @@ import {
 } from "../lib/dashboardMath.js";
 import { useCountUp } from "../hooks/useCountUp.js";
 import { computeMemberStreak } from "../lib/streakMath.js";
-import { resolveGroupName } from "../lib/groupName.js";
 import { resolveMilestoneEvent } from "../lib/milestones.js";
 import ProgressRing from "./ProgressRing.jsx";
 import CycleTimeline from "./CycleTimeline.jsx";
@@ -268,14 +267,14 @@ export default function Dashboard({
         </div>
       )}
 
-      {/* B — the cover banner: group name + the cycle-progress line that
-          used to sit loose in the strip below (see cycleLine above). The
-          greeting itself lives in the header (App.jsx), alongside the
-          OpenBook wordmark — this is identity/orientation only, never
-          the visual focus (the ring and "Nothing owed" below it are).
-          resolveGroupName prefers config over session so a rename in
-          Group Setup shows up here immediately — see lib/groupName.js. */}
-      <DashboardCoverBanner groupName={resolveGroupName(config, session)} cycleLine={cycleLine} />
+      {/* B — the cover banner: the cycle-progress line that used to sit
+          loose in the strip below (see cycleLine above). Doesn't show the
+          group name — the header's GroupSwitcher already does, on every
+          tab, right above this. The greeting itself also lives in the
+          header (App.jsx), alongside the OpenBook wordmark — this banner
+          is identity/orientation only, never the visual focus (the ring
+          and "Nothing owed" below it are). */}
+      <DashboardCoverBanner cycleLine={cycleLine} />
 
       {milestoneEvent && <MilestoneMoment groupSlug={session.groupSlug} event={milestoneEvent} />}
 

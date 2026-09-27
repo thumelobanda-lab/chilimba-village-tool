@@ -337,10 +337,16 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .profile-preview-trigger .avatar-photo, .profile-preview-trigger .avatar-fallback {
   border-color: var(--chrome-ink-faint);
 }
+/* position: fixed, not absolute — top/left come from computeTooltipPosition
+   (see MemberPreviewPopover.jsx), set as inline style. Needed because this
+   panel can open from an avatar inside PayoutAvatarRow's horizontally-
+   scrolling strip (overflow-x: auto), which per the CSS spec also clips
+   overflow-y — an absolutely-positioned panel taller than that strip used
+   to get cut off the moment it opened. Fixed positioning isn't subject to
+   an ancestor's overflow at all, so this works the same for that avatar
+   row and the header's own badge (ProfilePreview.jsx). */
 .profile-preview-panel {
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
+  position: fixed;
   z-index: 60;
   min-width: 180px;
   background: var(--panel);
@@ -1081,22 +1087,11 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
      sits up there. */
   background: linear-gradient(to top, rgba(15, 51, 38, 0.82) 0%, rgba(15, 51, 38, 0.35) 100%);
 }
-.dashboard-cover-banner-name {
-  display: block;
-  color: #FFFFFF;
-  font-weight: 700;
-  font-size: 1rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
-}
 .dashboard-cover-banner-cycle {
   display: block;
   color: rgba(255, 255, 255, 0.92);
   font-weight: 600;
   font-size: 0.75rem;
-  margin-top: 2px;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
 }
 

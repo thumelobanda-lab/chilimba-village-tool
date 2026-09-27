@@ -2,20 +2,19 @@ import React, { useEffect, useState } from "react";
 import Icon from "./Icon.jsx";
 import WhatIsChilimbaModal from "./WhatIsChilimbaModal.jsx";
 import { getSupportContact } from "../lib/api.js";
-import { buildWhatsAppDirectUrl } from "../lib/inviteCard.js";
-
-const HELP_WHATSAPP_MESSAGE = "Hi, I need help with OpenBook.";
 
 /**
  * Reachable from a single "Need help?" trigger in the header (see
  * App.jsx) — same one-shared-component pattern as PrivacyModal/TermsModal,
- * and the same owner-configured supportEmail/supportWhatsapp fields
- * TermsContent.jsx already reads (getSupportContact — public,
- * unauthenticated, works pre-login too, since a locked-out member needs
- * this most).
+ * and the same owner-configured supportEmail field TermsContent.jsx
+ * already reads (getSupportContact — public, unauthenticated, works
+ * pre-login too, since a locked-out member needs this most). Email only,
+ * not supportWhatsapp — this card is a quiet fallback for "who do I
+ * contact," not another channel to keep in sync; TermsContent.jsx and the
+ * owner's own messaging tools still use WhatsApp where that's the point.
  */
 export default function HelpModal({ onClose }) {
-  const [contact, setContact] = useState({ supportEmail: null, supportWhatsapp: null });
+  const [contact, setContact] = useState({ supportEmail: null });
   const [showWhatIsChilimba, setShowWhatIsChilimba] = useState(false);
 
   useEffect(() => {
@@ -24,7 +23,7 @@ export default function HelpModal({ onClose }) {
       .catch(() => {}); // non-critical — the fallback copy below still reads fine without it
   }, []);
 
-  const hasContact = contact.supportEmail || contact.supportWhatsapp;
+  const hasContact = !!contact.supportEmail;
 
   return (
     <div className="calc-modal-backdrop" onClick={onClose}>
@@ -46,21 +45,9 @@ export default function HelpModal({ onClose }) {
             <>
               <p className="small">Reach OpenBook support directly:</p>
               <div className="invite-card-actions">
-                {contact.supportEmail && (
-                  <a className="btn-ghost-dark" href={`mailto:${contact.supportEmail}`}>
-                    <Icon name="mail" size={16} className="icon-inline" /> {contact.supportEmail}
-                  </a>
-                )}
-                {contact.supportWhatsapp && (
-                  <a
-                    className="btn-ghost-dark"
-                    href={buildWhatsAppDirectUrl(contact.supportWhatsapp, HELP_WHATSAPP_MESSAGE)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <Icon name="message" size={16} className="icon-inline" /> WhatsApp {contact.supportWhatsapp}
-                  </a>
-                )}
+                <a className="btn-ghost-dark" href={`mailto:${contact.supportEmail}`}>
+                  <Icon name="mail" size={16} className="icon-inline" /> {contact.supportEmail}
+                </a>
               </div>
             </>
           ) : (
