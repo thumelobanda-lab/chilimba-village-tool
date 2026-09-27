@@ -211,6 +211,54 @@
   --chrome-accent: var(--accent-2-light);
 }
 
+/* Dashboard "ledger" palette — a warm-paper, calm-ledger mood distinct
+   from the app's ordinary mint/emerald --accent used everywhere else
+   (Payments, Community, Group Setup, ...), scoped to .dashboard-ledger
+   only so no other screen is affected. Deliberately its own small
+   palette rather than a wholesale reuse of --accent/--accent-2 — those
+   are tuned for a mint/parchment UI; this is a warmer, darker paper and
+   a duller, less saturated gold, per the dashboard redesign brief.
+   Existing tokens ARE reused wherever the exact color/role already
+   exists (see --ledger-gold/--on-accent-2 below) rather than
+   duplicating them under a new name.
+
+   Every pairing below was checked against WCAG AA (4.5:1 normal text,
+   3:1 large text/meaningful UI) at its actual computed contrast ratio
+   — see the ratio noted next to each. --ledger-muted is very slightly
+   darker (light) / lighter (dark) than the exact grey-brown the design
+   brief specified, by just enough to clear 4.5:1 with a small margin
+   (it measured 4.47:1 / 4.53:1 as originally specified — both just
+   under the threshold). --ledger-gold measures only 2.6:1 against
+   --ledger-paper in light mode (dark mode's brighter gold clears
+   7.4:1), so it's deliberately NEVER used as small running text on the
+   paper background in either theme — only as: a thin decorative
+   accent (active bottom-nav tab, "next" timeline marker) alongside a
+   redundant text/weight cue, or as a filled background with
+   var(--on-accent-2) text on top (5.65:1 light / 8.95:1 dark — that
+   token already exists precisely for text-on-gold and is themed
+   correctly for both). Hairline borders/dashed dividers are
+   intentionally very low-contrast (~1.3-1.7:1) — that softness is the
+   explicit "thin rules, not boxed cards" brief, not an oversight;
+   nothing on the dashboard depends on a divider alone to be
+   understood, only on the spacing/content either side of it. */
+.dashboard-ledger {
+  --ledger-paper: #F5F1E6;
+  --ledger-ink: #173D2C;      /* 10.69:1 on --ledger-paper */
+  --ledger-gold: #B8923A;     /* 2.58:1 on --ledger-paper — decorative accents only, see block comment */
+  --ledger-muted: #696C64;    /* 4.74:1 on --ledger-paper (spec's #6d7068 measured 4.47:1, just under AA) */
+  --ledger-border: #D9D2BF;
+  --ledger-divider: #E0D9C6;
+  --ledger-serif: Georgia, "Times New Roman", Times, serif;
+}
+[data-theme="dark"] .dashboard-ledger {
+  --ledger-paper: var(--panel);  /* #16332A — reuses the app's existing dark surface, already a deep-green paper analog */
+  --ledger-ink: #EDE6D3;         /* warm cream, not an inverted green — 10.94:1 on --ledger-paper */
+  --ledger-gold: var(--accent-2); /* reuses the app's existing dark-mode gold (#E8B93D) — 7.42:1 on --ledger-paper */
+  --ledger-muted: #A39B8A;       /* 4.94:1 on --ledger-paper (same too-close-to-4.5 nudge as light mode) */
+  --ledger-border: #2E4A3B;
+  --ledger-divider: #3A5645;
+}
+
 /* A modest bump over the browser default (16px) — plain rem-based
    sizing means every text size in this file scales with it, so this
    alone is most of "increase the base font size across the app" without
