@@ -755,7 +755,24 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   border-radius: 8px;
 }
 .bottom-tab-icon { font-size: 1.2rem; line-height: 1; }
-.bottom-tab-active { color: var(--accent); background: var(--surface-active); }
+/* Quieter active state (dashboard redesign, Part 3) — a plain color/
+   weight change plus a thin 2px top accent line instead of a filled
+   background pill, consistent with the rest of the app's "thin rules,
+   not boxed chrome" direction. This is global chrome (every tab, not
+   just the dashboard), so it stays on the app's ordinary --accent token
+   rather than the dashboard-only --ledger-* palette. */
+.bottom-tab-active { color: var(--accent); font-weight: 700; }
+.bottom-tab-active::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 22px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--accent);
+}
 .bottom-tab-dot {
   position: absolute;
   top: 2px;
