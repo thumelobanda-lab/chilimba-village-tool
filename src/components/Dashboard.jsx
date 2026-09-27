@@ -18,6 +18,7 @@ import {
 } from "../lib/dashboardMath.js";
 import { useCountUp } from "../hooks/useCountUp.js";
 import { computeMemberStreak } from "../lib/streakMath.js";
+import { resolveGroupName } from "../lib/groupName.js";
 import ProgressRing from "./ProgressRing.jsx";
 import CycleTimeline from "./CycleTimeline.jsx";
 import GroupPulse from "./GroupPulse.jsx";
@@ -264,8 +265,10 @@ export default function Dashboard({
           used to sit loose in the strip below (see cycleLine above). The
           greeting itself lives in the header (App.jsx), alongside the
           OpenBook wordmark — this is identity/orientation only, never
-          the visual focus (the ring and "Nothing owed" below it are). */}
-      <DashboardCoverBanner groupName={session?.groupName} cycleLine={cycleLine} />
+          the visual focus (the ring and "Nothing owed" below it are).
+          resolveGroupName prefers config over session so a rename in
+          Group Setup shows up here immediately — see lib/groupName.js. */}
+      <DashboardCoverBanner groupName={resolveGroupName(config, session)} cycleLine={cycleLine} />
 
       {recentPayout && <PayoutAcknowledgment groupSlug={session.groupSlug} row={recentPayout} />}
 

@@ -1,5 +1,12 @@
 import { MOCK_MODE, lsGet, lsSet, realFetch, currentSession, groupScopedKey } from "./core.js";
 
+// Mirrors createGroup()'s own "Group name is required" check above it in
+// auth.js — a group's name can't go empty on a later rename any more than
+// it could at creation. The length cap only applies here (not at
+// creation) since this is the one place a group name is actually
+// re-validated on every save, whatever it was before.
+const MAX_GROUP_NAME_LENGTH = 60;
+
 function subscriptionActiveFor(session) {
   const sub = lsGet(groupScopedKey(session, "group-sub"), null);
   return !!(sub?.expiresAt && new Date(sub.expiresAt).getTime() > Date.now());
@@ -22,6 +29,12 @@ export async function saveSchedule(schedule) {
   if (!session || session.role !== "admin") {
     throw new Error("Only a group admin can edit the schedule.");
   }
+  const groupName = (schedule.groupName || "").trim();
+  if (!groupName) throw new Error("Enter a group name.");
+  if (groupName.length > MAX_GROUP_NAME_LENGTH) {
+    throw new Error(`Group name must be ${MAX_GROUP_NAME_LENGTH} characters or fewer.`);
+  }
+  schedule = { ...schedule, groupName };
   if (MOCK_MODE) {
     // Only blocks actually raising the rate above what's already saved —
     // mirrors worker/src/routes/schedule.js's PUT handler, so a group

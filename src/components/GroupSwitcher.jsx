@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { resolveGroupName } from "../lib/groupName.js";
 
 /**
  * The header's current-group indicator doubles as a switcher once a
@@ -53,7 +54,10 @@ export default function GroupSwitcher({ session, config, myGroups, onSwitch, onR
     onRemove(groupSlug);
   };
 
-  const label = config.cycleName ? `${session.groupName} · ${config.cycleName}` : session.groupName;
+  // resolveGroupName prefers config over session's login-time snapshot,
+  // so a rename made in Group Setup shows up here right away.
+  const currentGroupName = resolveGroupName(config, session);
+  const label = config.cycleName ? `${currentGroupName} · ${config.cycleName}` : currentGroupName;
 
   return (
     <div className="group-switcher" ref={wrapRef}>
@@ -77,7 +81,14 @@ export default function GroupSwitcher({ session, config, myGroups, onSwitch, onR
                 onClick={() => handleSwitch(g.groupSlug)}
               >
                 <span className="group-switcher-item-info">
-                  <span className="group-switcher-item-name">{g.groupName}</span>
+                  {/* The active row shows the live name (resolveGroupName);
+                      every other row is a different group this device
+                      isn't currently signed into, so g.groupName — its
+                      snapshot from the last time it was — is the freshest
+                      name available until it's switched to again. */}
+                  <span className="group-switcher-item-name">
+                    {g.groupSlug === session.groupSlug ? currentGroupName : g.groupName}
+                  </span>
                   <span className="muted tiny">
                     {g.name}
                     {g.role && (

@@ -30,6 +30,12 @@ export default function registerScheduleRoutes(router) {
   router.put("/api/schedule", async ({ request, env, cors }) => {
     const admin = await requireAdmin(request, env);
     const body = await request.json();
+    // Mirrors src/lib/api/schedule.js's saveSchedule() — re-checked here,
+    // not just in the frontend, since this route is the one place a
+    // group's name can actually change after creation.
+    const groupName = (body.groupName || "").trim();
+    if (!groupName) throw new HttpError(400, "Enter a group name.");
+    if (groupName.length > 60) throw new HttpError(400, "Group name must be 60 characters or fewer.");
     const communityFundDeduction = Number(body.communityFundDeduction) || 0;
     if (communityFundDeduction < 0) throw new HttpError(400, "Community fund deduction can't be negative.");
     const latePenaltyAmount = Number(body.latePenaltyAmount) || 0;
@@ -61,7 +67,7 @@ export default function registerScheduleRoutes(router) {
     await env.DB.prepare(
       `UPDATE groups SET group_name=?, cycle_name=?, recipient_exempt=?, schedule_json=?, funds_json=?, payment_info_json=?, community_fund_deduction=?, late_penalty_amount=?, payment_interval=?, updated_at=datetime('now'), updated_by=? WHERE id=?`
     ).bind(
-      body.groupName, body.cycleName, body.recipientExempt ? 1 : 0,
+      groupName, body.cycleName, body.recipientExempt ? 1 : 0,
       JSON.stringify(body.schedule), JSON.stringify(body.funds || []),
       JSON.stringify(body.paymentMethods || []), communityFundDeduction, latePenaltyAmount,
       body.paymentInterval || "biweekly", admin.name, admin.groupId

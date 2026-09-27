@@ -50,6 +50,7 @@ import { findNextDue } from "./lib/scheduleUtils.js";
 import { getPendingPayments, sendReminderNow } from "./lib/api.js";
 import { withViewTransition } from "./lib/viewTransition.js";
 import { setAppBadge, clearAppBadge } from "./lib/badge.js";
+import { resolveGroupName } from "./lib/groupName.js";
 
 const TABS = [
   { id: "ledger", label: "My Payment History" },
@@ -523,7 +524,7 @@ export default function App() {
           />
         ) : onboarding.needsOnboarding ? (
           <Onboarding
-            groupName={session.groupName}
+            groupName={resolveGroupName(config, session)}
             groupDefaultRate={config.schedule.find((r) => !isRecipientRow(r))?.due}
             onComplete={handleFinishOnboarding}
             onSkip={onboarding.skip}
