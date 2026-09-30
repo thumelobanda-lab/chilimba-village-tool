@@ -214,7 +214,9 @@
 /* Dashboard "ledger" palette — a warm-paper, calm-ledger mood distinct
    from the app's ordinary mint/emerald --accent used everywhere else
    (Payments, Community, Group Setup, ...), scoped to .dashboard-ledger
-   only so no other screen is affected. Deliberately its own small
+   (and .nav-menu-panel — the hamburger Menu screen reuses this same
+   palette per its own restyle, see NavMenu.jsx) so no other screen is
+   affected. Deliberately its own small
    palette rather than a wholesale reuse of --accent/--accent-2 — those
    are tuned for a mint/parchment UI; this is a warmer, darker paper and
    a duller, less saturated gold, per the dashboard redesign brief.
@@ -241,7 +243,7 @@
    explicit "thin rules, not boxed cards" brief, not an oversight;
    nothing on the dashboard depends on a divider alone to be
    understood, only on the spacing/content either side of it. */
-.dashboard-ledger {
+.dashboard-ledger, .nav-menu-panel {
   --ledger-paper: #F5F1E6;
   --ledger-ink: #173D2C;      /* 10.69:1 on --ledger-paper */
   --ledger-gold: #B8923A;     /* 2.58:1 on --ledger-paper — decorative accents only, see block comment */
@@ -250,7 +252,7 @@
   --ledger-divider: #E0D9C6;
   --ledger-serif: Georgia, "Times New Roman", Times, serif;
 }
-[data-theme="dark"] .dashboard-ledger {
+[data-theme="dark"] .dashboard-ledger, [data-theme="dark"] .nav-menu-panel {
   --ledger-paper: var(--panel);  /* #16332A — reuses the app's existing dark surface, already a deep-green paper analog */
   --ledger-ink: #EDE6D3;         /* warm cream, not an inverted green — 10.94:1 on --ledger-paper */
   --ledger-gold: var(--accent-2); /* reuses the app's existing dark-mode gold (#E8B93D) — 7.42:1 on --ledger-paper */
@@ -632,32 +634,30 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   min-width: 220px;
   max-height: 70vh;
   overflow-y: auto;
-  background: var(--panel);
-  border: 1px solid var(--line);
+  background: var(--ledger-paper);
+  color: var(--ledger-ink);
+  border: 1px solid var(--ledger-border);
   border-radius: 10px;
   box-shadow: 0 8px 24px rgba(0,0,0,0.12);
-  padding: 6px;
+  padding: 6px 10px;
   display: flex;
   flex-direction: column;
 }
-.nav-menu-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  min-height: 44px;
-  text-align: left;
-  padding: 10px 12px;
-  border: none;
-  background: none;
-  color: var(--ink);
-  font-size: 0.92rem;
-  font-weight: 600;
-  border-radius: 8px;
-  cursor: pointer;
-}
-.nav-menu-item:hover { background: var(--surface-hover); }
-.nav-menu-item-active { color: var(--accent); background: var(--surface-active); }
+/* Every row in the Menu panel is a .ledger-list-row (same tappable
+   label+chevron pattern as the dashboard's "More" section) — plain
+   <button> children of .ledger-list here, not <li>s like the
+   dashboard, since role="menu"/role="menuitem" (NavMenu.jsx) shouldn't
+   gain an extra implicit "list" role in between. This rule only ever
+   matches that direct-child shape, so it doesn't affect the
+   dashboard's own <li>-wrapped .ledger-list-row's last-child rule. */
+.nav-menu-panel .ledger-list > .ledger-list-row:last-child { border-bottom: none; }
+/* Marks the item matching the currently-open tab — bold weight only,
+   deliberately no color change: --ledger-gold fails AA as running text
+   in light mode (see the palette's own doc comment above), so this
+   uses the same "redundant text/weight cue" it already recommends
+   instead, matching .bottom-tab-active's own quiet, no-color-swap
+   precedent from the same redesign pass. */
+.ledger-list-row-active { font-weight: 700; }
 .nav-badge {
   flex-shrink: 0;
   min-width: 18px;
@@ -671,28 +671,11 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   line-height: 18px;
   text-align: center;
 }
+/* Still used by GroupSwitcher.jsx's own panel — NavMenu.jsx's Menu
+   screen dropped this in favor of .ledger-section's own border-top
+   (see below), reusing the dashboard's exact section-separator instead
+   of a second divider rule. */
 .nav-menu-divider { border-top: 1px solid var(--line); margin: 6px 2px; }
-/* Groups the admin-only items (Group Setup, Payment Review, Loans,
-   Create a New Group) apart from the member-facing list above them —
-   same flat menu, just no longer one undifferentiated list mixing two
-   different audiences' items together. See NavMenu.jsx.
-   A divider now sits above this label (not just the uppercase/faint
-   styling below) — without one, this plain-text heading sat flush
-   against the last member item with near-identical padding, reading as
-   just another row in the same tappable list. An admin tapping it (it's
-   a <div>, not a button — no click handler, no hover/active feedback at
-   all) saw nothing happen and reported it as an unopenable "admin
-   tools" tab. cursor:default here makes clear it was never meant to be
-   interactive. */
-.nav-menu-section-label {
-  font-size: 0.68rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--ink-faint);
-  font-weight: 700;
-  padding: 8px 12px 2px;
-  cursor: default;
-}
 
 .back-link { display: inline-block; margin-bottom: 14px; }
 

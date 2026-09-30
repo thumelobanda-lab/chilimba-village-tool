@@ -14,6 +14,14 @@ import Icon from "./Icon.jsx";
  * BottomTabBar's Menu tab and the header's hamburger trigger can control
  * the exact same panel instead of each having their own independent one.
  * Closes on selection, Escape, or a click outside the panel.
+ *
+ * Styled with the dashboard's ledger palette/list-row pattern (see
+ * styles.css's .dashboard-ledger token block and .ledger-list-row) —
+ * every item here is a plain label+chevron row, grouped into
+ * .ledger-section blocks (border-top as the section divider, same as
+ * the dashboard) rather than the old boxed nav-menu-item styling. Purely
+ * visual: selection, admin-only grouping, and every item's destination
+ * are unchanged.
  */
 export default function NavMenu({ items, activeId, onSelect, onOpenSpotlightTour, theme, onToggleTheme, open, onToggle, onClose }) {
   const wrapRef = useRef(null);
@@ -51,11 +59,14 @@ export default function NavMenu({ items, activeId, onSelect, onOpenSpotlightTour
     <button
       key={t.id}
       role="menuitem"
-      className={activeId === t.id ? "nav-menu-item nav-menu-item-active" : "nav-menu-item"}
+      className={"ledger-list-row" + (activeId === t.id ? " ledger-list-row-active" : "")}
       onClick={() => select(t.id)}
     >
-      {t.label}
-      {t.badge > 0 && <span className="nav-badge">{t.badge > 9 ? "9+" : t.badge}</span>}
+      <span>
+        {t.label}
+        {t.badge > 0 && <span className="nav-badge">{t.badge > 9 ? "9+" : t.badge}</span>}
+      </span>
+      <span className="ledger-list-chevron" aria-hidden="true">›</span>
     </button>
   );
 
@@ -73,38 +84,46 @@ export default function NavMenu({ items, activeId, onSelect, onOpenSpotlightTour
       </button>
       {open && (
         <div className="nav-menu-panel" role="menu">
-          {memberItems.map(renderItem)}
+          <div className="ledger-list">{memberItems.map(renderItem)}</div>
+
           {adminItems.length > 0 && (
-            <>
-              <div className="nav-menu-divider" />
-              <div className="nav-menu-section-label" role="presentation">Admin Tools</div>
-              {adminItems.map(renderItem)}
-            </>
+            <div className="ledger-section">
+              <div className="ledger-section-label" role="presentation">Admin Tools</div>
+              <div className="ledger-list">{adminItems.map(renderItem)}</div>
+            </div>
           )}
-          <div className="nav-menu-divider" />
-          {onToggleTheme && (
-            <button
-              role="menuitem"
-              className="nav-menu-item"
-              onClick={() => {
-                onToggleTheme();
-                onClose();
-              }}
-            >
-              <Icon name={theme === "dark" ? "sun" : "moon"} size={14} className="icon-inline" />{" "}
-              {theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
-            </button>
-          )}
-          <button
-            role="menuitem"
-            className="nav-menu-item"
-            onClick={() => {
-              onOpenSpotlightTour();
-              onClose();
-            }}
-          >
-            How this app works
-          </button>
+
+          <div className="ledger-section">
+            <div className="ledger-list">
+              {onToggleTheme && (
+                <button
+                  role="menuitem"
+                  className="ledger-list-row"
+                  onClick={() => {
+                    onToggleTheme();
+                    onClose();
+                  }}
+                >
+                  <span>
+                    <Icon name={theme === "dark" ? "sun" : "moon"} size={14} className="icon-inline" />{" "}
+                    {theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
+                  </span>
+                  <span className="ledger-list-chevron" aria-hidden="true">›</span>
+                </button>
+              )}
+              <button
+                role="menuitem"
+                className="ledger-list-row"
+                onClick={() => {
+                  onOpenSpotlightTour();
+                  onClose();
+                }}
+              >
+                <span>How this app works</span>
+                <span className="ledger-list-chevron" aria-hidden="true">›</span>
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
