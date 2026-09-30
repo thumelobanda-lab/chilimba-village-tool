@@ -47,7 +47,10 @@ function formatToday() {
  *      with the next contribution due, and the one primary action
  *      ("Log a payment"). Replaces the old CTA + separate progress ring
  *      + "contributed"/"caught up" chips, which all restated pieces of
- *      this same question — consolidated into one block.
+ *      this same question — consolidated into one block. Below the
+ *      button, a "your turn" line + decorative rotation glyph names
+ *      the member's own position in the payout rotation (reusing
+ *      payoutTimelineRows from section 3, not a second lookup).
  *   2. This round — collected vs. target, members paid, as plain ruled
  *      rows with a thin progress bar instead of a boxed card with a
  *      circular ring.
@@ -191,6 +194,28 @@ export default function Dashboard({
   });
   const myStreak = computeMemberStreak(totals.rowsComputed);
 
+  // "Your turn" line under the primary CTA: reuses payoutTimelineRows
+  // (built above for the "Who receives" timeline) rather than
+  // re-deriving whose turn it is. There's no group-wide "expected
+  // payout amount" concept anywhere in this app (schedule rows only
+  // carry each *contributing* member's own due, not a pot total) — the
+  // only amount tied to a payout is ledger.payoutInfo.amount, which a
+  // member fills in themselves (see the Ledger tab's "Your Turn's
+  // Payout" field) and defaults to 0 until they do. So the amount only
+  // shows once that's actually been entered; otherwise this still names
+  // the date without inventing a figure.
+  const myTurnRow = payoutTimelineRows.find((r) => r.isCurrentUser);
+  let yourTurnLine;
+  if (!myTurnRow) {
+    yourTurnLine = "Your position isn't set yet";
+  } else if (myTurnRow.status === "received") {
+    yourTurnLine = `You received your payout on ${formatDate(myTurnRow.date)}`;
+  } else if (ledger.payoutInfo?.amount > 0) {
+    yourTurnLine = `You receive ${money(ledger.payoutInfo.amount)} on ${formatDate(myTurnRow.date)}`;
+  } else {
+    yourTurnLine = `Your turn is on ${formatDate(myTurnRow.date)}`;
+  }
+
   // Cycle-completion trigger for the timeline's pop/highlight animation:
   // fires once, the moment this round's balance reads 0 (i.e.
   // buildPayoutAvatarRow's rowsComputed option already promoted it to
@@ -287,6 +312,10 @@ export default function Dashboard({
             Log a payment
           </button>
         )}
+        <div className="ledger-your-turn-row">
+          <RotationGlyph />
+          <span className="ledger-your-turn-text">{yourTurnLine}</span>
+        </div>
       </div>
 
       {/* 2 — this round: collected vs target, thin progress bar. Still
@@ -431,5 +460,31 @@ export default function Dashboard({
         </div>
       )}
     </div>
+  );
+}
+
+// Decorative-only accent next to the "Your turn" line — a partial ring
+// plus a few dots suggesting the payout rotation, not a real member
+// count or position. The full rotation lives in the "Who receives"
+// timeline above; this is just a small visual echo of it.
+function RotationGlyph() {
+  return (
+    <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true" className="ledger-turn-glyph">
+      <circle cx="14" cy="14" r="10" fill="none" stroke="var(--ledger-border)" strokeWidth="2" />
+      <circle
+        cx="14"
+        cy="14"
+        r="10"
+        fill="none"
+        stroke="var(--ledger-gold)"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeDasharray="16 100"
+        transform="rotate(-90 14 14)"
+      />
+      <circle cx="14" cy="4" r="2" fill="var(--ledger-ink)" />
+      <circle cx="22.6" cy="19" r="2" fill="var(--ledger-ink)" />
+      <circle cx="5.4" cy="19" r="2" fill="var(--ledger-ink)" />
+    </svg>
   );
 }
