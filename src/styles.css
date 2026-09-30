@@ -1845,6 +1845,8 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   margin-bottom: 10px;
 }
 .inline-alert-link { background: none; border: none; padding: 0; font: inherit; color: inherit; text-decoration: underline; cursor: pointer; }
+.inline-alert-clickable { cursor: pointer; }
+.inline-alert-clickable:focus-visible { outline: 2px solid var(--ledger-gold); outline-offset: 2px; }
 
 /* Notice board — admin-to-members announcements at the top of the dashboard */
 .notice-board {

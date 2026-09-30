@@ -392,6 +392,31 @@ export default function App() {
     }
   };
 
+  // Dashboard's "N members haven't paid this round" nudge — same
+  // sendReminderNow used above for a single member, just looped over
+  // everyone still owing this round instead of adding a second
+  // reminder-sending mechanism. One combined confirm/result rather than
+  // one dialog per member.
+  const handleRemindUnpaid = async (memberNames) => {
+    if (memberNames.length === 0) return;
+    if (!window.confirm(`Send ${memberNames.length} member${memberNames.length === 1 ? "" : "s"} a reminder now?`)) return;
+    try {
+      const results = await Promise.all(
+        memberNames.map((name) => sendReminderNow(name).catch((e) => ({ ok: false, reason: e.message })))
+      );
+      const sentCount = results.filter((r) => r.ok).length;
+      setReminderStatus(
+        sentCount > 0
+          ? `Reminder sent to ${sentCount} of ${memberNames.length} member${memberNames.length === 1 ? "" : "s"}`
+          : "Could not send reminders."
+      );
+    } catch (e) {
+      setReminderStatus(e.message || "Could not send reminders.");
+    } finally {
+      setTimeout(() => setReminderStatus(""), 2500);
+    }
+  };
+
   // Renders standalone, not nested inside this component's own app-shell
   // below — OwnerDashboard already renders its own header/shell (same
   // structural isolation the old separate OwnerApp.jsx tree had), it's
@@ -569,6 +594,8 @@ export default function App() {
                   onOpenPaymentOptions={() => navigateTab("payment-options")}
                   onLogPayment={openLedgerToPay}
                   onSendReminder={handleSendReminder}
+                  onRemindUnpaid={handleRemindUnpaid}
+                  notifications={notifications}
                 />
                 <Toast message={reminderStatus} />
               </>

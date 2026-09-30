@@ -1,6 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { money } from "./LedgerTable.jsx";
-import { getGroupFunds, getGroupPulse, getPendingPayments, getGroupMembers, getGroupRoster } from "../lib/api.js";
+import {
+  getGroupFunds,
+  getGroupPulse,
+  getPendingPayments,
+  getGroupMembers,
+  getGroupRoster,
+  getReconciliation,
+} from "../lib/api.js";
 import { useApiData } from "../lib/useApiData.js";
 import { findNextDue, myNextDueDates, payeesLabel, cycleEndDate, getPayees, unassignedMembers } from "../lib/scheduleUtils.js";
 import {
@@ -36,6 +43,12 @@ function formatDate(dateISO) {
 
 function formatToday() {
   return new Date().toLocaleDateString("en-ZM", { weekday: "long", day: "numeric", month: "long" });
+}
+
+function truncateWords(text, count) {
+  const words = (text || "").trim().split(/\s+/);
+  if (words.length <= count) return words.join(" ");
+  return words.slice(0, count).join(" ") + "…";
 }
 
 /**
@@ -86,6 +99,8 @@ export default function Dashboard({
   onOpenPaymentOptions,
   onLogPayment,
   onSendReminder,
+  onRemindUnpaid,
+  notifications,
 }) {
   const { data: fundsData } = useApiData(getGroupFunds, []);
   const { data: pulseData } = useApiData(getGroupPulse, []);
@@ -118,6 +133,17 @@ export default function Dashboard({
   // for why conflating the two made this section and Payment Review
   // disagree with each other.
   const roundRow = currentRoundRow(totals.rowsComputed);
+  // Admin-only, same row Reconciliation.jsx's Payment Review defaults to
+  // (see the comment above) — reuses that exact endpoint rather than a
+  // second "who hasn't paid" computation, so this always agrees with
+  // what Payment Review would show for the same round.
+  const { data: reconciliationData } = useApiData(
+    isAdmin && roundRow ? () => getReconciliation(roundRow.id) : () => Promise.resolve(null),
+    [isAdmin, roundRow?.id]
+  );
+  const unpaidMembers = reconciliationData
+    ? reconciliationData.members.filter((m) => m.balance > 0 && !m.isRecipient)
+    : [];
   const roundPercent = roundProgressPercent(roundRow);
   const balanceDisplay = useCountUp(roundRow?.balance ?? 0);
   const paidDisplay = useCountUp(roundRow?.paid ?? 0);
@@ -183,6 +209,18 @@ export default function Dashboard({
   // only once the group actually tries to pay someone.
   const missingMomo =
     isAdmin && membersData && nextUpRow ? membersMissingMomo(getPayees(nextUpRow), membersData.members) : [];
+  // Leader-only heads-up for a notice they haven't seen yet — reuses
+  // useNotifications' own items/read/markSeen (App.jsx already builds
+  // one for the bell) rather than a second seen-tracking scheme. Notices
+  // themselves are visible to every member further down (NoticeBoard),
+  // this is just a "you haven't looked at this one yet" nudge, so it's
+  // gated to admins per this section's own scope, not because the
+  // notice itself is admin-only.
+  const unreadNotice = isAdmin ? notifications?.items.find((i) => i.kind === "notice" && !i.read) : null;
+  const handleOpenNoticeBoard = () => {
+    if (unreadNotice) notifications.markSeen([unreadNotice.id]);
+    document.querySelector('[data-tour="notice-board"]')?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
   const photoByName = new Map(
     (rosterData?.members || []).map((m) => [m.name.trim().toLowerCase(), m])
   );
@@ -398,6 +436,28 @@ export default function Dashboard({
           ) : (
             "check with them"
           )}
+        </p>
+      )}
+
+      {isAdmin && unpaidMembers.length > 0 && (
+        <p className="inline-alert">
+          <Icon name="warning" size={14} className="icon-inline" /> <strong>{unpaidMembers.length}</strong> member
+          {unpaidMembers.length === 1 ? "" : "s"} {unpaidMembers.length === 1 ? "hasn't" : "haven't"} paid this round —{" "}
+          <button type="button" className="inline-alert-link" onClick={() => onRemindUnpaid(unpaidMembers.map((m) => m.name))}>
+            Remind
+          </button>
+        </p>
+      )}
+
+      {isAdmin && unreadNotice && (
+        <p
+          className="inline-alert inline-alert-clickable"
+          onClick={handleOpenNoticeBoard}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), handleOpenNoticeBoard())}
+        >
+          <Icon name="megaphone" size={14} className="icon-inline" /> {truncateWords(unreadNotice.text, 10)}
         </p>
       )}
 
