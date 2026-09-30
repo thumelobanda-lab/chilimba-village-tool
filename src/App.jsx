@@ -567,7 +567,6 @@ export default function App() {
                   onOpenLedger={() => navigateTab("ledger")}
                   onOpenGroupSetup={session.role === "admin" ? () => navigateTab("setup") : undefined}
                   onOpenPaymentOptions={() => navigateTab("payment-options")}
-                  onOpenCommunity={() => navigateTab("community")}
                   onLogPayment={openLedgerToPay}
                   onSendReminder={handleSendReminder}
                 />

@@ -55,9 +55,12 @@ function formatToday() {
  *      vertical timeline instead of a horizontal avatar strip; same
  *      underlying rotation data and interactions (tap to preview,
  *      long-press to remind), just displayed differently.
- *   4. More — Payment options / Roster & admins / Community fund / Full
- *      breakdown as plain list rows instead of boxed quick-action
- *      buttons; each still calls the exact same handler as before.
+ *   4. More — Payment options / Roster & admins / Full breakdown as
+ *      plain list rows instead of boxed quick-action buttons; each
+ *      still calls the exact same handler as before. ("Community fund"
+ *      was removed from here — it's the exact same Community.jsx screen
+ *      as the bottom-nav "Community" tab, so the shortcut was a pure
+ *      duplicate.)
  * Notices/alerts (pending confirmations, the milestone moment, payout
  * acknowledgment, unassigned members, missing mobile-money numbers, an
  * outstanding loan) keep their own existing look and slot in around
@@ -78,7 +81,6 @@ export default function Dashboard({
   onOpenLedger,
   onOpenGroupSetup,
   onOpenPaymentOptions,
-  onOpenCommunity,
   onLogPayment,
   onSendReminder,
 }) {
@@ -392,14 +394,6 @@ export default function Dashboard({
             <li>
               <button type="button" className="ledger-list-row" onClick={onOpenGroupSetup} data-tour="manage-group">
                 <span>Roster &amp; admins</span>
-                <span className="ledger-list-chevron" aria-hidden="true">›</span>
-              </button>
-            </li>
-          )}
-          {onOpenCommunity && (
-            <li>
-              <button type="button" className="ledger-list-row" onClick={onOpenCommunity}>
-                <span>Community fund</span>
                 <span className="ledger-list-chevron" aria-hidden="true">›</span>
               </button>
             </li>
