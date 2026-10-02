@@ -6,6 +6,11 @@ import TitleSelect, { isTitleError, TITLE_FIELD_ERROR } from "./TitleSelect.jsx"
 
 const LAST_GROUP_KEY = "chilimba:last-group-slug";
 
+// Typing this exact value into the Group code field reveals the Platform
+// owner link. Decluttering only — not an access gate; owner sign-in is
+// still protected by its own email + password.
+const OWNER_REVEAL_CODE = "0000?";
+
 // Reads ?join=<slug> from the URL — the format InviteCard.jsx's share
 // link now uses (see buildJoinUrl in inviteCard.js). Its presence is
 // what tells this screen someone arrived via an invite rather than
@@ -396,15 +401,17 @@ export default function Login({ onLogin, onJoin, onCreateGroup, onOwnerLogin, se
                   </label>
                 </>
               )}
-              <button
-                type="button"
-                className="btn-link"
-                style={{ display: "block", marginBottom: 14 }}
-                onClick={() => setSigninMode(isOwner ? "group" : "owner")}
-                disabled={busy}
-              >
-                {isOwner ? "Sign in to a group instead" : "Platform owner? Sign in here"}
-              </button>
+              {(isOwner || groupSlug === OWNER_REVEAL_CODE) && (
+                <button
+                  type="button"
+                  className="btn-link"
+                  style={{ display: "block", marginBottom: 14 }}
+                  onClick={() => setSigninMode(isOwner ? "group" : "owner")}
+                  disabled={busy}
+                >
+                  {isOwner ? "Sign in to a group instead" : "Platform owner? Sign in here"}
+                </button>
+              )}
             </>
           )}
 
