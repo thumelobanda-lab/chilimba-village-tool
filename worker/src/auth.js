@@ -1,6 +1,7 @@
 import { hashPin, verifyPin, isLegacyHash, randomSalt, newToken, uid, generateGroupCode } from "./crypto.js";
 import { HttpError } from "./httpError.js";
 import { isSubscriptionActive, FREE_TIER_MAX_MEMBERS } from "./subscriptionUtils.js";
+import { cleanText, cleanPhone, validatePin } from "./validation.js";
 
 export { HttpError };
 
@@ -221,10 +222,9 @@ export async function login(env, groupSlug, identifier, pin) {
 // separate writes here previously risked an orphaned account with no
 // session, on a much smaller scale than that bug, but the same fix).
 export async function joinGroup(env, groupSlug, name, phone, pin, termsAccepted, title, gender) {
-  if (!name || !name.trim()) throw new HttpError(400, "Full name is required.");
-  const phoneKey = normalizePhone(phone);
-  if (phoneKey.replace(/^\+/, "").length < 7) throw new HttpError(400, "Enter a valid phone number.");
-  if (!pin || pin.length < 4) throw new HttpError(400, "Choose a PIN of at least 4 digits.");
+  const cleanName = cleanText(name, { label: "Full name", max: 80 });
+  const phoneKey = cleanPhone(phone);
+  validatePin(pin);
   // Re-checked here, not just gated client-side (Login.jsx disables the
   // submit button until the checkbox is ticked) — the same "never trust
   // the client alone for something that matters" rule every other
@@ -252,7 +252,7 @@ export async function joinGroup(env, groupSlug, name, phone, pin, termsAccepted,
     }
   }
 
-  const key = name.trim().toLowerCase();
+  const key = cleanName.toLowerCase();
 
   const id = uid();
   const salt = randomSalt();
@@ -265,7 +265,7 @@ export async function joinGroup(env, groupSlug, name, phone, pin, termsAccepted,
       env.DB.prepare(
         `INSERT INTO users (id, group_id, name, display_name, phone, pin_salt, pin_hash, title, gender, terms_accepted_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`
-      ).bind(id, group.id, key, name.trim(), phoneKey, salt, hash, titleValue, genderValue),
+      ).bind(id, group.id, key, cleanName, phoneKey, salt, hash, titleValue, genderValue),
       env.DB.prepare(`INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)`)
         .bind(token, id, expiresAt),
     ]);
@@ -277,7 +277,7 @@ export async function joinGroup(env, groupSlug, name, phone, pin, termsAccepted,
   }
 
   return {
-    name: name.trim(),
+    name: cleanName,
     role: "member",
     title: titleValue,
     gender: genderValue,
@@ -316,9 +316,9 @@ async function generateUniqueGroupCode(env) {
 }
 
 export async function createGroup(env, { groupName, adminName, pin, phone, title, gender, createdIp, termsAccepted }) {
-  if (!groupName || !groupName.trim()) throw new HttpError(400, "Group name is required.");
-  if (!adminName || !adminName.trim()) throw new HttpError(400, "Your name is required.");
-  if (!pin || pin.length < 4) throw new HttpError(400, "Choose a PIN of at least 4 digits.");
+  const cleanGroupName = cleanText(groupName, { label: "Group name", max: 100 });
+  const cleanAdminName = cleanText(adminName, { label: "Your name", max: 80 });
+  validatePin(pin);
   // Same re-check as joinGroup() above — creating a group also creates a
   // brand-new admin account, so it's a "new member/admin registering"
   // moment too, not just an existing admin's routine action.
@@ -332,16 +332,16 @@ export async function createGroup(env, { groupName, adminName, pin, phone, title
   const userId = uid();
   const salt = randomSalt();
   const hash = await hashPin(pin, salt);
-  const key = adminName.trim().toLowerCase();
+  const key = cleanAdminName.toLowerCase();
   const token = newToken();
   const expiresAt = new Date(Date.now() + SESSION_TTL_HOURS * 60 * 60 * 1000).toISOString();
   // Phone isn't required to create a group (unlike joinGroup — creating
   // a group is still a lighter-weight action) — but when it's given,
-  // storing it here (same normalizePhone as joinGroup) both on the
+  // storing it here (same cleanPhone as joinGroup) both on the
   // admin's own account and on the group row is what lets the owner
   // dashboard's fraud signal (fraudSignals.js) notice the same person
   // spinning up several groups in a short window, not just the same IP.
-  const normalizedPhone = phone ? normalizePhone(phone) : null;
+  const normalizedPhone = phone ? cleanPhone(phone) : null;
 
   // The group, its first admin, and their session must land together or
   // not at all — batch() runs them as one D1 transaction, same pattern
@@ -361,11 +361,11 @@ export async function createGroup(env, { groupName, adminName, pin, phone, title
       env.DB.prepare(
         `INSERT INTO groups (id, slug, group_name, cycle_name, recipient_exempt, schedule_json, funds_json, created_ip, created_by_phone)
          VALUES (?, ?, ?, 'Cycle 1', 1, '[]', '[]', ?, ?)`
-      ).bind(groupId, normalizedSlug, groupName.trim(), createdIp || null, normalizedPhone),
+      ).bind(groupId, normalizedSlug, cleanGroupName, createdIp || null, normalizedPhone),
       env.DB.prepare(
         `INSERT INTO users (id, group_id, name, display_name, phone, pin_salt, pin_hash, title, gender, role, terms_accepted_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'admin', datetime('now'))`
-      ).bind(userId, groupId, key, adminName.trim(), normalizedPhone, salt, hash, titleValue, genderValue),
+      ).bind(userId, groupId, key, cleanAdminName, normalizedPhone, salt, hash, titleValue, genderValue),
       env.DB.prepare(`INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)`)
         .bind(token, userId, expiresAt),
     ]);
@@ -377,13 +377,13 @@ export async function createGroup(env, { groupName, adminName, pin, phone, title
   }
 
   return {
-    name: adminName.trim(),
+    name: cleanAdminName,
     role: "admin",
     title: titleValue,
     gender: genderValue,
     token,
     isNew: true,
     groupSlug: normalizedSlug,
-    groupName: groupName.trim(),
+    groupName: cleanGroupName,
   };
 }
