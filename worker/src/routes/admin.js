@@ -4,6 +4,7 @@ import { uid, maskPhone } from "../crypto.js";
 import { json } from "../responses.js";
 import { isRecipient as isRecipientHelper, resolveDue, findNextDue } from "../scheduleUtils.js";
 import { wouldLeaveZeroAdmins } from "../adminUtils.js";
+import { rateKey, clearFailures } from "../rateLimit.js";
 import { computeCommunityFundSplit, EFFECTIVE_CONTRIBUTION_SQL, COMMUNITY_FUND_ID } from "../communityFundSplit.js";
 import { computeLatePenalty } from "../latePenalty.js";
 import { computeMemberStreak } from "../streakMath.js";
@@ -200,9 +201,11 @@ export default function registerAdminRoutes(router) {
   // existing account with an empty pin_hash the same as a
   // brand-new signup for PIN purposes — whatever PIN the member types on
   // their next login simply becomes their new one, no old PIN needed.
-  // Also clears any lockout, and signs them out of every existing
-  // session immediately (same as remove) since the old PIN they're
-  // signed in with is being invalidated.
+  // Also clears any login lockout (rateLimit.js's per-account key, not
+  // the now-dead users.failed_attempts/locked_until columns — those
+  // stopped being read once login() moved to rateLimit.js), and signs
+  // them out of every existing session immediately (same as remove)
+  // since the old PIN they're signed in with is being invalidated.
   router.post("/api/admin/reset-pin", async ({ request, env, cors }) => {
     const admin = await requireAdmin(request, env);
     const body = await request.json();
@@ -214,11 +217,13 @@ export default function registerAdminRoutes(router) {
     if (!target.active) throw new HttpError(400, "This member has been removed — nothing to reset.");
 
     await env.DB.batch([
-      env.DB.prepare(
-        `UPDATE users SET pin_hash = '', pin_salt = '', failed_attempts = 0, locked_until = NULL WHERE id = ?`
-      ).bind(target.id),
+      env.DB.prepare(`UPDATE users SET pin_hash = '', pin_salt = '' WHERE id = ?`).bind(target.id),
       env.DB.prepare(`DELETE FROM sessions WHERE user_id = ?`).bind(target.id),
     ]);
+    // Matches the acctKey login() computes (rateKey("login-acct", group.id, user.id))
+    // — without this, a member locked out by repeated wrong guesses would
+    // stay locked out even after the admin gives them a fresh PIN.
+    await clearFailures(env, await rateKey("login-acct", admin.groupId, target.id));
 
     return json({ ok: true }, 200, cors);
   });
