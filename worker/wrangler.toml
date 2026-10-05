@@ -49,7 +49,11 @@ D1_DATABASE_NAME = "chilimba-db"
 # --dry-run`, which rejected it as an unexpected field) despite some
 # docs describing one — this cron + explicit .create() is the
 # currently-working way to run a Workflow on a schedule.
-crons = ["0 6 * * *", "30 2 * * *"]
+#
+# Third entry (03:15 UTC, clear of both other jobs) purges stale rows
+# from rate_limits (migration 025) via purgeStaleRateLimits() — see the
+# RATE_LIMIT_PURGE_CRON comment in index.js.
+crons = ["0 6 * * *", "30 2 * * *", "15 3 * * *"]
 
 [[workflows]]
 name = "chilimba-d1-backup"
@@ -88,14 +92,14 @@ name = "chilimba-d1-backup-staging"
 binding = "D1_BACKUP_WORKFLOW"
 class_name = "D1BackupWorkflow"
 
-# Only the backup cron, deliberately — staging has never had a
-# [triggers] block before this (no automatic reminder sends against
-# staging's test data), and adding the reminders cron string here too
-# would silently turn that on as a side effect of this change. Backups
-# are harmless to run automatically against staging as well, so that
-# one's included.
+# Deliberately no REMINDER_CRON — staging has never had a [triggers]
+# block before this (no automatic reminder sends against staging's test
+# data), and adding the reminders cron string here too would silently
+# turn that on as a side effect of this change. Backups and the
+# rate-limit purge are both harmless to run automatically against
+# staging as well, so those two are included.
 [env.staging.triggers]
-crons = ["30 2 * * *"]
+crons = ["30 2 * * *", "15 3 * * *"]
 
 # Set real secrets with, e.g.:
 #   npx wrangler secret put VAPID_PRIVATE_KEY

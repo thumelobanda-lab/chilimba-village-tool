@@ -2,6 +2,7 @@ import { HttpError } from "./httpError.js";
 import { corsHeaders, json } from "./responses.js";
 import { createRouter } from "./router.js";
 import { runReminderSweep } from "./reminders.js";
+import { purgeStaleRateLimits } from "./rateLimit.js";
 import { D1BackupWorkflow } from "./backupWorkflow.js";
 
 // Cloudflare requires a Workflow class to be exported by name from the
@@ -10,11 +11,18 @@ import { D1BackupWorkflow } from "./backupWorkflow.js";
 // on the backup cron via env.D1_BACKUP_WORKFLOW.create().
 export { D1BackupWorkflow };
 
-// The two [triggers].crons strings in wrangler.toml, matched against
-// event.cron below so one scheduled() handler can dispatch to either
-// job by exact string rather than guessing from time-of-day.
+// The three [triggers].crons strings in wrangler.toml, matched against
+// event.cron below so one scheduled() handler can dispatch to any of
+// them by exact string rather than guessing from time-of-day.
 const REMINDER_CRON = "0 6 * * *";
 const BACKUP_CRON = "30 2 * * *";
+// A quiet hour clear of both the 02:30 backup and the 06:00 reminder
+// sweep — deletes old rows from rate_limits (migration 025) so a table
+// that's written to on every failed login/signup attempt doesn't grow
+// forever. purgeStaleRateLimits() itself only touches entries that are
+// both decayed AND not currently blocking anyone (see its own comment
+// in rateLimit.js).
+const RATE_LIMIT_PURGE_CRON = "15 3 * * *";
 
 import registerAuthRoutes from "./routes/auth.js";
 import registerProfileRoutes from "./routes/profile.js";
@@ -85,9 +93,10 @@ export default {
   },
 
   // Cron trigger — see [triggers] in wrangler.toml. event.cron tells us
-  // which of the two configured schedules just fired; staging only ever
-  // gets BACKUP_CRON (see [env.staging.triggers]), so REMINDER_CRON
-  // simply never matches there.
+  // which of the configured schedules just fired; staging only ever
+  // gets BACKUP_CRON and RATE_LIMIT_PURGE_CRON (see
+  // [env.staging.triggers]), so REMINDER_CRON simply never matches
+  // there.
   async scheduled(event, env, ctx) {
     if (event.cron === BACKUP_CRON) {
       ctx.waitUntil(env.D1_BACKUP_WORKFLOW.create());
@@ -95,6 +104,10 @@ export default {
     }
     if (event.cron === REMINDER_CRON) {
       ctx.waitUntil(runReminderSweep(env));
+      return;
+    }
+    if (event.cron === RATE_LIMIT_PURGE_CRON) {
+      ctx.waitUntil(purgeStaleRateLimits(env));
     }
   },
 };
