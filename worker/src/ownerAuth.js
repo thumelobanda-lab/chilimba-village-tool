@@ -14,7 +14,7 @@
  * request could be gated behind, and rules out a self-service or
  * leaked-secret path to owner access entirely.
  */
-import { hashPin, verifyPin, randomSalt, newToken } from "./crypto.js";
+import { hashPin, verifyPin, randomSalt, newToken, hashToken } from "./crypto.js";
 import { HttpError } from "./httpError.js";
 
 const OWNER_SESSION_TTL_HOURS = 12; // shorter than a group session (24 * 7) —
@@ -32,7 +32,7 @@ export async function getOwnerSessionUser(request, env) {
     `SELECT os.expires_at, o.id, o.email
      FROM owner_sessions os JOIN owners o ON o.id = os.owner_id
      WHERE os.token = ?`
-  ).bind(token).first();
+  ).bind(await hashToken(token)).first();
 
   if (!row) return null;
   if (new Date(row.expires_at).getTime() < Date.now()) return null;
@@ -85,13 +85,13 @@ export async function ownerLogin(env, email, password) {
   const token = newToken();
   const expiresAt = new Date(Date.now() + OWNER_SESSION_TTL_HOURS * 60 * 60 * 1000).toISOString();
   await env.DB.prepare(`INSERT INTO owner_sessions (token, owner_id, expires_at) VALUES (?, ?, ?)`)
-    .bind(token, owner.id, expiresAt).run();
+    .bind(await hashToken(token), owner.id, expiresAt).run();
 
   return { email: owner.email, token, expiresAt };
 }
 
 export async function ownerLogout(env, token) {
-  if (token) await env.DB.prepare(`DELETE FROM owner_sessions WHERE token = ?`).bind(token).run();
+  if (token) await env.DB.prepare(`DELETE FROM owner_sessions WHERE token = ?`).bind(await hashToken(token)).run();
 }
 
 // Exported for scripts/create-owner.mjs's own reference/documentation

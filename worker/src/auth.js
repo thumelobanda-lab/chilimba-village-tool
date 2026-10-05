@@ -1,4 +1,4 @@
-import { hashPin, verifyPin, isLegacyHash, randomSalt, newToken, uid, generateGroupCode } from "./crypto.js";
+import { hashPin, verifyPin, isLegacyHash, randomSalt, newToken, hashToken, uid, generateGroupCode } from "./crypto.js";
 import { HttpError } from "./httpError.js";
 import { isSubscriptionActive, FREE_TIER_MAX_MEMBERS } from "./subscriptionUtils.js";
 import { cleanText, cleanPhone, validatePin } from "./validation.js";
@@ -8,6 +8,20 @@ export { HttpError };
 const SESSION_TTL_HOURS = 24 * 7; // a week
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCKOUT_MINUTES = 15;
+
+// A session token is returned to the client once; only its SHA-256 hash
+// is stored (see hashToken in crypto.js), so a copy of the database or a
+// backup can't be replayed as a login.
+async function insertSession(env, userId, token) {
+  const expiresAt = new Date(Date.now() + SESSION_TTL_HOURS * 60 * 60 * 1000).toISOString();
+  return env.DB.prepare(`INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)`)
+    .bind(await hashToken(token), userId, expiresAt);
+}
+
+export async function logoutSession(env, token) {
+  if (!token) return;
+  await env.DB.prepare(`DELETE FROM sessions WHERE token = ?`).bind(await hashToken(token)).run();
+}
 
 /**
  * Resolves the authenticated user AND their group in one lookup. Every
@@ -29,7 +43,7 @@ export async function getSessionUser(request, env) {
      JOIN users u ON u.id = s.user_id
      JOIN groups g ON g.id = u.group_id
      WHERE s.token = ?`
-  ).bind(token).first();
+  ).bind(await hashToken(token)).first();
 
   if (!row) return null;
   if (new Date(row.expires_at).getTime() < Date.now()) return null;
@@ -195,9 +209,7 @@ export async function login(env, groupSlug, identifier, pin) {
   }
 
   const token = newToken();
-  const expiresAt = new Date(Date.now() + SESSION_TTL_HOURS * 60 * 60 * 1000).toISOString();
-  await env.DB.prepare(`INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)`)
-    .bind(token, user.id, expiresAt).run();
+  await (await insertSession(env, user.id, token)).run();
 
   return {
     name: user.display_name,
@@ -258,7 +270,6 @@ export async function joinGroup(env, groupSlug, name, phone, pin, termsAccepted,
   const salt = randomSalt();
   const hash = await hashPin(pin, salt);
   const token = newToken();
-  const expiresAt = new Date(Date.now() + SESSION_TTL_HOURS * 60 * 60 * 1000).toISOString();
 
   try {
     await env.DB.batch([
@@ -266,8 +277,7 @@ export async function joinGroup(env, groupSlug, name, phone, pin, termsAccepted,
         `INSERT INTO users (id, group_id, name, display_name, phone, pin_salt, pin_hash, title, gender, terms_accepted_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`
       ).bind(id, group.id, key, cleanName, phoneKey, salt, hash, titleValue, genderValue),
-      env.DB.prepare(`INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)`)
-        .bind(token, id, expiresAt),
+      await insertSession(env, id, token),
     ]);
   } catch (e) {
     if (String(e?.message || e).includes("UNIQUE constraint failed")) {
@@ -334,7 +344,6 @@ export async function createGroup(env, { groupName, adminName, pin, phone, title
   const hash = await hashPin(pin, salt);
   const key = cleanAdminName.toLowerCase();
   const token = newToken();
-  const expiresAt = new Date(Date.now() + SESSION_TTL_HOURS * 60 * 60 * 1000).toISOString();
   // Phone isn't required to create a group (unlike joinGroup — creating
   // a group is still a lighter-weight action) — but when it's given,
   // storing it here (same cleanPhone as joinGroup) both on the
@@ -366,8 +375,7 @@ export async function createGroup(env, { groupName, adminName, pin, phone, title
         `INSERT INTO users (id, group_id, name, display_name, phone, pin_salt, pin_hash, title, gender, role, terms_accepted_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'admin', datetime('now'))`
       ).bind(userId, groupId, key, cleanAdminName, normalizedPhone, salt, hash, titleValue, genderValue),
-      env.DB.prepare(`INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)`)
-        .bind(token, userId, expiresAt),
+      await insertSession(env, userId, token),
     ]);
   } catch (e) {
     if (String(e?.message || e).includes("UNIQUE constraint failed")) {

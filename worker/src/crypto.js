@@ -76,6 +76,15 @@ export function newToken() {
   return bufToHex(arr.buffer);
 }
 
+// Session tokens are stored only as SHA-256 hashes: the token itself is a
+// 256-bit random value (no brute-forcing it, so a fast hash is correct
+// here), and a leaked database or backup then contains nothing that can
+// be replayed as a login.
+export async function hashToken(token) {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(String(token)));
+  return bufToHex(digest);
+}
+
 export function maskPhone(phone) {
   const digits = phone.replace(/\D/g, "");
   if (digits.length <= 3) return "***";

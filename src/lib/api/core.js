@@ -46,7 +46,20 @@ export function currentSession() {
 }
 
 export function logout() {
+  const session = currentSession();
   localStorage.removeItem("chilimba:session");
+  // Best-effort, mirrors ownerLogout() (lib/api/owner.js) — the local
+  // session is already cleared either way, so a failed request here
+  // (offline, mock mode with no real backend) never leaves the caller
+  // stuck. Invalidates the token server-side so a device that's lost or
+  // left signed in elsewhere stops working immediately instead of just
+  // expiring on its own a week later.
+  if (!MOCK_MODE && session?.token) {
+    fetch(`${API_BASE}/api/logout`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${session.token}` },
+    }).catch(() => {});
+  }
 }
 
 /**

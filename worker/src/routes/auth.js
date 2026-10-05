@@ -1,4 +1,4 @@
-import { login, joinGroup } from "../auth.js";
+import { login, joinGroup, logoutSession } from "../auth.js";
 import { json } from "../responses.js";
 
 export default function registerAuthRoutes(router) {
@@ -17,5 +17,19 @@ export default function registerAuthRoutes(router) {
     const { groupSlug, name, phone, pin, termsAccepted, title, gender } = await request.json();
     const session = await joinGroup(env, groupSlug, name, phone, pin, termsAccepted, title, gender);
     return json(session, 201, cors);
+  });
+
+  // Invalidates this one session server-side (deletes its row by hash —
+  // see logoutSession in auth.js), so a token that's already out in the
+  // world (an old device, a stolen one) stops working the moment someone
+  // signs out, not just when it eventually expires. Idempotent and never
+  // errors on a missing/already-expired token, same as owner logout
+  // (routes/owner.js) — signing out is always a success from the client's
+  // point of view.
+  router.post("/api/logout", async ({ request, env, cors }) => {
+    const auth = request.headers.get("Authorization") || "";
+    const token = auth.startsWith("Bearer ") ? auth.slice(7) : null;
+    await logoutSession(env, token);
+    return json({ ok: true }, 200, cors);
   });
 }
