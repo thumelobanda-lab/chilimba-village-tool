@@ -5,6 +5,7 @@ import { json } from "../responses.js";
 import { isRecipient as isRecipientHelper, resolveDue, findNextDue } from "../scheduleUtils.js";
 import { wouldLeaveZeroAdmins } from "../adminUtils.js";
 import { rateKey, clearFailures } from "../rateLimit.js";
+import { logAdminAction, AUDIT_ACTIONS } from "../auditLog.js";
 import { computeCommunityFundSplit, EFFECTIVE_CONTRIBUTION_SQL, COMMUNITY_FUND_ID } from "../communityFundSplit.js";
 import { computeLatePenalty } from "../latePenalty.js";
 import { computeMemberStreak } from "../streakMath.js";
@@ -139,7 +140,13 @@ export default function registerAdminRoutes(router) {
       .bind(admin.groupId, body.name.trim().toLowerCase()).first();
     if (!target) throw new HttpError(404, "No member with that name in your group.");
 
-    await env.DB.prepare(`UPDATE users SET role = 'admin' WHERE id = ?`).bind(target.id).run();
+    await env.DB.batch([
+      env.DB.prepare(`UPDATE users SET role = 'admin' WHERE id = ?`).bind(target.id),
+      logAdminAction(env, {
+        groupId: admin.groupId, actorName: admin.name,
+        action: AUDIT_ACTIONS.PROMOTE, targetName: body.name.trim(),
+      }),
+    ]);
     return json({ ok: true }, 200, cors);
   });
 
@@ -164,7 +171,13 @@ export default function registerAdminRoutes(router) {
       .bind(admin.groupId, body.name.trim().toLowerCase()).first();
     if (!target) throw new HttpError(404, "No member with that name in your group.");
 
-    await env.DB.prepare(`UPDATE users SET role = 'member' WHERE id = ?`).bind(target.id).run();
+    await env.DB.batch([
+      env.DB.prepare(`UPDATE users SET role = 'member' WHERE id = ?`).bind(target.id),
+      logAdminAction(env, {
+        groupId: admin.groupId, actorName: admin.name,
+        action: AUDIT_ACTIONS.DEMOTE, targetName: body.name.trim(),
+      }),
+    ]);
     return json({ ok: true }, 200, cors);
   });
 
@@ -189,6 +202,10 @@ export default function registerAdminRoutes(router) {
     await env.DB.batch([
       env.DB.prepare(`UPDATE users SET active = 0, removed_at = datetime('now') WHERE id = ?`).bind(target.id),
       env.DB.prepare(`DELETE FROM sessions WHERE user_id = ?`).bind(target.id), // log them out immediately
+      logAdminAction(env, {
+        groupId: admin.groupId, actorName: admin.name,
+        action: AUDIT_ACTIONS.REMOVE, targetName: body.name.trim(),
+      }),
     ]);
 
     return json({ ok: true }, 200, cors);
@@ -219,6 +236,10 @@ export default function registerAdminRoutes(router) {
     await env.DB.batch([
       env.DB.prepare(`UPDATE users SET pin_hash = '', pin_salt = '' WHERE id = ?`).bind(target.id),
       env.DB.prepare(`DELETE FROM sessions WHERE user_id = ?`).bind(target.id),
+      logAdminAction(env, {
+        groupId: admin.groupId, actorName: admin.name,
+        action: AUDIT_ACTIONS.RESET_PIN, targetName: body.name.trim(),
+      }),
     ]);
     // Matches the acctKey login() computes (rateKey("login-acct", group.id, user.id))
     // — without this, a member locked out by repeated wrong guesses would
@@ -366,6 +387,11 @@ export default function registerAdminRoutes(router) {
       env.DB.prepare(
         `UPDATE payments SET confirmed_at = datetime('now'), confirmed_by = ?, community_fund_amount = ?, late_penalty_amount = ? WHERE id = ?`
       ).bind(admin.name, fundAmount, penaltyAmount, params.id),
+      logAdminAction(env, {
+        groupId: admin.groupId, actorName: admin.name,
+        action: AUDIT_ACTIONS.PAYMENT_CONFIRM, targetName: owned.displayName,
+        detail: money(owned.amount),
+      }),
     ];
     if (fundAmount > 0) {
       stmts.push(
@@ -420,7 +446,7 @@ export default function registerAdminRoutes(router) {
   router.post("/api/admin/payments/:id/unconfirm", async ({ request, env, params, cors }) => {
     const admin = await requireAdmin(request, env);
     const owned = await env.DB.prepare(
-      `SELECT p.id FROM payments p JOIN users u ON u.id = p.user_id WHERE p.id = ? AND u.group_id = ?`
+      `SELECT p.id, u.display_name as displayName FROM payments p JOIN users u ON u.id = p.user_id WHERE p.id = ? AND u.group_id = ?`
     ).bind(params.id, admin.groupId).first();
     if (!owned) throw new HttpError(404, "Payment not found in your group.");
 
@@ -430,6 +456,10 @@ export default function registerAdminRoutes(router) {
       ).bind(params.id),
       env.DB.prepare(`DELETE FROM fund_contributions WHERE payment_id = ?`).bind(params.id),
       env.DB.prepare(`DELETE FROM late_penalties WHERE payment_id = ?`).bind(params.id),
+      logAdminAction(env, {
+        groupId: admin.groupId, actorName: admin.name,
+        action: AUDIT_ACTIONS.PAYMENT_UNCONFIRM, targetName: owned.displayName,
+      }),
     ]);
     return json({ ok: true }, 200, cors);
   });
@@ -446,16 +476,22 @@ export default function registerAdminRoutes(router) {
     const body = await request.json().catch(() => ({}));
     const owned = await env.DB.prepare(
       `SELECT p.id, p.confirmed_at as confirmedAt, p.user_id as userId, p.amount,
-              p.schedule_row_id as scheduleRowId
+              p.schedule_row_id as scheduleRowId, u.display_name as displayName
        FROM payments p JOIN users u ON u.id = p.user_id WHERE p.id = ? AND u.group_id = ?`
     ).bind(params.id, admin.groupId).first();
     if (!owned) throw new HttpError(404, "Payment not found in your group.");
     if (owned.confirmedAt) throw new HttpError(400, "This payment is already confirmed — unconfirm it first if it needs to be rejected.");
 
     const reason = (body.reason || "").slice(0, 500);
-    await env.DB.prepare(
-      `UPDATE payments SET rejected_at = datetime('now'), rejected_by = ?, rejection_reason = ? WHERE id = ?`
-    ).bind(admin.name, reason, params.id).run();
+    await env.DB.batch([
+      env.DB.prepare(
+        `UPDATE payments SET rejected_at = datetime('now'), rejected_by = ?, rejection_reason = ? WHERE id = ?`
+      ).bind(admin.name, reason, params.id),
+      logAdminAction(env, {
+        groupId: admin.groupId, actorName: admin.name,
+        action: AUDIT_ACTIONS.PAYMENT_REJECT, targetName: owned.displayName, detail: reason || null,
+      }),
+    ]);
 
     const subs = await env.DB.prepare(
       `SELECT id, endpoint, p256dh, auth FROM push_subscriptions WHERE user_id = ?`
@@ -525,10 +561,16 @@ export default function registerAdminRoutes(router) {
       .bind(admin.groupId, body.borrowerName.trim().toLowerCase()).first();
 
     const id = uid();
-    await env.DB.prepare(
-      `INSERT INTO fund_loans (id, group_id, fund_id, borrower_user_id, borrower_name, amount, notes, issued_by)
-       VALUES (?,?,?,?,?,?,?,?)`
-    ).bind(id, admin.groupId, body.fundId, borrowerUser?.id || null, body.borrowerName.trim(), amount, body.notes || "", admin.name).run();
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO fund_loans (id, group_id, fund_id, borrower_user_id, borrower_name, amount, notes, issued_by)
+         VALUES (?,?,?,?,?,?,?,?)`
+      ).bind(id, admin.groupId, body.fundId, borrowerUser?.id || null, body.borrowerName.trim(), amount, body.notes || "", admin.name),
+      logAdminAction(env, {
+        groupId: admin.groupId, actorName: admin.name,
+        action: AUDIT_ACTIONS.LOAN_ISSUE, targetName: body.borrowerName.trim(), detail: money(amount),
+      }),
+    ]);
 
     return json({ id, ok: true }, 201, cors);
   });
@@ -565,6 +607,10 @@ export default function registerAdminRoutes(router) {
       env.DB.prepare(
         `INSERT INTO loan_repayments (id, group_id, loan_id, amount, recorded_by) VALUES (?,?,?,?,?)`
       ).bind(uid(), admin.groupId, loan.id, amount, admin.name),
+      logAdminAction(env, {
+        groupId: admin.groupId, actorName: admin.name,
+        action: AUDIT_ACTIONS.LOAN_REPAY, targetName: loan.borrower_name, detail: money(amount),
+      }),
     ];
     const newRemaining = remaining - amount;
     if (newRemaining <= 0) {
@@ -614,6 +660,11 @@ export default function registerAdminRoutes(router) {
         `UPDATE fund_loans SET amount = ?, borrower_name = ?, borrower_user_id = ?, status = ?, repaid_at = ?
          WHERE id = ?`
       ).bind(amount, borrowerName, borrowerUser?.id || null, nowRepaid ? "repaid" : "outstanding", nowRepaid ? loan.repaid_at || new Date().toISOString() : null, loan.id),
+      logAdminAction(env, {
+        groupId: admin.groupId, actorName: admin.name,
+        action: AUDIT_ACTIONS.LOAN_EDIT, targetName: borrowerName,
+        detail: `${money(loan.amount)} → ${money(amount)}`,
+      }),
     ]);
 
     return json({ ok: true }, 200, cors);
@@ -644,6 +695,10 @@ export default function registerAdminRoutes(router) {
       env.DB.prepare(
         `UPDATE loan_repayments SET voided_at = datetime('now'), void_reason = ? WHERE id = ?`
       ).bind(body.reason || "Edited — voided by an admin", repayment.id),
+      logAdminAction(env, {
+        groupId: admin.groupId, actorName: admin.name,
+        action: AUDIT_ACTIONS.LOAN_REPAYMENT_VOID, targetName: loan.borrower_name, detail: money(repayment.amount),
+      }),
     ];
     if (loan.status === "repaid") {
       stmts.push(
@@ -653,5 +708,20 @@ export default function registerAdminRoutes(router) {
     await env.DB.batch(stmts);
 
     return json({ ok: true }, 200, cors);
+  });
+
+  // Chronological, group-scoped feed of every logAdminAction() entry
+  // (auditLog.js) — the one place an admin can review promotions,
+  // removals, PIN resets, and every payment/loan action together,
+  // without checking each table's own *_by/*_at columns individually.
+  // Most recent first, capped at 200 rows (an activity feed, not an
+  // export).
+  router.get("/api/admin/audit-log", async ({ request, env, cors }) => {
+    const admin = await requireAdmin(request, env);
+    const rows = await env.DB.prepare(
+      `SELECT id, actor_name as actorName, action, target_name as targetName, detail, created_at as createdAt
+       FROM audit_log WHERE group_id = ? ORDER BY created_at DESC LIMIT 200`
+    ).bind(admin.groupId).all();
+    return json({ entries: rows.results || [] }, 200, cors);
   });
 }
