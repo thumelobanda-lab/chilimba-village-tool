@@ -6,7 +6,7 @@ export default function registerAuthRoutes(router) {
   // Never creates an account; see POST /api/join for that.
   router.post("/api/login", async ({ request, env, cors }) => {
     const { groupSlug, identifier, pin } = await request.json();
-    const session = await login(env, groupSlug, identifier, pin);
+    const session = await login(env, groupSlug, identifier, pin, request);
     return json(session, 200, cors);
   });
 
@@ -15,7 +15,7 @@ export default function registerAuthRoutes(router) {
   // is collected here and nowhere else in the login flow.
   router.post("/api/join", async ({ request, env, cors }) => {
     const { groupSlug, name, phone, pin, termsAccepted, title, gender } = await request.json();
-    const session = await joinGroup(env, groupSlug, name, phone, pin, termsAccepted, title, gender);
+    const session = await joinGroup(env, groupSlug, name, phone, pin, termsAccepted, title, gender, request);
     return json(session, 201, cors);
   });
 

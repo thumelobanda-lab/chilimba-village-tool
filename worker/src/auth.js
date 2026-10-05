@@ -2,12 +2,28 @@ import { hashPin, verifyPin, isLegacyHash, randomSalt, newToken, hashToken, uid,
 import { HttpError } from "./httpError.js";
 import { isSubscriptionActive, FREE_TIER_MAX_MEMBERS } from "./subscriptionUtils.js";
 import { cleanText, cleanPhone, validatePin } from "./validation.js";
+import { POLICIES, rateKey, clientIp, assertNotBlocked, recordFailure, clearFailures } from "./rateLimit.js";
 
 export { HttpError };
 
 const SESSION_TTL_HOURS = 24 * 7; // a week
-const MAX_FAILED_ATTEMPTS = 5;
-const LOCKOUT_MINUTES = 15;
+
+// Shown for every login failure that could possibly mean "no such
+// account" — unknown group code, unknown name/phone, removed account,
+// or a wrong PIN all collapse into this one message. Telling any of
+// those apart from the response would let an attacker enumerate real
+// group codes or account names; the rate limiting below (loginIp,
+// loginAccount, codeLookupIp — see rateLimit.js) is what actually keeps
+// guessing slow, not the wording of the error.
+const GENERIC_LOGIN_ERROR = "Incorrect name, phone number, or PIN.";
+
+// Burns roughly the same CPU time as a real verifyPin() call (one
+// PBKDF2 derive) on a path that has no real PIN to check — an unknown
+// group code or unknown account — so the two cases aren't distinguishable
+// by response latency either.
+async function burnPinHashTime(pin) {
+  await hashPin(pin, randomSalt());
+}
 
 // A session token is returned to the client once; only its SHA-256 hash
 // is stored (see hashToken in crypto.js), so a copy of the database or a
@@ -147,25 +163,59 @@ function normalizePhone(phone) {
 }
 
 // Sign in only — an EXISTING account's name or phone number + PIN, with
-// a per-account lockout after repeated failures. Never creates an
-// account (see joinGroup() below for that): the two are deliberately
-// split so phone-number collection can't be skipped by using the "wrong"
-// form — sign-in stays minimal and fast, sign-up is the only path onto
-// the roster. A not-found identifier is a clear 404 pointing at sign-up,
-// not a silent registration.
-export async function login(env, groupSlug, identifier, pin) {
+// a per-account and per-IP lockout after repeated failures (rateLimit.js).
+// Never creates an account (see joinGroup() below for that): the two are
+// deliberately split so phone-number collection can't be skipped by using
+// the "wrong" form — sign-in stays minimal and fast, sign-up is the only
+// path onto the roster.
+//
+// Every failure path — unknown group code, unknown name/phone, a removed
+// account, a wrong PIN — throws the exact same GENERIC_LOGIN_ERROR at the
+// same roughly-constant cost (burnPinHashTime on the paths with no real
+// PIN to check). None of this is observable from outside, by design: a
+// distinct "no such account, sign up first" message is exactly the signal
+// that lets an attacker enumerate real names or group codes.
+export async function login(env, groupSlug, identifier, pin, request) {
   if (!identifier || !identifier.trim()) throw new HttpError(400, "Name or phone number is required.");
   if (!pin || pin.length < 4) throw new HttpError(400, "PIN must be at least 4 digits.");
 
-  const group = await resolveGroupBySlug(env, groupSlug);
+  const ip = clientIp(request);
+  const ipKey = await rateKey("login-ip", ip);
+  const codeLookupKey = await rateKey("code-lookup-ip", ip);
+  await assertNotBlocked(env, [ipKey, codeLookupKey]);
+
+  let group;
+  try {
+    group = await resolveGroupBySlug(env, groupSlug);
+  } catch (e) {
+    if (e instanceof HttpError && e.status === 404) {
+      await recordFailure(env, codeLookupKey, POLICIES.codeLookupIp);
+      await burnPinHashTime(pin);
+      throw new HttpError(401, GENERIC_LOGIN_ERROR);
+    }
+    throw e;
+  }
+
   const key = identifier.trim().toLowerCase();
   const phoneKey = normalizePhone(identifier);
 
   let user = await env.DB.prepare(
     `SELECT * FROM users WHERE group_id = ? AND (name = ? OR (phone IS NOT NULL AND phone = ?))`
   ).bind(group.id, key, phoneKey).first();
-  if (!user) throw new HttpError(404, "No account found with that name or phone number — sign up first.");
-  if (!user.active) throw new HttpError(403, "This account has been removed by a group leader.");
+
+  // Keyed by the resolved user id when the account exists, or by the
+  // submitted identifier itself when it doesn't — so a nonexistent name
+  // locks out exactly like a real one, and a 429 can never itself be used
+  // to test whether an account exists.
+  const acctKey = await rateKey("login-acct", group.id, user ? user.id : key);
+  await assertNotBlocked(env, [ipKey, acctKey]);
+
+  if (!user || !user.active) {
+    await recordFailure(env, ipKey, POLICIES.loginIp);
+    await recordFailure(env, acctKey, POLICIES.loginAccount);
+    await burnPinHashTime(pin);
+    throw new HttpError(401, GENERIC_LOGIN_ERROR);
+  }
 
   // An admin-reset account (see POST /api/admin/reset-pin) has its
   // pin_hash cleared to '' rather than the row being deleted — role,
@@ -175,27 +225,16 @@ export async function login(env, groupSlug, identifier, pin) {
   if (!user.pin_hash) {
     const salt = randomSalt();
     const hash = await hashPin(pin, salt);
-    await env.DB.prepare(
-      `UPDATE users SET pin_salt = ?, pin_hash = ?, failed_attempts = 0, locked_until = NULL WHERE id = ?`
-    ).bind(salt, hash, user.id).run();
+    await env.DB.prepare(`UPDATE users SET pin_salt = ?, pin_hash = ? WHERE id = ?`)
+      .bind(salt, hash, user.id).run();
     user = { ...user, pin_salt: salt, pin_hash: hash };
   } else {
-    if (user.locked_until && new Date(user.locked_until).getTime() > Date.now()) {
-      throw new HttpError(429, "Too many attempts. Try again later.");
-    }
     const ok = await verifyPin(pin, user.pin_salt, user.pin_hash);
     if (!ok) {
-      const attempts = (user.failed_attempts || 0) + 1;
-      const lockedUntil =
-        attempts >= MAX_FAILED_ATTEMPTS
-          ? new Date(Date.now() + LOCKOUT_MINUTES * 60 * 1000).toISOString()
-          : null;
-      await env.DB.prepare(`UPDATE users SET failed_attempts = ?, locked_until = ? WHERE id = ?`)
-        .bind(attempts, lockedUntil, user.id).run();
-      throw new HttpError(401, "Incorrect PIN.");
+      await recordFailure(env, ipKey, POLICIES.loginIp);
+      await recordFailure(env, acctKey, POLICIES.loginAccount);
+      throw new HttpError(401, GENERIC_LOGIN_ERROR);
     }
-    await env.DB.prepare(`UPDATE users SET failed_attempts = 0, locked_until = NULL WHERE id = ?`)
-      .bind(user.id).run();
 
     // Transparent hash upgrade: an account created before the PBKDF2
     // switch verifies fine via the legacy path above, but a correct PIN
@@ -207,6 +246,13 @@ export async function login(env, groupSlug, identifier, pin) {
       await env.DB.prepare(`UPDATE users SET pin_hash = ? WHERE id = ?`).bind(upgraded, user.id).run();
     }
   }
+
+  // A correct PIN clears this account's own failure count — but not the
+  // IP's. IP-level failures are about volume from that network, and
+  // should keep decaying on their own (loginIp's decayMs) rather than
+  // reset on every success, or one attacker-controlled account would
+  // give unlimited free guesses against everyone else from the same IP.
+  await clearFailures(env, acctKey);
 
   const token = newToken();
   await (await insertSession(env, user.id, token)).run();
@@ -233,7 +279,16 @@ export async function login(env, groupSlug, identifier, pin) {
 // all — same reasoning as createGroup() below (a failure between two
 // separate writes here previously risked an orphaned account with no
 // session, on a much smaller scale than that bug, but the same fix).
-export async function joinGroup(env, groupSlug, name, phone, pin, termsAccepted, title, gender) {
+export async function joinGroup(env, groupSlug, name, phone, pin, termsAccepted, title, gender, request) {
+  // Counts every sign-up attempt against this IP, successful or not —
+  // this is a volume cap on account creation, not a guessing lockout, so
+  // it's recorded up front rather than only on failure.
+  const ip = clientIp(request);
+  const ipKey = await rateKey("join-ip", ip);
+  const codeLookupKey = await rateKey("code-lookup-ip", ip);
+  await assertNotBlocked(env, [ipKey, codeLookupKey]);
+  await recordFailure(env, ipKey, POLICIES.joinIp);
+
   const cleanName = cleanText(name, { label: "Full name", max: 80 });
   const phoneKey = cleanPhone(phone);
   validatePin(pin);
@@ -245,7 +300,13 @@ export async function joinGroup(env, groupSlug, name, phone, pin, termsAccepted,
   const titleValue = normalizeTitle(title);
   const genderValue = normalizeGender(gender);
 
-  const group = await resolveGroupBySlug(env, groupSlug);
+  let group;
+  try {
+    group = await resolveGroupBySlug(env, groupSlug);
+  } catch (e) {
+    if (e instanceof HttpError && e.status === 404) await recordFailure(env, codeLookupKey, POLICIES.codeLookupIp);
+    throw e;
+  }
 
   // Free tier's member cap — checked here, where membership is actually
   // granted, not just displayed somewhere in the UI (a determined free
@@ -326,6 +387,12 @@ async function generateUniqueGroupCode(env) {
 }
 
 export async function createGroup(env, { groupName, adminName, pin, phone, title, gender, createdIp, termsAccepted }) {
+  // Every attempt counts, successful or not — spinning up many groups
+  // from one IP is the abuse case this caps, not a guessing attack.
+  const ipKey = await rateKey("create-group-ip", createdIp || "unknown");
+  await assertNotBlocked(env, [ipKey]);
+  await recordFailure(env, ipKey, POLICIES.createGroupIp);
+
   const cleanGroupName = cleanText(groupName, { label: "Group name", max: 100 });
   const cleanAdminName = cleanText(adminName, { label: "Your name", max: 80 });
   validatePin(pin);

@@ -16,12 +16,11 @@
  */
 import { hashPin, verifyPin, randomSalt, newToken, hashToken } from "./crypto.js";
 import { HttpError } from "./httpError.js";
+import { POLICIES, rateKey, clientIp, assertNotBlocked, recordFailure, clearFailures } from "./rateLimit.js";
 
 const OWNER_SESSION_TTL_HOURS = 12; // shorter than a group session (24 * 7) —
 // owner access is the most sensitive credential in this system, so it's
 // deliberately made to re-authenticate more often rather than linger.
-const MAX_FAILED_ATTEMPTS = 5;
-const LOCKOUT_MINUTES = 15;
 
 export async function getOwnerSessionUser(request, env) {
   const auth = request.headers.get("Authorization") || "";
@@ -51,36 +50,37 @@ export async function requireOwner(request, env) {
 // password gives them far more entropy to work with than a 4-digit PIN
 // ever could, so reusing them (rather than a separate scheme) is a
 // strict improvement, not a compromise.
-export async function ownerLogin(env, email, password) {
+export async function ownerLogin(env, email, password, request) {
   if (!email || !email.trim()) throw new HttpError(400, "Email is required.");
   if (!password) throw new HttpError(400, "Password is required.");
 
   const key = email.trim().toLowerCase();
-  const owner = await env.DB.prepare(`SELECT * FROM owners WHERE email = ?`).bind(key).first();
-  // Same message whether the email doesn't exist or the password is
-  // wrong — an owner-login endpoint is a much higher-value enumeration
-  // target than a group's login, so this is deliberately less specific
-  // than the group login()'s 404 (whose slug is already public, unlike
-  // an owner's email).
-  if (!owner) throw new HttpError(401, "Incorrect email or password.");
+  const ip = clientIp(request);
+  const ipKey = await rateKey("owner-ip", ip);
+  // Keyed by the submitted email, found or not — same reasoning as the
+  // group login()'s per-account key: an unknown email must lock out
+  // exactly like a real one, or the lockout itself becomes the leak.
+  const acctKey = await rateKey("owner-acct", key);
+  await assertNotBlocked(env, [ipKey, acctKey]);
 
-  if (owner.locked_until && new Date(owner.locked_until).getTime() > Date.now()) {
-    throw new HttpError(429, "Too many attempts. Try again later.");
+  const owner = await env.DB.prepare(`SELECT * FROM owners WHERE email = ?`).bind(key).first();
+  // Same message and (via the dummy hash below) similar cost whether the
+  // email doesn't exist or the password is wrong — an owner-login endpoint
+  // is a much higher-value enumeration target than a group's login.
+  if (!owner) {
+    await recordFailure(env, ipKey, POLICIES.ownerIp);
+    await recordFailure(env, acctKey, POLICIES.ownerAccount);
+    await hashPin(password, randomSalt());
+    throw new HttpError(401, "Incorrect email or password.");
   }
 
   const ok = await verifyPin(password, owner.password_salt, owner.password_hash);
   if (!ok) {
-    const attempts = (owner.failed_attempts || 0) + 1;
-    const lockedUntil =
-      attempts >= MAX_FAILED_ATTEMPTS
-        ? new Date(Date.now() + LOCKOUT_MINUTES * 60 * 1000).toISOString()
-        : null;
-    await env.DB.prepare(`UPDATE owners SET failed_attempts = ?, locked_until = ? WHERE id = ?`)
-      .bind(attempts, lockedUntil, owner.id).run();
+    await recordFailure(env, ipKey, POLICIES.ownerIp);
+    await recordFailure(env, acctKey, POLICIES.ownerAccount);
     throw new HttpError(401, "Incorrect email or password.");
   }
-  await env.DB.prepare(`UPDATE owners SET failed_attempts = 0, locked_until = NULL WHERE id = ?`)
-    .bind(owner.id).run();
+  await clearFailures(env, acctKey);
 
   const token = newToken();
   const expiresAt = new Date(Date.now() + OWNER_SESSION_TTL_HOURS * 60 * 60 * 1000).toISOString();

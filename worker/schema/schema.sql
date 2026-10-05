@@ -487,6 +487,16 @@ CREATE TABLE IF NOT EXISTS loan_edits (
 CREATE INDEX IF NOT EXISTS idx_loan_edits_loan ON loan_edits(loan_id);
 CREATE INDEX IF NOT EXISTS idx_loan_edits_group ON loan_edits(group_id);
 
+-- One row per rate-limited key (hashed account/IP identity) — see
+-- worker/src/rateLimit.js and migration 025.
+CREATE TABLE IF NOT EXISTS rate_limits (
+  key TEXT PRIMARY KEY,
+  failures INTEGER NOT NULL DEFAULT 0,
+  last_failure_at INTEGER NOT NULL,
+  blocked_until INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_rate_limits_last_failure ON rate_limits(last_failure_at);
+
 -- Ledger of which schema/migrations/*.sql files have been applied to this
 -- database — see scripts/check-migrations.sh and scripts/apply-migration.sh.
 -- A fresh DB built from this file already has every migration's effects
@@ -519,7 +529,8 @@ INSERT OR IGNORE INTO schema_migrations (filename) VALUES
   ('021_gender.sql'),
   ('022_momo_recipient.sql'),
   ('023_group_currency.sql'),
-  ('024_title.sql');
+  ('024_title.sql'),
+  ('025_rate_limits.sql');
 
 -- Seed one example group so the app is usable immediately after a fresh
 -- deploy. Real groups are created via POST /api/groups (see routes/groups.js)

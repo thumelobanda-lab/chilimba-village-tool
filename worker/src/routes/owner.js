@@ -21,7 +21,7 @@ const PLATFORM_SETTINGS_ID = "default"; // singleton row — see migration 012
 export default function registerOwnerRoutes(router) {
   router.post("/api/owner/login", async ({ request, env, cors }) => {
     const { email, password } = await request.json();
-    const session = await ownerLogin(env, email, password);
+    const session = await ownerLogin(env, email, password, request);
     return json(session, 200, cors);
   });
 
