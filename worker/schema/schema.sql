@@ -497,6 +497,19 @@ CREATE TABLE IF NOT EXISTS rate_limits (
 );
 CREATE INDEX IF NOT EXISTS idx_rate_limits_last_failure ON rate_limits(last_failure_at);
 
+-- One row per admin-initiated mutation — see worker/src/auditLog.js and
+-- migration 026.
+CREATE TABLE IF NOT EXISTS audit_log (
+  id TEXT PRIMARY KEY,
+  group_id TEXT NOT NULL REFERENCES groups(id),
+  actor_name TEXT NOT NULL,
+  action TEXT NOT NULL,
+  target_name TEXT,
+  detail TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_audit_log_group_created ON audit_log(group_id, created_at);
+
 -- Ledger of which schema/migrations/*.sql files have been applied to this
 -- database — see scripts/check-migrations.sh and scripts/apply-migration.sh.
 -- A fresh DB built from this file already has every migration's effects
@@ -530,7 +543,8 @@ INSERT OR IGNORE INTO schema_migrations (filename) VALUES
   ('022_momo_recipient.sql'),
   ('023_group_currency.sql'),
   ('024_title.sql'),
-  ('025_rate_limits.sql');
+  ('025_rate_limits.sql'),
+  ('026_audit_log.sql');
 
 -- Seed one example group so the app is usable immediately after a fresh
 -- deploy. Real groups are created via POST /api/groups (see routes/groups.js)
