@@ -2019,6 +2019,22 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .terms-content ul { margin: 0 0 12px; padding-left: 20px; }
 .terms-content li { margin-bottom: 6px; }
 
+/* Standalone /terms and /privacy pages (LegalPage.jsx) — the Play Store
+   needs these reachable at a stable URL without logging in, so they're
+   mounted outside the authenticated app shell entirely (see main.jsx).
+   Reuses .terms-content for the document body typography. */
+.legal-page { min-height: 100vh; }
+.legal-page-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--surface-2);
+}
+.legal-page-brand { font-weight: 700; font-size: 1.1rem; }
+.legal-page-body { max-width: 640px; margin: 0 auto; padding: 24px 20px 60px; }
+.legal-page-title { margin: 0 0 4px; }
+
 /* "What is a Chilimba?" modal (WhatIsChilimbaModal.jsx) — reuses
    .terms-modal for the wider scrollable box. */
 .chilimba-names-list {

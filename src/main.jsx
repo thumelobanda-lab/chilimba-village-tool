@@ -1,8 +1,17 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App.jsx";
+import LegalPage from "./components/LegalPage.jsx";
 import ErrorBoundary from "./components/ErrorBoundary.jsx";
 import "./styles.css";
+
+// /terms and /privacy need to be reachable at a stable URL with no
+// login (the Play Store's privacy-policy field links here directly) —
+// there's no client-side router in this app, so this is the one place
+// that branches on the raw pathname before the authenticated App tree
+// ever mounts.
+const LEGAL_PAGES = { "/terms": "terms", "/privacy": "privacy" };
+const legalPage = LEGAL_PAGES[window.location.pathname];
 
 // Explicit registration (nothing else in this app registers sw.js — see
 // vite.config.js's injectRegister: false) paired with a one-time reload
@@ -37,7 +46,7 @@ if ("serviceWorker" in navigator) {
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <ErrorBoundary>
-      <App />
+      {legalPage ? <LegalPage page={legalPage} /> : <App />}
     </ErrorBoundary>
   </React.StrictMode>
 );
