@@ -1,0 +1,7 @@
+# Digital Asset Links file for Android TWA (Trusted Web Activity) domain
+# verification — Cloudflare Pages already infers Content-Type from the
+# .json extension for static assets, but Android's verifier is strict
+# about this header, so it's pinned explicitly rather than relying on
+# the default.
+/.well-known/assetlinks.json
+  Content-Type: application/json
